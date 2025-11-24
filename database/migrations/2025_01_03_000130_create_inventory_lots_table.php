@@ -1,0 +1,38 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('inventory_lots', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('inventory_type_id')->constrained()->onDelete('cascade');
+            $table->string('production_id')->nullable(); // ID Lot dari Produksi (PROD-2024-001)
+            $table->date('expiry_date')->nullable(); // Masa edar / kadaluarsa
+            $table->enum('status', ['tersedia', 'segera_kadaluarsa', 'kadaluarsa', 'habis'])->default('tersedia');
+            $table->decimal('initial_stock', 15, 2)->default(0); // Stok awal
+            $table->decimal('current_stock', 15, 2)->default(0); // Stok tersisa
+            $table->string('stock_unit')->default('kg');
+            $table->foreignId('warehouse_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('bin_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('certification_id')->nullable()->constrained()->onDelete('set null');
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('inventory_lots');
+    }
+};
+

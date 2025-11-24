@@ -1,0 +1,111 @@
+================================================================================
+                    SIBIT - Sistem Informasi Balai Benih Induk
+================================================================================
+
+INFORMASI LOGIN DEFAULT
+================================================================================
+
+URL Aplikasi (jika menggunakan php artisan serve):
+http://localhost:8000
+
+URL Aplikasi (jika menggunakan Laragon):
+http://localhost/example-app/public
+atau
+http://example-app.test (jika sudah setup virtual host)
+
+--------------------------------------------------------------------------------
+
+KREDENSIAL LOGIN:
+Email    : admin@sibit.com
+Password : password123
+
+--------------------------------------------------------------------------------
+
+CATATAN PENTING:
+1. Pastikan MySQL service sudah berjalan
+2. Database "sibit" sudah dibuat
+3. Migration dan seeder sudah dijalankan
+4. File .env sudah dikonfigurasi dengan benar
+
+--------------------------------------------------------------------------------
+
+QUICK COMMANDS:
+- Jalankan server    : php artisan serve
+- Reset database     : php artisan migrate:fresh --seed
+- Clear cache        : php artisan cache:clear
+
+================================================================================
+
+DOKUMENTASI:
+- QUICK_START.md      : Panduan mulai cepat
+- INSTALASI.md        : Panduan instalasi lengkap
+- RINGKASAN_APLIKASI.md : Overview aplikasi
+- TESTING_GUIDE.md    : Panduan testing
+- README_SIBIT.md     : README umum
+
+================================================================================
+
+FITUR YANG TERSEDIA:
+✓ Login/Logout
+✓ Dashboard dengan weather widget
+✓ Manajemen Tugas (CRUD)
+✓ Responsive Design (Desktop, Tablet, Mobile)
+✓ Sidebar Navigation
+
+DALAM PENGEMBANGAN:
+⧗ Manajemen Penanaman
+⧗ Manajemen Sertifikasi
+⧗ Manajemen Stok
+⧗ Penjualan Bibit
+⧗ Perencanaan
+⧗ Laporan
+⧗ Peta Lahan
+⧗ Multi-user Management
+
+================================================================================
+
+STRUKTUR DATABASE:
+- users (tabel user authentication)
+- tasks (tabel tugas/task management)
+
+================================================================================
+
+TEKNOLOGI:
+Backend  : Laravel 10 (PHP 8.1+)
+Frontend : Blade, Bootstrap 5, Font Awesome 6
+Database : MySQL/MariaDB
+API      : OpenWeatherMap (untuk data cuaca)
+
+================================================================================
+
+LOKASI MONITORING CUACA:
+Lubuk Minturun, Padang
+Latitude  : -0.9478
+Longitude : 100.4172
+
+================================================================================
+
+SUPPORT:
+Untuk bantuan atau pertanyaan, silakan hubungi tim developer SIBIT.
+
+================================================================================
+                    Selamat Menggunakan SIBIT! 🌾
+================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
