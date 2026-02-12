@@ -14,10 +14,9 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             UserSeeder::class,
-            LocationSeeder::class,
-            TaskTemplateSeeder::class,
-            PlantTypeSeeder::class,
-            ContactSeeder::class,
+            // LocationSeeder dihapus: tabel locations sudah di-drop oleh migrasi
+            // TaskTemplateSeeder::class,
+            // PlantTypeSeeder::class,
         ]);
     }
 }
