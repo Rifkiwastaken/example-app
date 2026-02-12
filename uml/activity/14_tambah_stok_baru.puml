@@ -1,0 +1,51 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Tambah Stok Baru
+
+|#LightBlue|Petugas Gudang|
+start
+:Masuk ke form tambah stok;
+:Pilih tipe benih;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data inventory types;
+:Query data gudang dan bin;
+:Query data sertifikasi yang lulus;
+:Menampilkan form tambah stok;
+
+|#LightBlue|Petugas Gudang|
+:Pilih benih dari sertifikasi;
+:Input jumlah stok\n(quantity, unit);
+:Input lokasi gudang dan bin;
+:Input tanggal kadaluarsa;
+:Submit form;
+
+|#LightGreen|Sistem|
+:Validasi data stok;
+:Check kapasitas bin;
+:Insert ke tabel inventory_type_seeds;
+:Insert ke tabel inventory_lots (jika perlu);
+:Update total stok;
+:Create history record;
+:Success message;
+:Redirect ke halaman detail stok;
+
+|#LightBlue|Petugas Gudang|
+:Lihat pesan stok berhasil ditambahkan;
+
+stop
+
+@enduml

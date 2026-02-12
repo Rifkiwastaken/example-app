@@ -1,0 +1,68 @@
+@startuml Sequence Diagram - Input Data Penanaman
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Input Data Penanaman
+
+actor "Kepala Satgas/Penangkar" as User
+participant "PlantingController" as Controller
+participant "Planting Model" as Planting
+participant "Plant Model" as Plant
+participant "PlantingLocation Model" as PlantingLocation
+participant "Database" as DB
+
+User -> Controller: GET /plantings/create
+activate Controller
+Controller -> Controller: validateRole
+Controller -> Plant: getAll
+activate Plant
+Plant -> DB: SELECT * FROM plants ORDER BY name
+DB --> Plant: plants[]
+Plant --> Controller: plants[]
+deactivate Plant
+
+Controller -> PlantingLocation: getAll
+activate PlantingLocation
+PlantingLocation -> DB: SELECT * FROM planting_locations ORDER BY name
+DB --> PlantingLocation: locations[]
+PlantingLocation --> Controller: locations[]
+deactivate PlantingLocation
+
+Controller --> User: render form create
+deactivate Controller
+
+User -> Controller: POST /plantings
+activate Controller
+Controller -> Controller: validate
+Controller -> Plant: findById
+activate Plant
+Plant -> DB: SELECT * FROM plants WHERE id = ?
+DB --> Plant: plant data
+Plant --> Controller: Plant
+deactivate Plant
+
+Controller -> PlantingLocation: findById
+activate PlantingLocation
+PlantingLocation -> DB: SELECT * FROM planting_locations WHERE id = ?
+DB --> PlantingLocation: location data
+PlantingLocation --> Controller: PlantingLocation
+deactivate PlantingLocation
+
+alt Validation Success
+    Controller -> Planting: create
+    activate Planting
+    Planting -> DB: INSERT INTO plantings plant_id planting_location_id
+    DB --> Planting: planting_id
+    Planting --> Controller: Planting
+    deactivate Planting
+    
+    Controller --> User: redirect with success message
+else Validation Failed
+    Controller --> User: redirect errors
+endif
+deactivate Controller
+
+@enduml
+

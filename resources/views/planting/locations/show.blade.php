@@ -1,14 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Detail Lokasi Penanaman - ' . $plantingLocation->name . ' - SIBIT')
+@section('title', 'Detail Lokasi Penanaman - ' . $plantingLocation->name . ' - SIBESTI')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="mb-0">{{ $plantingLocation->name }}</h4>
-        @if($plantingLocation->baseLocation)
-            <small class="text-muted">{{ $plantingLocation->baseLocation->name }}</small>
-        @endif
     </div>
     <a href="{{ route('planting-locations.index') }}" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Kembali</a>
 </div>
@@ -53,9 +50,6 @@
             <div class="col-md-6">
                 <div class="mb-2"><strong>Ukuran Peta:</strong> {{ $plantingLocation->map_size ?: '-' }}</div>
                 <div class="mb-2"><strong>Kondisi Cahaya:</strong> {{ $plantingLocation->light_condition ?: 'Tidak ada data' }}</div>
-                @if($plantingLocation->baseLocation)
-                    <div class="mb-2"><strong>Lokasi Lahan:</strong> {{ $plantingLocation->baseLocation->name }}</div>
-                @endif
             </div>
         </div>
         @if($plantingLocation->description)
@@ -67,7 +61,7 @@
     <div class="tab-pane fade show active" id="penanaman">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="d-flex align-items-center gap-3">
-                <h6 class="mb-0">Penanaman Saat Ini - {{ $plantingLocation->name }}</h6>
+                <h6 class="mb-0">Penanaman - {{ $plantingLocation->name }}</h6>
                 <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href='?year=' + this.value">
                     @foreach($plantingYears as $py)
                         <option value="{{ $py }}" {{ $py == $year ? 'selected' : '' }}>{{ $py }}</option>
@@ -79,67 +73,261 @@
             </button>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Lokasi Tanam</th>
-                        <th>Tanaman</th>
-                        <th>Jumlah Tanam</th>
-                        <th>Tanggal Tanam</th>
-                        <th>Est. Panen</th>
-                        <th>Progres</th>
-                        <th width="150">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($activePlantings as $planting)
-                        @php
-                            $daysSince = $planting->planted_at ? $planting->planted_at->diffInDays(now()) : 0;
-                            $daysToHarvest = $planting->days_to_harvest ?? ($planting->plant->type->days_to_harvest ?? 0);
-                            $progress = $daysToHarvest > 0 ? min(100, ($daysSince / $daysToHarvest) * 100) : ($daysSince > 0 ? 50 : 0);
-                            $estHarvest = $planting->planted_at && $daysToHarvest > 0 
-                                ? $planting->planted_at->copy()->addDays($daysToHarvest) 
-                                : null;
-                            $statusColor = $progress >= 100 ? 'success' : ($progress >= 75 ? 'warning' : 'info');
-                        @endphp
-                        <tr>
-                            <td>{{ $planting->bed_label ?: '-' }}</td>
-                            <td><strong>{{ $planting->plant->name }}</strong><br><small class="text-muted">{{ $planting->plant->variety ?: 'Tidak ada varietas' }}</small></td>
-                            <td>{{ number_format($planting->quantity_planted ?? 0, 0) }}</td>
-                            <td>{{ $planting->planted_at ? $planting->planted_at->format('d M Y') : '-' }}</td>
-                            <td>{{ $estHarvest ? $estHarvest->format('d M Y') : '-' }}</td>
-                            <td>
-                                <div class="progress mb-1" style="height: 20px;">
-                                    <div class="progress-bar bg-{{ $statusColor }}" role="progressbar" style="width: {{ $progress }}%">
-                                        {{ number_format($progress, 0) }}%
-                                    </div>
-                                </div>
-                                <small class="text-muted">{{ $daysSince }} hari</small>
-                            </td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <button type="button" class="btn btn-outline-success" 
-                                            onclick="openHarvestModal({{ $planting->id }}, '{{ addslashes($planting->plant->name) }}', '{{ addslashes($planting->bed_label ?? '') }}')"
-                                            title="Catat Panen">
-                                        <i class="fas fa-cut"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-outline-danger" 
-                                            onclick="markFailed({{ $planting->id }})"
-                                            title="Gagal Panen">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                    <a href="{{ route('plantings.show', $planting) }}" class="btn btn-outline-primary" title="Lihat Detail">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="7" class="text-center text-muted">Belum ada penanaman aktif.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
+        <!-- Sub-tabs untuk kategori penanaman -->
+        <ul class="nav nav-pills mb-3" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="pill" href="#ditanam-saat-ini" style="background-color: #0d6efd; color: white;">
+                    <i class="fas fa-seedling me-1"></i>Ditanam Saat Ini
+                    <span class="badge bg-light text-dark ms-1">{{ $activePlantings->count() }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="pill" href="#telah-dipanen" style="background-color: transparent; color: #198754;">
+                    <i class="fas fa-check-circle me-1"></i>Telah Dipanen
+                    <span class="badge bg-success ms-1">{{ $harvestedPlantings->count() }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="pill" href="#kehilangan" style="background-color: transparent; color: #ffc107;">
+                    <i class="fas fa-exclamation-triangle me-1"></i>Kehilangan
+                    <span class="badge bg-warning ms-1">{{ $lossPlantings->count() }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="pill" href="#gagal-panen" style="background-color: transparent; color: #dc3545;">
+                    <i class="fas fa-times-circle me-1"></i>Gagal Panen
+                    <span class="badge bg-danger ms-1">{{ $failedPlantings->count() }}</span>
+                </a>
+            </li>
+        </ul>
+        
+        <style>
+            .nav-pills .nav-link {
+                transition: all 0.3s ease;
+            }
+            .nav-pills .nav-link:hover {
+                background-color: rgba(13, 110, 253, 0.1) !important;
+                color: #0d6efd !important;
+                opacity: 1 !important;
+            }
+            .nav-pills .nav-link.active {
+                opacity: 1 !important;
+            }
+            .nav-pills .nav-link:not(.active):hover {
+                background-color: rgba(0, 0, 0, 0.05) !important;
+            }
+            .nav-pills .nav-link[href="#telah-dipanen"]:hover {
+                background-color: rgba(25, 135, 84, 0.1) !important;
+                color: #198754 !important;
+            }
+            .nav-pills .nav-link[href="#kehilangan"]:hover {
+                background-color: rgba(255, 193, 7, 0.1) !important;
+                color: #ffc107 !important;
+            }
+            .nav-pills .nav-link[href="#gagal-panen"]:hover {
+                background-color: rgba(220, 53, 69, 0.1) !important;
+                color: #dc3545 !important;
+            }
+        </style>
+
+        <div class="tab-content">
+            <!-- Sub-tab: Ditanam Saat Ini -->
+            <div class="tab-pane fade show active" id="ditanam-saat-ini">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Lokasi Tanam</th>
+                                <th>Tanaman</th>
+                                <th>Jumlah Tanam</th>
+                                <th>Tanggal Tanam</th>
+                                <th>Est. Panen</th>
+                                <th>Progres</th>
+                                <th width="150">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($activePlantings as $planting)
+                                @php
+                                    $daysSince = $planting->planted_at ? $planting->planted_at->diffInDays(now()) : 0;
+                                    $daysToHarvest = $planting->days_to_harvest ?? ($planting->plant->type->days_to_harvest ?? 0);
+                                    $progress = $daysToHarvest > 0 ? min(100, ($daysSince / $daysToHarvest) * 100) : ($daysSince > 0 ? 50 : 0);
+                                    $estHarvest = $planting->planted_at && $daysToHarvest > 0 
+                                        ? $planting->planted_at->copy()->addDays($daysToHarvest) 
+                                        : null;
+                                    $statusColor = $progress >= 100 ? 'success' : ($progress >= 75 ? 'warning' : 'info');
+                                @endphp
+                                <tr>
+                                    <td>{{ $planting->bed_label ?: '-' }}</td>
+                                    <td><strong>{{ $planting->plant->name }}</strong><br><small class="text-muted">{{ $planting->plant->variety ?: 'Tidak ada varietas' }}</small></td>
+                                    <td>{{ number_format($planting->quantity_planted ?? 0, 0) }}</td>
+                                    <td>{{ $planting->planted_at ? $planting->planted_at->format('d M Y') : '-' }}</td>
+                                    <td>{{ $estHarvest ? $estHarvest->format('d M Y') : '-' }}</td>
+                                    <td>
+                                        <div class="progress mb-1" style="height: 20px;">
+                                            <div class="progress-bar bg-{{ $statusColor }}" role="progressbar" style="width: {{ $progress }}%">
+                                                {{ number_format($progress, 0) }}%
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">{{ $daysSince }} hari</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-success" 
+                                                    onclick="openHarvestModal({{ $planting->id }}, '{{ addslashes($planting->plant->name) }}', '{{ addslashes($planting->bed_label ?? '') }}')"
+                                                    title="Catat Panen">
+                                                <i class="fas fa-cut"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-warning" 
+                                                    onclick="openLossModal({{ $planting->id }}, '{{ addslashes($planting->plant->name) }}', '{{ addslashes($planting->bed_label ?? '') }}', {{ $planting->quantity_planted - $planting->losses->sum('loss_amount') }})"
+                                                    title="Catat Kehilangan">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="markFailed({{ $planting->id }})"
+                                                    title="Gagal Panen">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            <a href="{{ route('plantings.show', $planting) }}" class="btn btn-outline-primary" title="Lihat Detail">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="7" class="text-center text-muted">Belum ada penanaman aktif.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Sub-tab: Telah Dipanen -->
+            <div class="tab-pane fade" id="telah-dipanen">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Lokasi Tanam</th>
+                                <th>Tanaman</th>
+                                <th>Jumlah Tanam</th>
+                                <th>Tanggal Tanam</th>
+                                <th>Tanggal Panen</th>
+                                <th>Jumlah Panen</th>
+                                <th>Batch No</th>
+                                <th width="100">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($harvestedPlantings as $planting)
+                                <tr>
+                                    <td>{{ $planting->bed_label ?: '-' }}</td>
+                                    <td><strong>{{ $planting->plant->name }}</strong><br><small class="text-muted">{{ $planting->plant->variety ?: 'Tidak ada varietas' }}</small></td>
+                                    <td>{{ number_format($planting->quantity_planted ?? 0, 0) }}</td>
+                                    <td>{{ $planting->planted_at ? $planting->planted_at->format('d M Y') : '-' }}</td>
+                                    <td>{{ $planting->harvest && $planting->harvest->harvested_at ? $planting->harvest->harvested_at->format('d M Y') : '-' }}</td>
+                                    <td>{{ $planting->harvest ? number_format($planting->harvest->quantity ?? 0, 2) . ' ' . ($planting->harvest->unit ?? 'kg') : '-' }}</td>
+                                    <td><span class="badge bg-info">{{ $planting->harvest->batch_no ?? '-' }}</span></td>
+                                    <td>
+                                        <a href="{{ route('plantings.show', $planting) }}" class="btn btn-sm btn-outline-primary" title="Lihat Detail">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="8" class="text-center text-muted">Belum ada penanaman yang telah dipanen.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Sub-tab: Kehilangan -->
+            <div class="tab-pane fade" id="kehilangan">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Lokasi Tanam</th>
+                                <th>Tanaman</th>
+                                <th>Jumlah Tanam</th>
+                                <th>Total Kehilangan</th>
+                                <th>Sisa Tanaman</th>
+                                <th>Alasan</th>
+                                <th width="100">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($lossPlantings as $planting)
+                                @php
+                                    $totalLoss = $planting->losses->sum('loss_amount');
+                                    $remaining = $planting->quantity_planted - $totalLoss;
+                                @endphp
+                                <tr>
+                                    <td>{{ $planting->bed_label ?: '-' }}</td>
+                                    <td><strong>{{ $planting->plant->name }}</strong><br><small class="text-muted">{{ $planting->plant->variety ?: 'Tidak ada varietas' }}</small></td>
+                                    <td>{{ number_format($planting->quantity_planted ?? 0, 0) }}</td>
+                                    <td><span class="badge bg-warning">{{ number_format($totalLoss, 0) }}</span></td>
+                                    <td>{{ number_format($remaining, 0) }}</td>
+                                    <td>
+                                        @foreach($planting->losses->take(2) as $loss)
+                                            <small class="d-block">{{ $loss->loss_reason ?: 'Tidak disebutkan' }}</small>
+                                        @endforeach
+                                        @if($planting->losses->count() > 2)
+                                            <small class="text-muted">+{{ $planting->losses->count() - 2 }} lainnya</small>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <a href="{{ route('plantings.show', $planting) }}" class="btn btn-sm btn-outline-primary" title="Lihat Detail">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="7" class="text-center text-muted">Belum ada data kehilangan.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Sub-tab: Gagal Panen -->
+            <div class="tab-pane fade" id="gagal-panen">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Lokasi Tanam</th>
+                                <th>Tanaman</th>
+                                <th>Jumlah Tanam</th>
+                                <th>Tanggal Tanam</th>
+                                <th>Tanggal Gagal</th>
+                                <th>Keterangan</th>
+                                <th width="100">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($failedPlantings as $planting)
+                                <tr>
+                                    <td>{{ $planting->bed_label ?: '-' }}</td>
+                                    <td><strong>{{ $planting->plant->name }}</strong><br><small class="text-muted">{{ $planting->plant->variety ?: 'Tidak ada varietas' }}</small></td>
+                                    <td>{{ number_format($planting->quantity_planted ?? 0, 0) }}</td>
+                                    <td>{{ $planting->planted_at ? $planting->planted_at->format('d M Y') : '-' }}</td>
+                                    <td>{{ $planting->harvest && $planting->harvest->harvested_at ? $planting->harvest->harvested_at->format('d M Y') : '-' }}</td>
+                                    <td><span class="badge bg-danger">Gagal Panen</span></td>
+                                    <td>
+                                        <a href="{{ route('plantings.show', $planting) }}" class="btn btn-sm btn-outline-primary" title="Lihat Detail">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="7" class="text-center text-muted">Belum ada penanaman yang gagal panen.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -263,7 +451,7 @@
                 <tbody>
                     @forelse($tasks as $task)
                         <tr>
-                            <td><input type="checkbox" class="task-checkbox" value="{{ $task->id }}"></td>
+                            <td><input type="checkbox" class="task-checkbox" value="{{ $task->task_id }}"></td>
                             <td>
                                 <strong>{{ $task->title }}</strong>
                                 @if($task->description)
@@ -473,7 +661,7 @@
             <form action="{{ route('harvests.store') }}" method="POST">
                 @csrf
                 <input type="hidden" name="planting_id" id="harvest_planting_id">
-                <input type="hidden" name="planting_location_id" value="{{ $plantingLocation->id }}">
+                <input type="hidden" name="planting_location_id" value="{{ $plantingLocation->planting_location_id }}">
                 <input type="hidden" name="from_planting_location" value="1">
                 <input type="hidden" name="unit" value="kg">
                 <div class="modal-header">
@@ -486,9 +674,9 @@
                         <input type="date" name="harvested_at" class="form-control" value="{{ date('Y-m-d') }}" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Nomor Batch (Otomatis)</label>
-                        <input type="text" class="form-control" id="harvest_batch_no" readonly>
-                        <input type="hidden" name="batch_no" id="harvest_batch_no_hidden">
+                        <label class="form-label">Nomor Batch <span class="text-danger">*</span></label>
+                        <input type="text" name="batch_no" class="form-control" id="harvest_batch_no" required>
+                        <small class="text-muted">Nomor batch akan otomatis terisi, namun dapat diubah jika diperlukan</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Sumber Panen (Otomatis)</label>
@@ -511,6 +699,58 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-success">Simpan Panen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Catat Kehilangan -->
+<div class="modal fade" id="modalCatatKehilangan" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('planting-locations.losses.store', $plantingLocation) }}" method="POST">
+                @csrf
+                <input type="hidden" name="planting_id" id="loss_planting_id">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="lossModalTitle">Catat Kehilangan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tanggal <span class="text-danger">*</span></label>
+                        <input type="date" name="loss_date" id="loss_date" class="form-control" value="{{ date('Y-m-d') }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Jumlah Kehilangan <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="number" name="loss_amount" id="loss_amount" class="form-control" step="0.01" min="0.01" required>
+                            <span class="badge bg-secondary align-self-center ms-2" id="loss_current_plants">0 Tanaman Saat Ini</span>
+                        </div>
+                        <small class="text-muted">Masukkan jumlah tanaman yang hilang</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Alasan Kehilangan</label>
+                        <select name="loss_reason" id="loss_reason" class="form-select">
+                            <option value="">-- Pilih Alasan --</option>
+                            <option value="penyakit">Penyakit</option>
+                            <option value="hama">Hama</option>
+                            <option value="cuaca">Cuaca Ekstrem</option>
+                            <option value="kekeringan">Kekeringan</option>
+                            <option value="banjir">Banjir</option>
+                            <option value="hewan">Serangan Hewan</option>
+                            <option value="human_error">Kesalahan Manusia</option>
+                            <option value="lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Deskripsi</label>
+                        <textarea name="description" id="loss_description" class="form-control" rows="3" placeholder="Tambahkan catatan atau komentar..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success">Simpan</button>
                 </div>
             </form>
         </div>
@@ -724,7 +964,6 @@ function openHarvestModal(plantingId, plantName, bedLabel) {
     const harvestCount = {{ $harvestCount }};
     const batchNo = 'PAN-' + locationCode + '-' + year + '-' + String(harvestCount).padStart(3, '0');
     document.getElementById('harvest_batch_no').value = batchNo;
-    document.getElementById('harvest_batch_no_hidden').value = batchNo;
     
     // Set plant_id from planting
     @php
@@ -755,9 +994,22 @@ function openHarvestModal(plantingId, plantName, bedLabel) {
     new bootstrap.Modal(document.getElementById('modalCatatPanen')).show();
 }
 
+function openLossModal(plantingId, plantName, bedLabel, currentPlants) {
+    document.getElementById('loss_planting_id').value = plantingId;
+    document.getElementById('lossModalTitle').textContent = 'Catat Kehilangan - ' + plantName + (bedLabel ? ' (' + bedLabel + ')' : '');
+    document.getElementById('loss_current_plants').textContent = currentPlants + ' Tanaman Saat Ini';
+    document.getElementById('loss_amount').max = currentPlants;
+    document.getElementById('loss_amount').value = '';
+    document.getElementById('loss_date').value = '{{ date('Y-m-d') }}';
+    document.getElementById('loss_reason').value = '';
+    document.getElementById('loss_description').value = '';
+    
+    new bootstrap.Modal(document.getElementById('modalCatatKehilangan')).show();
+}
+
 function markFailed(plantingId) {
     if (confirm('Apakah Anda yakin ingin menandai penanaman ini sebagai gagal panen?')) {
-        fetch('{{ route('planting-locations.plantings.mark-failed', ['plantingLocation' => $plantingLocation->id, 'planting' => ':id']) }}'.replace(':id', plantingId), {
+        fetch('{{ route('planting-locations.plantings.mark-failed', ['plantingLocation' => $plantingLocation->planting_location_id, 'planting' => ':id']) }}'.replace(':id', plantingId), {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',

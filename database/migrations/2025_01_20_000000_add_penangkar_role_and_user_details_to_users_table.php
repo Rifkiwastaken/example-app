@@ -21,7 +21,7 @@ return new class extends Migration
         });
         
         // Copy existing location_id data to location_placement if needed
-        DB::statement("UPDATE users SET location_placement = (SELECT name FROM locations WHERE locations.id = users.location_id) WHERE location_id IS NOT NULL");
+        DB::statement("UPDATE users SET location_placement = (SELECT name FROM locations WHERE locations.location_id = users.location_id) WHERE location_id IS NOT NULL");
         
         // Add new fields for user details
         Schema::table('users', function (Blueprint $table) {
@@ -83,4 +83,7 @@ return new class extends Migration
         DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'kepala_satuan_tugas', 'petugas_sertifikasi', 'petugas_gudang', 'petugas_bbi') DEFAULT 'petugas_bbi'");
     }
 };
+
+
+
 

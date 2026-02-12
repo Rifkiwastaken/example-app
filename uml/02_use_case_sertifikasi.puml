@@ -1,0 +1,107 @@
+@startuml Use Case Diagram - Modul Sertifikasi (SIBESTI)
+!theme plain
+skinparam usecase {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 12
+}
+skinparam actor {
+    BackgroundColor #FFF9C4
+    BorderColor #F57F17
+}
+
+left to right direction
+
+actor "Petugas Sertifikasi" as PetugasSertifikasi
+actor "Penangkar" as Penangkar
+actor "Sistem" as Sistem
+
+rectangle "Modul Sertifikasi" {
+    
+    usecase "Akses Halaman Sertifikasi" as UC_Access
+    usecase "Lihat Daftar Sertifikasi" as UC_List
+    usecase "Pilih Hasil Panen" as UC_PilihPanen
+    usecase "Pilih Kelas Benih" as UC_PilihKelas
+    usecase "Buat Laporan Pemeriksaan" as UC_BuatLaporan
+    usecase "Input Data Inspeksi" as UC_InputInspeksi
+    usecase "Upload Dokumen Scan" as UC_Upload
+    usecase "Evaluasi Hasil Pemeriksaan" as UC_Evaluasi
+    usecase "Tambahkan Benih ke Stok" as UC_TambahStok
+    usecase "Edit Laporan Pemeriksaan" as UC_Edit
+    usecase "Lihat Detail Sertifikasi" as UC_Detail
+    
+    ' Use case sistem
+    usecase "Validasi Role Petugas" as UC_ValidasiRole
+    usecase "Query Data Panen" as UC_QueryPanen
+    usecase "Create Sertifikasi Baru" as UC_CreateCertification
+    usecase "Validasi Data Laporan" as UC_ValidasiLaporan
+    usecase "Check Nomor Laporan Unik" as UC_CheckReportNumber
+    usecase "Simpan Laporan Pemeriksaan" as UC_SimpanLaporan
+    usecase "Update Status LULUS" as UC_UpdateLulus
+    usecase "Update Status TIDAK LULUS" as UC_UpdateTidakLulus
+    usecase "Simpan Data Benih ke Stok" as UC_SimpanStok
+}
+
+' Relasi Petugas Sertifikasi
+PetugasSertifikasi --> UC_Access
+PetugasSertifikasi --> UC_List
+PetugasSertifikasi --> UC_PilihPanen
+PetugasSertifikasi --> UC_PilihKelas
+PetugasSertifikasi --> UC_BuatLaporan
+PetugasSertifikasi --> UC_InputInspeksi
+PetugasSertifikasi --> UC_Upload
+PetugasSertifikasi --> UC_Evaluasi
+PetugasSertifikasi --> UC_Edit
+PetugasSertifikasi --> UC_Detail
+
+' Relasi Penangkar
+Penangkar --> UC_PilihPanen
+Penangkar --> UC_TambahStok
+
+' Relasi Sistem
+Sistem --> UC_ValidasiRole
+Sistem --> UC_QueryPanen
+Sistem --> UC_CreateCertification
+Sistem --> UC_ValidasiLaporan
+Sistem --> UC_CheckReportNumber
+Sistem --> UC_SimpanLaporan
+Sistem --> UC_UpdateLulus
+Sistem --> UC_UpdateTidakLulus
+Sistem --> UC_SimpanStok
+
+' Relasi Include
+UC_Access ..> UC_ValidasiRole : <<include>>
+UC_PilihPanen ..> UC_QueryPanen : <<include>>
+UC_PilihPanen ..> UC_CreateCertification : <<include>>
+UC_BuatLaporan ..> UC_PilihKelas : <<include>>
+UC_BuatLaporan ..> UC_InputInspeksi : <<include>>
+UC_BuatLaporan ..> UC_Upload : <<include>>
+UC_BuatLaporan ..> UC_ValidasiLaporan : <<include>>
+UC_ValidasiLaporan ..> UC_CheckReportNumber : <<include>>
+UC_BuatLaporan ..> UC_SimpanLaporan : <<include>>
+UC_Evaluasi ..> UC_UpdateLulus : <<include>>
+UC_Evaluasi ..> UC_UpdateTidakLulus : <<include>>
+UC_TambahStok ..> UC_SimpanStok : <<include>>
+
+' Relasi Extend
+UC_List ..> UC_Detail : <<extend>>
+UC_List ..> UC_Edit : <<extend>>
+UC_Evaluasi ..> UC_TambahStok : <<extend>>
+
+@enduml
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

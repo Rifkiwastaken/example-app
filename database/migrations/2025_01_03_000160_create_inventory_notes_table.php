@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('inventory_notes', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('inventory_type_id')->constrained()->onDelete('cascade');
+            $table->string('inventory_note_id', 36)->primary();
+            $table->string('inventory_type_id', 36)->onDelete('cascade');
             $table->text('content');
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('user_id', 36)->onDelete('cascade');
             $table->timestamps();
         });
     }

@@ -1,0 +1,169 @@
+@startuml Activity Diagram - Modul Penanaman
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Modul Penanaman
+
+' ============================================
+' Use Case: Lihat Daftar Penanaman
+' ============================================
+|#LightBlue|Kepala Satgas/Penangkar|
+start
+:Masuk ke halaman daftar penanaman;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data penanaman dari database;
+:Filter berdasarkan lokasi penanaman;
+:Display daftar penanaman;
+
+|#LightBlue|Kepala Satgas/Penangkar|
+:Lihat daftar penanaman;
+
+stop
+
+' ============================================
+' Use Case: Input Data Penanaman
+' ============================================
+|#LightBlue|Kepala Satgas/Penangkar|
+start
+:Masuk ke form input penanaman;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data tanaman dari database;
+:Query data lokasi penanaman dari database;
+:Display form input penanaman;
+
+|#LightBlue|Kepala Satgas/Penangkar|
+:Isi data penanaman\n(plant_id, planting_location_id, bed_label);
+:Isi detail penanaman\n(spacing, sowing_depth, start_method);
+:Isi data perkembangan\n(germination_stage, days_to_emerge);
+:Submit form;
+
+|#LightGreen|Sistem|
+:Validasi input data;
+:Check tanaman terdaftar;
+:Check lokasi terdaftar;
+
+if (Data valid?) then (Ya)
+    :Insert ke tabel plantings;
+    :Generate ID penanaman;
+    :Success message;
+    :Redirect ke halaman detail;
+else (Tidak)
+    :Error message;
+    :Kembali ke form;
+endif
+
+stop
+
+' ============================================
+' Use Case: Edit Data Penanaman
+' ============================================
+|#LightBlue|Admin/Kepala Satgas|
+start
+:Dari daftar penanaman;
+:Klik tombol Edit;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Load data penanaman dari database;
+:Display form edit dengan data existing;
+
+|#LightBlue|Admin/Kepala Satgas|
+:Edit data penanaman;
+:Submit form;
+
+|#LightGreen|Sistem|
+:Validasi input data;
+:Update data di tabel plantings;
+:Success message;
+:Redirect ke halaman detail;
+
+stop
+
+' ============================================
+' Use Case: Hapus Data Penanaman
+' ============================================
+|#LightBlue|Admin|
+start
+:Dari daftar penanaman;
+:Klik tombol Hapus;
+:Konfirmasi penghapusan;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Check relasi dengan data lain;
+:Delete data dari tabel plantings;
+:Success message;
+:Redirect ke daftar penanaman;
+
+stop
+
+' ============================================
+' Use Case: Trading Perkembangan Tanaman
+' ============================================
+|#LightBlue|Kepala Satgas/Penangkar|
+start
+:Masuk ke halaman tracking perkembangan;
+:Pilih penanaman yang akan di-track;
+
+|#LightGreen|Sistem|
+:Load data penanaman dari database;
+:Load history perkembangan;
+:Display form tracking;
+
+|#LightBlue|Kepala Satgas/Penangkar|
+:Input perkembangan tanaman\n(germination_stage, avg_height);
+:Input kondisi tanaman\n(light_profile, soil_condition);
+:Submit update;
+
+|#LightGreen|Sistem|
+:Validasi data perkembangan;
+:Update status perkembangan;
+:Simpan history perkembangan;
+:Update tabel plantings;
+:Success message;
+
+stop
+
+' ============================================
+' Use Case: Input Data Panen
+' ============================================
+|#LightBlue|Kepala Satgas/Penangkar|
+start
+:Masuk ke form input panen;
+:Pilih penanaman yang akan dipanen;
+
+|#LightGreen|Sistem|
+:Validasi penanaman siap panen;
+:Load data penanaman;
+:Display form input panen;
+
+|#LightBlue|Kepala Satgas/Penangkar|
+:Input data panen\n(harvest_date, quantity, unit);
+:Input kualitas hasil panen;
+:Submit form;
+
+|#LightGreen|Sistem|
+:Validasi data panen;
+:Insert ke tabel harvests;
+:Update status penanaman menjadi "dipanen";
+:Generate ID panen;
+:Success message;
+:Redirect ke halaman detail panen;
+
+stop
+
+@enduml

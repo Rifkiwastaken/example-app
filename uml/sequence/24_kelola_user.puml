@@ -1,0 +1,143 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Kelola User
+
+actor "Admin" as User
+participant "UserController" as Controller
+participant "User" as UserModel
+participant "Database" as DB
+
+User -> User: akses halaman kelola user()
+User -> Controller: index()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> UserModel: User::with('plantingLocations')->paginate(15)
+activate UserModel
+UserModel -> DB: SELECT * FROM users LEFT JOIN user_planting_location_land_manager LIMIT 15 OFFSET ?
+DB --> UserModel: return users dengan data lengkap[]
+UserModel --> Controller: return users[]
+deactivate UserModel
+
+Controller --> User: return view index dengan data dan pagination()
+deactivate Controller
+User -> User: tampilkan daftar user()
+
+alt Aksi Tambah User
+    User -> User: klik tambah user()
+    User -> Controller: create()
+    activate Controller
+    Controller -> Controller: validateRole()
+    Controller --> User: return view create()
+    deactivate Controller
+    User -> User: tampilkan form tambah user()
+    
+    User -> User: isi data user()
+    User -> Controller: store(Request)
+    activate Controller
+    Controller -> Controller: validate(Request)
+    Controller -> UserModel: User::where('email', email)->first()
+    activate UserModel
+    UserModel -> DB: SELECT * FROM users WHERE email = ?
+    DB --> UserModel: return null atau user
+    UserModel --> Controller: return result
+    deactivate UserModel
+    
+    alt Data Valid
+        Controller -> Controller: hashPassword()
+        Controller -> UserModel: User::create(data)
+        activate UserModel
+        UserModel -> DB: INSERT INTO users VALUES
+        DB --> UserModel: return user_id
+        UserModel --> Controller: return User
+        deactivate UserModel
+        
+        Controller --> User: redirect back dengan success message()
+        User -> User: tampilkan pesan user berhasil ditambahkan()
+    else Data Tidak Valid
+        Controller --> User: redirect back dengan validation errors()
+        User -> User: tampilkan form dengan pesan error()
+    end
+    deactivate Controller
+else Aksi Edit User
+    User -> User: klik edit user()
+    User -> Controller: edit(user_id)
+    activate Controller
+    Controller -> Controller: validateRole()
+    Controller -> UserModel: User::findOrFail(user_id)
+    activate UserModel
+    UserModel -> DB: SELECT * FROM users WHERE id = ?
+    DB --> UserModel: return user data
+    UserModel --> Controller: return User
+    deactivate UserModel
+    
+    Controller --> User: return view edit dengan data()
+    deactivate Controller
+    User -> User: tampilkan form edit user()
+    
+    User -> User: ubah data user()
+    User -> Controller: update(Request, user_id)
+    activate Controller
+    Controller -> Controller: validate(Request)
+    Controller -> UserModel: User::findOrFail(user_id)
+    activate UserModel
+    UserModel -> DB: SELECT * FROM users WHERE id = ?
+    DB --> UserModel: return user data
+    UserModel --> Controller: return User
+    deactivate UserModel
+    
+    alt Data Valid
+        alt Password Changed
+            Controller -> Controller: hashPassword()
+        end
+        
+        Controller -> UserModel: User::update(data)
+        activate UserModel
+        UserModel -> DB: UPDATE users SET name = ?, email = ?, role = ? WHERE id = ?
+        DB --> UserModel: return updated
+        UserModel --> Controller: return updated
+        deactivate UserModel
+        
+        Controller --> User: redirect back dengan success message()
+        User -> User: tampilkan pesan user berhasil diupdate()
+    else Data Tidak Valid
+        Controller --> User: redirect back dengan validation errors()
+        User -> User: tampilkan form dengan pesan error()
+    end
+    deactivate Controller
+else Aksi Hapus User
+    User -> User: klik hapus user()
+    User -> User: konfirmasi penghapusan()
+    User -> Controller: destroy(user_id)
+    activate Controller
+    Controller -> Controller: validateRole()
+    Controller -> UserModel: User::findOrFail(user_id)
+    activate UserModel
+    UserModel -> DB: SELECT * FROM users WHERE id = ?
+    DB --> UserModel: return user data
+    UserModel --> Controller: return User
+    deactivate UserModel
+    
+    Controller -> Controller: checkUserRelations()
+    
+    alt Tidak Ada Relasi
+        Controller -> UserModel: User::delete()
+        activate UserModel
+        UserModel -> DB: DELETE FROM users WHERE id = ?
+        DB --> UserModel: return deleted
+        UserModel --> Controller: return deleted
+        deactivate UserModel
+        
+        Controller --> User: redirect back dengan success message()
+        User -> User: tampilkan pesan user berhasil dihapus()
+    else Ada Relasi
+        Controller --> User: redirect back dengan error message()
+        User -> User: tampilkan pesan user memiliki relasi data()
+    end
+    deactivate Controller
+end
+
+@enduml

@@ -1,0 +1,50 @@
+@startuml Sequence Diagram - Lihat Daftar Penanaman
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Lihat Daftar Penanaman
+
+actor "Kepala Satgas/Penangkar" as User
+participant "PlantingController" as Controller
+participant "Planting Model" as Planting
+participant "Plant Model" as Plant
+participant "PlantingLocation Model" as PlantingLocation
+participant "Database" as DB
+
+User -> Controller: GET /plantings
+activate Controller
+Controller -> Controller: validateRole
+Controller -> Planting: getPaginated
+activate Planting
+Planting -> DB: SELECT * FROM plantings LEFT JOIN plants LIMIT 15 OFFSET ?
+DB --> Planting: plantings[]
+Planting --> Controller: plantings[]
+deactivate Planting
+
+Controller -> Plant: load plants for plantings
+activate Plant
+Plant -> DB: SELECT * FROM plants WHERE id IN (...)
+DB --> Plant: plants[]
+Plant --> Controller: plants[]
+deactivate Plant
+
+Controller -> PlantingLocation: load locations for plantings
+activate PlantingLocation
+PlantingLocation -> DB: SELECT * FROM planting_locations WHERE id IN (...)
+DB --> PlantingLocation: locations[]
+PlantingLocation --> Controller: locations[]
+
+
+
+
+
+
+deactivate PlantingLocation
+
+Controller --> User: render daftar penanaman
+deactivate Controller
+
+@enduml
+

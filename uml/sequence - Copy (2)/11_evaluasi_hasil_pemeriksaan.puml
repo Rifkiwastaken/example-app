@@ -1,0 +1,58 @@
+@startuml Sequence Diagram - Evaluasi Hasil Pemeriksaan
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Evaluasi Hasil Pemeriksaan
+
+actor "Petugas Sertifikasi/Admin" as User
+participant "CertificationController" as Controller
+participant "CertificationReport Model" as Report
+participant "Database" as DB
+
+User -> Controller: GET /certifications/reports/{id}
+activate Controller
+Controller -> Report: findById
+activate Report
+Report -> DB: SELECT * FROM certification_reports LEFT JOIN certifications WHERE id = ?
+DB --> Report: report data
+Report --> Controller: Report
+deactivate Report
+
+Controller --> User: render halaman evaluasi
+deactivate Controller
+
+User -> Controller: PUT /certifications/reports/{id} evaluasi result
+activate Controller
+Controller -> Controller: validate
+Controller -> Report: findById
+activate Report
+Report -> DB: SELECT * FROM certification_reports WHERE id = ?
+DB --> Report: report data
+Report --> Controller: Report
+deactivate Report
+
+alt Hasil Evaluasi LULUS
+    Controller -> Report: update seed_class_result LULUS
+    activate Report
+    Report -> DB: UPDATE certification_reports SET seed_class_result = LULUS WHERE id = ?
+    DB --> Report: updated
+    Report --> Controller: updated
+    deactivate Report
+    
+    Controller --> User: response success
+else Hasil Evaluasi TIDAK LULUS
+    Controller -> Report: update seed_class_result TIDAK LULUS
+    activate Report
+    Report -> DB: UPDATE certification_reports SET seed_class_result = TIDAK_LULUS WHERE id = ?
+    DB --> Report: updated
+    Report --> Controller: updated
+    deactivate Report
+    
+    Controller --> User: response success
+end
+deactivate Controller
+
+@enduml
+

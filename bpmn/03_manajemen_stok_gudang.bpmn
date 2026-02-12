@@ -1,0 +1,614 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_3" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.0.0">
+  <bpmn:process id="ProsesManajemenStok" name="Proses Manajemen Stok dan Gudang" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Stok" name="Mulai Proses Manajemen Stok">
+      <bpmn:outgoing>Flow_PilihAksi</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="Gateway_PilihAksi" name="Pilih Aksi">
+      <bpmn:incoming>Flow_PilihAksi</bpmn:incoming>
+      <bpmn:outgoing>Flow_TambahStok</bpmn:outgoing>
+      <bpmn:outgoing>Flow_KelolaGudang</bpmn:outgoing>
+      <bpmn:outgoing>Flow_AdjustmentStok</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_PilihTanaman" name="Pengguna Memilih Tanaman untuk Stok">
+      <bpmn:incoming>Flow_TambahStok</bpmn:incoming>
+      <bpmn:outgoing>Flow_InputDataStok</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_InputDataStok" name="Pengguna Mengisi Data Stok (SKU, Unit, dll)">
+      <bpmn:incoming>Flow_InputDataStok</bpmn:incoming>
+      <bpmn:outgoing>Flow_PilihGudang</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_PilihGudang" name="Pengguna Memilih Gudang dan Bin">
+      <bpmn:incoming>Flow_PilihGudang</bpmn:incoming>
+      <bpmn:outgoing>Flow_InputLot</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_InputLot" name="Pengguna Mengisi Data Lot (Batch Number, Tanggal Produksi)">
+      <bpmn:incoming>Flow_InputLot</bpmn:incoming>
+      <bpmn:outgoing>Flow_ValidasiStok</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_ValidasiStok" name="Memvalidasi Data Stok">
+      <bpmn:incoming>Flow_ValidasiStok</bpmn:incoming>
+      <bpmn:outgoing>Flow_CheckSKU</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_CheckSKU" name="Memeriksa SKU Unik di Database">
+      <bpmn:incoming>Flow_CheckSKU</bpmn:incoming>
+      <bpmn:outgoing>Flow_GatewayValidasiStok</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_ValidasiStok" name="Data Valid?">
+      <bpmn:incoming>Flow_GatewayValidasiStok</bpmn:incoming>
+      <bpmn:outgoing>Flow_StokValid</bpmn:outgoing>
+      <bpmn:outgoing>Flow_StokTidakValid</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_SimpanInventoryType" name="Menyimpan Tipe Inventory ke Database">
+      <bpmn:incoming>Flow_StokValid</bpmn:incoming>
+      <bpmn:outgoing>Flow_InsertInventoryType</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_InsertInventoryType" name="Menyimpan ke Tabel Inventory Types">
+      <bpmn:incoming>Flow_InsertInventoryType</bpmn:incoming>
+      <bpmn:outgoing>Flow_SimpanLot</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_SimpanLot" name="Menyimpan Data Lot ke Database">
+      <bpmn:incoming>Flow_SimpanLot</bpmn:incoming>
+      <bpmn:outgoing>Flow_InsertInventoryLot</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_InsertInventoryLot" name="Menyimpan ke Tabel Inventory Lots">
+      <bpmn:incoming>Flow_InsertInventoryLot</bpmn:incoming>
+      <bpmn:outgoing>Flow_CatatTransaksi</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_CatatTransaksi" name="Mencatat Transaksi Inventory">
+      <bpmn:incoming>Flow_CatatTransaksi</bpmn:incoming>
+      <bpmn:outgoing>Flow_InsertTransaction</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_InsertTransaction" name="Menyimpan ke Tabel Inventory Transactions">
+      <bpmn:incoming>Flow_InsertTransaction</bpmn:incoming>
+      <bpmn:outgoing>Flow_EndTambahStok</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_BuatGudang" name="Pengguna Membuat Gudang Baru">
+      <bpmn:incoming>Flow_KelolaGudang</bpmn:incoming>
+      <bpmn:outgoing>Flow_InputDataGudang</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_InputDataGudang" name="Pengguna Mengisi Data Gudang">
+      <bpmn:incoming>Flow_InputDataGudang</bpmn:incoming>
+      <bpmn:outgoing>Flow_ValidasiGudang</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_ValidasiGudang" name="Memvalidasi Data Gudang">
+      <bpmn:incoming>Flow_ValidasiGudang</bpmn:incoming>
+      <bpmn:outgoing>Flow_CheckInternalID</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_CheckInternalID" name="Memeriksa Internal ID Unik di Database">
+      <bpmn:incoming>Flow_CheckInternalID</bpmn:incoming>
+      <bpmn:outgoing>Flow_GatewayValidasiGudang</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_ValidasiGudang" name="Data Valid?">
+      <bpmn:incoming>Flow_GatewayValidasiGudang</bpmn:incoming>
+      <bpmn:outgoing>Flow_GudangValid</bpmn:outgoing>
+      <bpmn:outgoing>Flow_GudangTidakValid</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_SimpanGudang" name="Menyimpan Data Gudang ke Database">
+      <bpmn:incoming>Flow_GudangValid</bpmn:incoming>
+      <bpmn:outgoing>Flow_InsertWarehouse</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_InsertWarehouse" name="Menyimpan ke Tabel Warehouses">
+      <bpmn:incoming>Flow_InsertWarehouse</bpmn:incoming>
+      <bpmn:outgoing>Flow_BuatBin</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_BuatBin" name="Pengguna Membuat Bin di Gudang">
+      <bpmn:incoming>Flow_BuatBin</bpmn:incoming>
+      <bpmn:outgoing>Flow_InputDataBin</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_InputDataBin" name="Pengguna Mengisi Data Bin">
+      <bpmn:incoming>Flow_InputDataBin</bpmn:incoming>
+      <bpmn:outgoing>Flow_SimpanBin</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_SimpanBin" name="Menyimpan Data Bin ke Database">
+      <bpmn:incoming>Flow_SimpanBin</bpmn:incoming>
+      <bpmn:outgoing>Flow_InsertBin</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_InsertBin" name="Menyimpan ke Tabel Bins">
+      <bpmn:incoming>Flow_InsertBin</bpmn:incoming>
+      <bpmn:outgoing>Flow_EndKelolaGudang</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_InputAdjustment" name="Pengguna Mengisi Data Adjustment Stok">
+      <bpmn:incoming>Flow_AdjustmentStok</bpmn:incoming>
+      <bpmn:outgoing>Flow_ValidasiAdjustment</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_ValidasiAdjustment" name="Memvalidasi Data Adjustment">
+      <bpmn:incoming>Flow_ValidasiAdjustment</bpmn:incoming>
+      <bpmn:outgoing>Flow_CheckStokTersedia</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_CheckStokTersedia" name="Memeriksa Stok Tersedia di Database">
+      <bpmn:incoming>Flow_CheckStokTersedia</bpmn:incoming>
+      <bpmn:outgoing>Flow_GatewayValidasiAdjustment</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_ValidasiAdjustment" name="Stok Cukup?">
+      <bpmn:incoming>Flow_GatewayValidasiAdjustment</bpmn:incoming>
+      <bpmn:outgoing>Flow_StokCukup</bpmn:outgoing>
+      <bpmn:outgoing>Flow_StokTidakCukup</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_UpdateStok" name="Memperbarui Stok di Database">
+      <bpmn:incoming>Flow_StokCukup</bpmn:incoming>
+      <bpmn:outgoing>Flow_UpdateInventoryLot</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_UpdateInventoryLot" name="Update Stok di Tabel Inventory Lots">
+      <bpmn:incoming>Flow_UpdateInventoryLot</bpmn:incoming>
+      <bpmn:outgoing>Flow_CatatTransaksiAdjustment</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_CatatTransaksiAdjustment" name="Mencatat Transaksi Adjustment">
+      <bpmn:incoming>Flow_CatatTransaksiAdjustment</bpmn:incoming>
+      <bpmn:outgoing>Flow_InsertTransactionAdjustment</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_InsertTransactionAdjustment" name="Menyimpan Transaksi Adjustment">
+      <bpmn:incoming>Flow_InsertTransactionAdjustment</bpmn:incoming>
+      <bpmn:outgoing>Flow_EndAdjustment</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_TambahStok" name="Stok Berhasil Ditambahkan">
+      <bpmn:incoming>Flow_EndTambahStok</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_KelolaGudang" name="Gudang Berhasil Dikelola">
+      <bpmn:incoming>Flow_EndKelolaGudang</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_Adjustment" name="Adjustment Stok Selesai">
+      <bpmn:incoming>Flow_EndAdjustment</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_StokTidakValid" name="Data Stok Tidak Valid">
+      <bpmn:incoming>Flow_StokTidakValid</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_GudangTidakValid" name="Data Gudang Tidak Valid">
+      <bpmn:incoming>Flow_GudangTidakValid</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_StokTidakCukup" name="Stok Tidak Cukup">
+      <bpmn:incoming>Flow_StokTidakCukup</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:dataStore id="Database" name="Database" />
+    <bpmn:dataStoreReference id="DataStore_Database" name="Database">
+      <bpmn:dataStoreRef>Database</bpmn:dataStoreRef>
+    </bpmn:dataStoreReference>
+    <bpmn:sequenceFlow id="Flow_PilihAksi" sourceRef="StartEvent_Stok" targetRef="Gateway_PilihAksi" />
+    <bpmn:sequenceFlow id="Flow_TambahStok" name="Tambah Stok" sourceRef="Gateway_PilihAksi" targetRef="Task_PilihTanaman" />
+    <bpmn:sequenceFlow id="Flow_KelolaGudang" name="Kelola Gudang" sourceRef="Gateway_PilihAksi" targetRef="Task_BuatGudang" />
+    <bpmn:sequenceFlow id="Flow_AdjustmentStok" name="Adjustment Stok" sourceRef="Gateway_PilihAksi" targetRef="Task_InputAdjustment" />
+    <bpmn:sequenceFlow id="Flow_InputDataStok" sourceRef="Task_PilihTanaman" targetRef="Task_InputDataStok" />
+    <bpmn:sequenceFlow id="Flow_PilihGudang" sourceRef="Task_InputDataStok" targetRef="Task_PilihGudang" />
+    <bpmn:sequenceFlow id="Flow_InputLot" sourceRef="Task_PilihGudang" targetRef="Task_InputLot" />
+    <bpmn:sequenceFlow id="Flow_ValidasiStok" sourceRef="Task_InputLot" targetRef="Task_ValidasiStok" />
+    <bpmn:sequenceFlow id="Flow_CheckSKU" sourceRef="Task_ValidasiStok" targetRef="Task_CheckSKU" />
+    <bpmn:sequenceFlow id="Flow_GatewayValidasiStok" sourceRef="Task_CheckSKU" targetRef="Gateway_ValidasiStok" />
+    <bpmn:sequenceFlow id="Flow_StokValid" name="Ya" sourceRef="Gateway_ValidasiStok" targetRef="Task_SimpanInventoryType" />
+    <bpmn:sequenceFlow id="Flow_StokTidakValid" name="Tidak" sourceRef="Gateway_ValidasiStok" targetRef="EndEvent_StokTidakValid" />
+    <bpmn:sequenceFlow id="Flow_InsertInventoryType" sourceRef="Task_SimpanInventoryType" targetRef="Task_InsertInventoryType" />
+    <bpmn:sequenceFlow id="Flow_SimpanLot" sourceRef="Task_InsertInventoryType" targetRef="Task_SimpanLot" />
+    <bpmn:sequenceFlow id="Flow_InsertInventoryLot" sourceRef="Task_SimpanLot" targetRef="Task_InsertInventoryLot" />
+    <bpmn:sequenceFlow id="Flow_CatatTransaksi" sourceRef="Task_InsertInventoryLot" targetRef="Task_CatatTransaksi" />
+    <bpmn:sequenceFlow id="Flow_InsertTransaction" sourceRef="Task_CatatTransaksi" targetRef="Task_InsertTransaction" />
+    <bpmn:sequenceFlow id="Flow_EndTambahStok" sourceRef="Task_InsertTransaction" targetRef="EndEvent_TambahStok" />
+    <bpmn:sequenceFlow id="Flow_InputDataGudang" sourceRef="Task_BuatGudang" targetRef="Task_InputDataGudang" />
+    <bpmn:sequenceFlow id="Flow_ValidasiGudang" sourceRef="Task_InputDataGudang" targetRef="Task_ValidasiGudang" />
+    <bpmn:sequenceFlow id="Flow_CheckInternalID" sourceRef="Task_ValidasiGudang" targetRef="Task_CheckInternalID" />
+    <bpmn:sequenceFlow id="Flow_GatewayValidasiGudang" sourceRef="Task_CheckInternalID" targetRef="Gateway_ValidasiGudang" />
+    <bpmn:sequenceFlow id="Flow_GudangValid" name="Ya" sourceRef="Gateway_ValidasiGudang" targetRef="Task_SimpanGudang" />
+    <bpmn:sequenceFlow id="Flow_GudangTidakValid" name="Tidak" sourceRef="Gateway_ValidasiGudang" targetRef="EndEvent_GudangTidakValid" />
+    <bpmn:sequenceFlow id="Flow_InsertWarehouse" sourceRef="Task_SimpanGudang" targetRef="Task_InsertWarehouse" />
+    <bpmn:sequenceFlow id="Flow_BuatBin" sourceRef="Task_InsertWarehouse" targetRef="Task_BuatBin" />
+    <bpmn:sequenceFlow id="Flow_InputDataBin" sourceRef="Task_BuatBin" targetRef="Task_InputDataBin" />
+    <bpmn:sequenceFlow id="Flow_SimpanBin" sourceRef="Task_InputDataBin" targetRef="Task_SimpanBin" />
+    <bpmn:sequenceFlow id="Flow_InsertBin" sourceRef="Task_SimpanBin" targetRef="Task_InsertBin" />
+    <bpmn:sequenceFlow id="Flow_EndKelolaGudang" sourceRef="Task_InsertBin" targetRef="EndEvent_KelolaGudang" />
+    <bpmn:sequenceFlow id="Flow_ValidasiAdjustment" sourceRef="Task_InputAdjustment" targetRef="Task_ValidasiAdjustment" />
+    <bpmn:sequenceFlow id="Flow_CheckStokTersedia" sourceRef="Task_ValidasiAdjustment" targetRef="Task_CheckStokTersedia" />
+    <bpmn:sequenceFlow id="Flow_GatewayValidasiAdjustment" sourceRef="Task_CheckStokTersedia" targetRef="Gateway_ValidasiAdjustment" />
+    <bpmn:sequenceFlow id="Flow_StokCukup" name="Ya" sourceRef="Gateway_ValidasiAdjustment" targetRef="Task_UpdateStok" />
+    <bpmn:sequenceFlow id="Flow_StokTidakCukup" name="Tidak" sourceRef="Gateway_ValidasiAdjustment" targetRef="EndEvent_StokTidakCukup" />
+    <bpmn:sequenceFlow id="Flow_UpdateInventoryLot" sourceRef="Task_UpdateStok" targetRef="Task_UpdateInventoryLot" />
+    <bpmn:sequenceFlow id="Flow_CatatTransaksiAdjustment" sourceRef="Task_UpdateInventoryLot" targetRef="Task_CatatTransaksiAdjustment" />
+    <bpmn:sequenceFlow id="Flow_InsertTransactionAdjustment" sourceRef="Task_CatatTransaksiAdjustment" targetRef="Task_InsertTransactionAdjustment" />
+    <bpmn:sequenceFlow id="Flow_EndAdjustment" sourceRef="Task_InsertTransactionAdjustment" targetRef="EndEvent_Adjustment" />
+    <bpmn:association id="Association_CheckSKU" sourceRef="Task_CheckSKU" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_InsertInventoryType" sourceRef="Task_InsertInventoryType" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_InsertInventoryLot" sourceRef="Task_InsertInventoryLot" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_InsertTransaction" sourceRef="Task_InsertTransaction" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_CheckInternalID" sourceRef="Task_CheckInternalID" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_InsertWarehouse" sourceRef="Task_InsertWarehouse" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_InsertBin" sourceRef="Task_InsertBin" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_CheckStokTersedia" sourceRef="Task_CheckStokTersedia" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_UpdateInventoryLot" sourceRef="Task_UpdateInventoryLot" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_InsertTransactionAdjustment" sourceRef="Task_InsertTransactionAdjustment" targetRef="DataStore_Database" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_3">
+    <bpmndi:BPMNPlane id="BPMNPlane_3" bpmnElement="ProsesManajemenStok">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_3" bpmnElement="StartEvent_Stok">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="160" y="142" width="120" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_PilihAksi" bpmnElement="Gateway_PilihAksi" isMarkerVisible="true">
+        <dc:Bounds x="270" y="92" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="255" y="65" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_PilihTanaman" bpmnElement="Task_PilihTanaman">
+        <dc:Bounds x="380" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InputDataStok" bpmnElement="Task_InputDataStok">
+        <dc:Bounds x="520" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_PilihGudang" bpmnElement="Task_PilihGudang">
+        <dc:Bounds x="660" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InputLot" bpmnElement="Task_InputLot">
+        <dc:Bounds x="800" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ValidasiStok" bpmnElement="Task_ValidasiStok">
+        <dc:Bounds x="940" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_CheckSKU" bpmnElement="Task_CheckSKU">
+        <dc:Bounds x="1080" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ValidasiStok" bpmnElement="Gateway_ValidasiStok" isMarkerVisible="true">
+        <dc:Bounds x="1245" y="92" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1230" y="65" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_SimpanInventoryType" bpmnElement="Task_SimpanInventoryType">
+        <dc:Bounds x="1355" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InsertInventoryType" bpmnElement="Task_InsertInventoryType">
+        <dc:Bounds x="1495" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_SimpanLot" bpmnElement="Task_SimpanLot">
+        <dc:Bounds x="1635" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InsertInventoryLot" bpmnElement="Task_InsertInventoryLot">
+        <dc:Bounds x="1775" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_CatatTransaksi" bpmnElement="Task_CatatTransaksi">
+        <dc:Bounds x="1915" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InsertTransaction" bpmnElement="Task_InsertTransaction">
+        <dc:Bounds x="2055" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_BuatGudang" bpmnElement="Task_BuatGudang">
+        <dc:Bounds x="380" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InputDataGudang" bpmnElement="Task_InputDataGudang">
+        <dc:Bounds x="520" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ValidasiGudang" bpmnElement="Task_ValidasiGudang">
+        <dc:Bounds x="660" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_CheckInternalID" bpmnElement="Task_CheckInternalID">
+        <dc:Bounds x="800" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ValidasiGudang" bpmnElement="Gateway_ValidasiGudang" isMarkerVisible="true">
+        <dc:Bounds x="965" y="265" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="950" y="238" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_SimpanGudang" bpmnElement="Task_SimpanGudang">
+        <dc:Bounds x="1075" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InsertWarehouse" bpmnElement="Task_InsertWarehouse">
+        <dc:Bounds x="1215" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_BuatBin" bpmnElement="Task_BuatBin">
+        <dc:Bounds x="1355" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InputDataBin" bpmnElement="Task_InputDataBin">
+        <dc:Bounds x="1495" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_SimpanBin" bpmnElement="Task_SimpanBin">
+        <dc:Bounds x="1635" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InsertBin" bpmnElement="Task_InsertBin">
+        <dc:Bounds x="1775" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InputAdjustment" bpmnElement="Task_InputAdjustment">
+        <dc:Bounds x="380" y="423" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ValidasiAdjustment" bpmnElement="Task_ValidasiAdjustment">
+        <dc:Bounds x="520" y="423" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_CheckStokTersedia" bpmnElement="Task_CheckStokTersedia">
+        <dc:Bounds x="660" y="423" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ValidasiAdjustment" bpmnElement="Gateway_ValidasiAdjustment" isMarkerVisible="true">
+        <dc:Bounds x="825" y="438" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="810" y="411" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_UpdateStok" bpmnElement="Task_UpdateStok">
+        <dc:Bounds x="935" y="423" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_UpdateInventoryLot" bpmnElement="Task_UpdateInventoryLot">
+        <dc:Bounds x="1075" y="423" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_CatatTransaksiAdjustment" bpmnElement="Task_CatatTransaksiAdjustment">
+        <dc:Bounds x="1215" y="423" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InsertTransactionAdjustment" bpmnElement="Task_InsertTransactionAdjustment">
+        <dc:Bounds x="1355" y="423" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndTambahStok" bpmnElement="EndEvent_TambahStok">
+        <dc:Bounds x="2210" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2191" y="142" width="120" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndKelolaGudang" bpmnElement="EndEvent_KelolaGudang">
+        <dc:Bounds x="1930" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1911" y="315" width="120" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndAdjustment" bpmnElement="EndEvent_Adjustment">
+        <dc:Bounds x="1510" y="445" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1491" y="488" width="120" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndStokTidakValid" bpmnElement="EndEvent_StokTidakValid">
+        <dc:Bounds x="1355" y="250" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1336" y="293" width="120" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndGudangTidakValid" bpmnElement="EndEvent_GudangTidakValid">
+        <dc:Bounds x="1075" y="423" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1056" y="466" width="120" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndStokTidakCukup" bpmnElement="EndEvent_StokTidakCukup">
+        <dc:Bounds x="935" y="596" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="916" y="639" width="120" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataStore_Database" bpmnElement="DataStore_Database">
+        <dc:Bounds x="800" y="596" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_PilihAksi" bpmnElement="Flow_PilihAksi">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="270" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_TambahStok" bpmnElement="Flow_TambahStok">
+        <di:waypoint x="320" y="117" />
+        <di:waypoint x="380" y="117" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="330" y="99" width="60" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_KelolaGudang" bpmnElement="Flow_KelolaGudang">
+        <di:waypoint x="295" y="142" />
+        <di:waypoint x="295" y="250" />
+        <di:waypoint x="430" y="290" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="305" y="200" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AdjustmentStok" bpmnElement="Flow_AdjustmentStok">
+        <di:waypoint x="295" y="92" />
+        <di:waypoint x="295" y="423" />
+        <di:waypoint x="430" y="463" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="305" y="250" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InputDataStok" bpmnElement="Flow_InputDataStok">
+        <di:waypoint x="480" y="117" />
+        <di:waypoint x="520" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_PilihGudang" bpmnElement="Flow_PilihGudang">
+        <di:waypoint x="620" y="117" />
+        <di:waypoint x="660" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InputLot" bpmnElement="Flow_InputLot">
+        <di:waypoint x="760" y="117" />
+        <di:waypoint x="800" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ValidasiStok" bpmnElement="Flow_ValidasiStok">
+        <di:waypoint x="900" y="117" />
+        <di:waypoint x="940" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CheckSKU" bpmnElement="Flow_CheckSKU">
+        <di:waypoint x="1040" y="117" />
+        <di:waypoint x="1080" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_GatewayValidasiStok" bpmnElement="Flow_GatewayValidasiStok">
+        <di:waypoint x="1180" y="117" />
+        <di:waypoint x="1245" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_StokValid" bpmnElement="Flow_StokValid">
+        <di:waypoint x="1295" y="117" />
+        <di:waypoint x="1355" y="117" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1310" y="99" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_StokTidakValid" bpmnElement="Flow_StokTidakValid">
+        <di:waypoint x="1270" y="142" />
+        <di:waypoint x="1270" y="250" />
+        <di:waypoint x="1373" y="268" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1280" y="200" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InsertInventoryType" bpmnElement="Flow_InsertInventoryType">
+        <di:waypoint x="1455" y="117" />
+        <di:waypoint x="1495" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_SimpanLot" bpmnElement="Flow_SimpanLot">
+        <di:waypoint x="1595" y="117" />
+        <di:waypoint x="1635" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InsertInventoryLot" bpmnElement="Flow_InsertInventoryLot">
+        <di:waypoint x="1735" y="117" />
+        <di:waypoint x="1775" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CatatTransaksi" bpmnElement="Flow_CatatTransaksi">
+        <di:waypoint x="1875" y="117" />
+        <di:waypoint x="1915" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InsertTransaction" bpmnElement="Flow_InsertTransaction">
+        <di:waypoint x="2015" y="117" />
+        <di:waypoint x="2055" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EndTambahStok" bpmnElement="Flow_EndTambahStok">
+        <di:waypoint x="2155" y="117" />
+        <di:waypoint x="2210" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InputDataGudang" bpmnElement="Flow_InputDataGudang">
+        <di:waypoint x="480" y="290" />
+        <di:waypoint x="520" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ValidasiGudang" bpmnElement="Flow_ValidasiGudang">
+        <di:waypoint x="620" y="290" />
+        <di:waypoint x="660" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CheckInternalID" bpmnElement="Flow_CheckInternalID">
+        <di:waypoint x="760" y="290" />
+        <di:waypoint x="800" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_GatewayValidasiGudang" bpmnElement="Flow_GatewayValidasiGudang">
+        <di:waypoint x="900" y="290" />
+        <di:waypoint x="965" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_GudangValid" bpmnElement="Flow_GudangValid">
+        <di:waypoint x="1015" y="290" />
+        <di:waypoint x="1075" y="290" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1030" y="272" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_GudangTidakValid" bpmnElement="Flow_GudangTidakValid">
+        <di:waypoint x="990" y="315" />
+        <di:waypoint x="990" y="423" />
+        <di:waypoint x="1093" y="463" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1000" y="350" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InsertWarehouse" bpmnElement="Flow_InsertWarehouse">
+        <di:waypoint x="1175" y="290" />
+        <di:waypoint x="1215" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_BuatBin" bpmnElement="Flow_BuatBin">
+        <di:waypoint x="1315" y="290" />
+        <di:waypoint x="1355" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InputDataBin" bpmnElement="Flow_InputDataBin">
+        <di:waypoint x="1455" y="290" />
+        <di:waypoint x="1495" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_SimpanBin" bpmnElement="Flow_SimpanBin">
+        <di:waypoint x="1595" y="290" />
+        <di:waypoint x="1635" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InsertBin" bpmnElement="Flow_InsertBin">
+        <di:waypoint x="1735" y="290" />
+        <di:waypoint x="1775" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EndKelolaGudang" bpmnElement="Flow_EndKelolaGudang">
+        <di:waypoint x="1875" y="290" />
+        <di:waypoint x="1930" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ValidasiAdjustment" bpmnElement="Flow_ValidasiAdjustment">
+        <di:waypoint x="480" y="463" />
+        <di:waypoint x="520" y="463" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CheckStokTersedia" bpmnElement="Flow_CheckStokTersedia">
+        <di:waypoint x="620" y="463" />
+        <di:waypoint x="660" y="463" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_GatewayValidasiAdjustment" bpmnElement="Flow_GatewayValidasiAdjustment">
+        <di:waypoint x="760" y="463" />
+        <di:waypoint x="825" y="463" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_StokCukup" bpmnElement="Flow_StokCukup">
+        <di:waypoint x="875" y="463" />
+        <di:waypoint x="935" y="463" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="890" y="445" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_StokTidakCukup" bpmnElement="Flow_StokTidakCukup">
+        <di:waypoint x="850" y="488" />
+        <di:waypoint x="850" y="596" />
+        <di:waypoint x="953" y="636" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="860" y="550" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_UpdateInventoryLot" bpmnElement="Flow_UpdateInventoryLot">
+        <di:waypoint x="1035" y="463" />
+        <di:waypoint x="1075" y="463" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CatatTransaksiAdjustment" bpmnElement="Flow_CatatTransaksiAdjustment">
+        <di:waypoint x="1175" y="463" />
+        <di:waypoint x="1215" y="463" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InsertTransactionAdjustment" bpmnElement="Flow_InsertTransactionAdjustment">
+        <di:waypoint x="1315" y="463" />
+        <di:waypoint x="1355" y="463" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EndAdjustment" bpmnElement="Flow_EndAdjustment">
+        <di:waypoint x="1455" y="463" />
+        <di:waypoint x="1510" y="463" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_CheckSKU" bpmnElement="Association_CheckSKU">
+        <di:waypoint x="1130" y="157" />
+        <di:waypoint x="1130" y="596" />
+        <di:waypoint x="850" y="636" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_InsertInventoryType" bpmnElement="Association_InsertInventoryType">
+        <di:waypoint x="1545" y="157" />
+        <di:waypoint x="1545" y="596" />
+        <di:waypoint x="850" y="636" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_InsertInventoryLot" bpmnElement="Association_InsertInventoryLot">
+        <di:waypoint x="1825" y="157" />
+        <di:waypoint x="1825" y="596" />
+        <di:waypoint x="850" y="636" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_InsertTransaction" bpmnElement="Association_InsertTransaction">
+        <di:waypoint x="2105" y="157" />
+        <di:waypoint x="2105" y="596" />
+        <di:waypoint x="850" y="636" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_CheckInternalID" bpmnElement="Association_CheckInternalID">
+        <di:waypoint x="850" y="330" />
+        <di:waypoint x="850" y="596" />
+        <di:waypoint x="850" y="636" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_InsertWarehouse" bpmnElement="Association_InsertWarehouse">
+        <di:waypoint x="1265" y="330" />
+        <di:waypoint x="1265" y="596" />
+        <di:waypoint x="850" y="636" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_InsertBin" bpmnElement="Association_InsertBin">
+        <di:waypoint x="1825" y="330" />
+        <di:waypoint x="1825" y="596" />
+        <di:waypoint x="850" y="636" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_CheckStokTersedia" bpmnElement="Association_CheckStokTersedia">
+        <di:waypoint x="710" y="463" />
+        <di:waypoint x="710" y="596" />
+        <di:waypoint x="850" y="636" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_UpdateInventoryLot" bpmnElement="Association_UpdateInventoryLot">
+        <di:waypoint x="1125" y="503" />
+        <di:waypoint x="1125" y="596" />
+        <di:waypoint x="850" y="636" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_InsertTransactionAdjustment" bpmnElement="Association_InsertTransactionAdjustment">
+        <di:waypoint x="1405" y="503" />
+        <di:waypoint x="1405" y="596" />
+        <di:waypoint x="850" y="636" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

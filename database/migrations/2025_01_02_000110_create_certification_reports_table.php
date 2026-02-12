@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('certification_reports', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('certification_id')->constrained('certifications')->cascadeOnDelete();
+            $table->string('certification_report_id', 36)->primary();
+            $table->string('certification_id', 36)->cascadeOnDelete();
             $table->string('report_number_bpsb')->nullable();
             $table->date('report_date');
             $table->string('growing_season')->nullable();
@@ -44,6 +44,9 @@ return new class extends Migration
         Schema::dropIfExists('certification_reports');
     }
 };
+
+
+
 
 
 

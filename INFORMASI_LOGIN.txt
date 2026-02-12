@@ -1,5 +1,5 @@
 ================================================================================
-                    SIBIT - Sistem Informasi Balai Benih Induk
+                    SIBESTI - Sistem Informasi Benih Bersertifikat
 ================================================================================
 
 INFORMASI LOGIN DEFAULT
@@ -9,15 +9,21 @@ URL Aplikasi (jika menggunakan php artisan serve):
 http://localhost:8000
 
 URL Aplikasi (jika menggunakan Laragon):
-http://localhost/example-app/public
+http://localhost/sibesti/public
 atau
-http://example-app.test (jika sudah setup virtual host)
+http://sibesti.test (jika sudah setup virtual host)
 
 --------------------------------------------------------------------------------
 
-KREDENSIAL LOGIN:
+KREDENSIAL LOGIN (pilih salah satu):
+
+OPSI 1 - Jika menjalankan seeder (php artisan migrate:fresh --seed):
 Email    : admin@sibit.com
 Password : password123
+
+OPSI 2 - Jika menjalankan create_admin_account.php:
+Email    : admin@sibesti.com
+Password : admin123
 
 --------------------------------------------------------------------------------
 
@@ -91,6 +97,9 @@ Untuk bantuan atau pertanyaan, silakan hubungi tim developer SIBIT.
 ================================================================================
                     Selamat Menggunakan SIBIT! 🌾
 ================================================================================
+
+
+
 
 
 

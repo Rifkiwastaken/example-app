@@ -1,0 +1,103 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Mengelola Data Panen
+
+||#LightBlue|User|
+start
+:Masuk ke halaman kelola data panen;
+:Pilih penanaman yang akan dikelola;
+
+||#LightGreen|Sistem|
+:Validasi role pengguna;
+:Load data penanaman dari database;
+:Menampilkan halaman kelola data panen;
+
+||#LightBlue|User|
+:Lihat data panen yang ada;
+
+if (Pilih jenis data yang akan ditambahkan?) then (Catat Panen)
+    |#LightBlue|User|
+    :Klik tombol catat panen;
+    |#LightGreen|Sistem|
+    :Tampilkan form catat panen;
+    :Load data tanaman dan lokasi penanaman;
+    |#LightBlue|User|
+    :Isi form catat panen\n(tanggal panen, batch number, quantity, unit, quality);
+    :Isi data tambahan\n(source, harvest_unit, quantity_per_unit);
+    :Pilih action (simpan dan selesai / simpan dan lanjutkan);
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data panen;
+    if (Data valid?) then (Ya)
+        :Simpan data panen ke database;
+        :Update status penanaman sesuai action;
+        :Tampilkan pesan sukses;
+        |#LightBlue|User|
+        :Lihat pesan panen berhasil dicatat;
+    else (Tidak)
+        :Tampilkan pesan error;
+        |#LightBlue|User|
+        :Lihat form dengan pesan error;
+    endif
+elseif (Catat Kehilangan) then
+    |#LightBlue|User|
+    :Klik tombol catat kehilangan;
+    |#LightGreen|Sistem|
+    :Tampilkan form catat kehilangan;
+    :Load data penanaman;
+    |#LightBlue|User|
+    :Isi form kehilangan\n(tanggal kehilangan, jumlah kehilangan, alasan);
+    :Isi deskripsi kehilangan;
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data kehilangan;
+    if (Data valid?) then (Ya)
+        :Simpan data kehilangan ke database;
+        :Tampilkan pesan sukses;
+        |#LightBlue|User|
+        :Lihat pesan kehilangan berhasil dicatat;
+    else (Tidak)
+        :Tampilkan pesan error;
+        |#LightBlue|User|
+        :Lihat form dengan pesan error;
+    endif
+else (Catat Gagal Panen)
+    |#LightBlue|User|
+    :Klik tombol catat gagal panen;
+    |#LightGreen|Sistem|
+    :Tampilkan form catat gagal panen;
+    :Load data penanaman;
+    |#LightBlue|User|
+    :Isi form gagal panen\n(tanggal gagal panen, alasan gagal panen);
+    :Isi deskripsi detail gagal panen;
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data gagal panen;
+    if (Data valid?) then (Ya)
+        :Simpan data gagal panen ke database;
+        :Update status penanaman menjadi gagal;
+        :Tampilkan pesan sukses;
+        |#LightBlue|User|
+        :Lihat pesan gagal panen berhasil dicatat;
+    else (Tidak)
+        :Tampilkan pesan error;
+        |#LightBlue|User|
+        :Lihat form dengan pesan error;
+    endif
+endif
+
+stop
+
+@enduml

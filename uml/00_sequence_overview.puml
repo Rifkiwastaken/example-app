@@ -1,0 +1,149 @@
+@startuml Sequence Diagram - Overview Alur Keseluruhan Sistem
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Overview Alur Keseluruhan Sistem SIBIT
+
+actor User as user
+participant "PlantingController" as plantingCtrl
+participant "HarvestController" as harvestCtrl
+participant "CertificationController" as certCtrl
+participant "InventoryTypeController" as inventoryCtrl
+participant "SaleController" as saleCtrl
+participant "Database" as db
+
+== Alur Lengkap: Penanaman → Panen → Sertifikasi → Stok → Penjualan ==
+
+note over user, db #LightBlue
+  **Alur Utama Sistem SIBIT**
+  Dari penanaman hingga penjualan benih
+end note
+
+== 1. Proses Penanaman ==
+
+user -> plantingCtrl: POST /plantings (data penanaman)
+activate plantingCtrl
+plantingCtrl -> db: INSERT INTO plantings
+db --> plantingCtrl: planting_id
+plantingCtrl --> user: success
+deactivate plantingCtrl
+
+== 2. Pencatatan Panen ==
+
+user -> harvestCtrl: POST /harvests (data panen)
+activate harvestCtrl
+harvestCtrl -> db: INSERT INTO harvests\n(plant_id, planting_id, quantity, ...)
+db --> harvestCtrl: harvest_id
+harvestCtrl --> user: success
+deactivate harvestCtrl
+
+== 3. Proses Sertifikasi ==
+
+user -> certCtrl: POST /certifications (data sertifikasi + laporan)
+activate certCtrl
+certCtrl -> db: INSERT INTO certifications\n(harvest_id, certification_status='dalam_proses')
+db --> certCtrl: certification_id
+
+certCtrl -> db: INSERT INTO certification_reports\n(certification_id, conclusion, ...)
+db --> certCtrl: report_id
+
+alt Conclusion = LULUS
+    certCtrl -> db: UPDATE certifications\nSET certification_status = 'lulus'
+    db --> certCtrl: updated
+    certCtrl --> user: sertifikasi lulus
+else Conclusion = TIDAK LULUS
+    certCtrl -> db: UPDATE certifications\nSET certification_status = 'tidak_lulus'
+    db --> certCtrl: updated
+    certCtrl --> user: sertifikasi tidak lulus
+end
+deactivate certCtrl
+
+== 4. Tambah ke Stok (jika Lulus) ==
+
+alt Sertifikasi Lulus
+    user -> inventoryCtrl: POST /seed-stock/{inventoryType}/add-certified-seed
+    activate inventoryCtrl
+    inventoryCtrl -> db: INSERT INTO inventory_type_seeds\n(inventory_type_id, plant_id, quantity, ...)
+    db --> inventoryCtrl: seed_id
+    
+    inventoryCtrl -> db: INSERT INTO certification_report_inventory_type\n(certification_report_id, inventory_type_id)
+    db --> inventoryCtrl: attached
+    
+    inventoryCtrl --> user: benih ditambahkan ke stok
+    deactivate inventoryCtrl
+    
+    == 4a. Tambah Lot ke Bin ==
+    user -> inventoryCtrl: POST /warehouse-locations/{warehouse}/bins/{bin}/inventory-lots
+    activate inventoryCtrl
+    inventoryCtrl -> db: INSERT INTO inventory_lots\n(inventory_type_id, warehouse_id, bin_id,\nproduction_id, initial_stock, current_stock, ...)
+    db --> inventoryCtrl: lot_id
+    
+    inventoryCtrl -> db: INSERT INTO inventory_transactions\n(transaction_type='stok_masuk', ...)
+    db --> inventoryCtrl: transaction_id
+    
+    inventoryCtrl --> user: lot ditambahkan ke bin
+    deactivate inventoryCtrl
+end
+
+== 5. Proses Penjualan ==
+
+user -> saleCtrl: POST /sales (data penjualan + items)
+activate saleCtrl
+saleCtrl -> db: BEGIN TRANSACTION
+
+saleCtrl -> db: INSERT INTO sales\n(receipt_number, buyer_name, total_amount=0, ...)
+db --> saleCtrl: sale_id
+
+loop For each item
+    saleCtrl -> db: SELECT * FROM inventory_lots\nWHERE bin_id = ?\nAND current_stock > 0\nORDER BY created_at ASC
+    db --> saleCtrl: lots[] (FIFO)
+    
+    loop For each lot (FIFO)
+        saleCtrl -> db: UPDATE inventory_lots\nSET current_stock = current_stock - ?\nWHERE id = ?
+        db --> saleCtrl: updated
+        
+        saleCtrl -> db: INSERT INTO inventory_transactions\n(transaction_type='distribusi', ...)
+        db --> saleCtrl: transaction_id
+    end
+    
+    saleCtrl -> db: INSERT INTO sale_items\n(sale_id, inventory_type_id, quantity, ...)
+    db --> saleCtrl: sale_item_id
+end
+
+saleCtrl -> db: UPDATE sales\nSET total_amount = ?\nWHERE id = ?
+db --> saleCtrl: updated
+
+saleCtrl -> db: COMMIT TRANSACTION
+saleCtrl --> user: penjualan berhasil
+deactivate saleCtrl
+
+== Ringkasan Alur ==
+
+note over user, db #LightGreen
+  **Ringkasan:**
+  1. Penanaman → Data penanaman disimpan
+  2. Panen → Hasil panen dicatat
+  3. Sertifikasi → Benih disertifikasi (LULUS/TIDAK LULUS)
+  4. Stok → Benih lulus ditambahkan ke gudang
+  5. Penjualan → Stok dikurangi menggunakan FIFO
+end note
+
+@enduml
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

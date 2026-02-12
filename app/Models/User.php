@@ -2,9 +2,12 @@
 
 namespace App\Models;
 
+use App\Traits\HasCustomId;
+
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -12,7 +15,28 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasCustomId;
+
+    /**
+     * The primary key for the model.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'user_id';
+
+    /**
+     * Indicates if the IDs are auto-incrementing.
+     *
+     * @var bool
+     */
+    public $incrementing = false;
+
+    /**
+     * The "type" of the primary key ID.
+     *
+     * @var string
+     */
+    protected $keyType = 'string';
 
     /**
      * The attributes that are mass assignable.
@@ -63,22 +87,6 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
-
-    /**
-     * Get the location assigned to this user
-     */
-    public function location(): BelongsTo
-    {
-        return $this->belongsTo(Location::class);
-    }
-
-    /**
-     * Get the tasks assigned to this user
-     */
-    public function tasks(): HasMany
-    {
-        return $this->hasMany(Task::class, 'assigned_to');
-    }
 
     /**
      * Get the role label in Indonesian
@@ -135,5 +143,109 @@ class User extends Authenticatable
             'penjualan' => $this->role === 'petugas_bbi',
             default => false,
         };
+    }
+
+    /**
+     * Get planting locations where user is assigned as manager
+     * Kolom pivot: user_id, planting_location_id (parent key user_id, related key planting_location_id)
+     */
+    public function managedPlantingLocations(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            PlantingLocation::class,
+            'user_planting_location_land_manager',
+            'user_id',
+            'planting_location_id',
+            'user_id',
+            'planting_location_id'
+        )->withTimestamps();
+    }
+
+    /**
+     * Get planting locations where user is assigned as worker
+     */
+    public function workedPlantingLocations(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            PlantingLocation::class,
+            'user_planting_location_land_worker',
+            'user_id',
+            'planting_location_id',
+            'user_id',
+            'planting_location_id'
+        )->withTimestamps();
+    }
+
+    /**
+     * Get all planting locations assigned to this user (as manager or worker)
+     */
+    public function assignedPlantingLocations()
+    {
+        return $this->managedPlantingLocations()->get()->merge($this->workedPlantingLocations()->get())->unique('planting_location_id');
+    }
+
+    /**
+     * Check if user is assigned to a planting location (as manager or worker).
+     * Siapa pun yang ditugaskan admin (land manager atau land worker) boleh mengakses lokasi.
+     */
+    public function isAssignedToPlantingLocation(PlantingLocation $plantingLocation): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return $plantingLocation->landManagerUsers->contains($this->getKey()) ||
+               $plantingLocation->landWorkerUsers->contains($this->getKey());
+    }
+
+    /**
+     * Check if user can edit/delete planting location
+     */
+    public function canManagePlantingLocation(PlantingLocation $plantingLocation): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        // Only kepala_satuan_tugas can manage (edit/delete)
+        if ($this->role !== 'kepala_satuan_tugas') {
+            return false;
+        }
+
+        return $this->isAssignedToPlantingLocation($plantingLocation);
+    }
+
+    /**
+     * Check if user can add data in pelaporan tab
+     */
+    public function canAddDataInPelaporan(PlantingLocation $plantingLocation): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        // Both kepala_satuan_tugas and penangkar can add data in pelaporan
+        if (!in_array($this->role, ['kepala_satuan_tugas', 'penangkar'])) {
+            return false;
+        }
+
+        return $this->isAssignedToPlantingLocation($plantingLocation);
+    }
+
+    /**
+     * Check if user can edit/delete data in pelaporan tab
+     */
+    public function canManageDataInPelaporan(PlantingLocation $plantingLocation): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        // Only kepala_satuan_tugas can edit/delete in pelaporan
+        if ($this->role !== 'kepala_satuan_tugas') {
+            return false;
+        }
+
+        return $this->isAssignedToPlantingLocation($plantingLocation);
     }
 }

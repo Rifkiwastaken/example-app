@@ -1,0 +1,75 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Kelola Gudang
+
+|#LightBlue|Petugas Gudang/Admin|
+start
+:Masuk ke halaman kelola gudang;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data gudang dari database;
+:Menampilkan daftar gudang;
+
+|#LightBlue|Petugas Gudang/Admin|
+:Lihat daftar gudang;
+
+if (Aksi?) then (Tambah Gudang)
+    :Masuk ke form tambah gudang;
+    :Input data gudang\n(nama, alamat, kapasitas);
+    :Submit form;
+    
+    |#LightGreen|Sistem|
+    :Validasi data gudang;
+    :Insert ke tabel warehouses;
+    :Success message;
+    :Redirect ke daftar gudang;
+    |#LightBlue|Petugas Gudang/Admin|
+    :Lihat pesan gudang berhasil ditambahkan;
+else (Edit Gudang)
+    :Pilih gudang;
+    :Edit data gudang;
+    :Submit form;
+    
+    |#LightGreen|Sistem|
+    :Update data di tabel warehouses;
+    :Success message;
+    :Redirect ke daftar gudang;
+    |#LightBlue|Petugas Gudang/Admin|
+    :Lihat pesan gudang berhasil diupdate;
+else (Hapus Gudang)
+    :Pilih gudang;
+    :Klik hapus gudang;
+    :Konfirmasi penghapusan;
+    
+    |#LightGreen|Sistem|
+    :Check stok di gudang;
+    if (Gudang kosong?) then (Ya)
+        :Delete dari tabel warehouses;
+        :Success message;
+        :Redirect ke daftar gudang;
+        |#LightBlue|Petugas Gudang/Admin|
+        :Lihat pesan gudang berhasil dihapus;
+    else (Tidak)
+        :Error: gudang masih berisi stok;
+        :Tampilkan pesan error;
+        |#LightBlue|Petugas Gudang/Admin|
+        :Lihat pesan gudang masih berisi stok;
+    endif
+endif
+
+stop
+
+@enduml

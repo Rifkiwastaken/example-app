@@ -1,0 +1,56 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - UC02 Melihat Data Tanaman
+
+actor "User" as User
+boundary "PlantView" as View
+control "PlantController" as Controller
+entity "Plant" as Plant
+entity "PlantType" as PlantType
+
+User -> View: akses halaman lihat tanaman()
+View -> Controller: index()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Plant: with('type')->get()
+activate Plant
+Plant -> Plant: load('type')
+Plant --> Controller: return plants[]
+deactivate Plant
+Controller --> View: return data[]
+deactivate Controller
+View --> User: tampilkan daftar tanaman()
+
+alt Filter atau Cari
+    User -> View: pilih filter atau cari()
+    View -> Controller: index(request dengan filter)
+    activate Controller
+    Controller -> Plant: where(...)->with('type')->get()
+    activate Plant
+    Plant -> Plant: applyFilter()
+    Plant --> Controller: return filtered_plants[]
+    deactivate Plant
+    Controller --> View: return filtered_plants[]
+    deactivate Controller
+    View --> User: tampilkan daftar tanaman terfilter()
+end
+
+alt Lihat Detail
+    User -> View: klik tombol lihat detail()
+    View -> Controller: show(id)
+    activate Controller
+    Controller -> Plant: with('type')->findOrFail(id)
+    activate Plant
+    Plant -> Plant: load('type')
+    Plant --> Controller: return plant
+    deactivate Plant
+    Controller --> View: return plant
+    deactivate Controller
+    View --> User: tampilkan detail tanaman()
+end
+
+@enduml

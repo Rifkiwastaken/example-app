@@ -1,0 +1,75 @@
+@startuml
+' SIBESTI - Sequence Diagram (Updated Feb 2026)
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - UC01 Mengelola Data Tanaman
+
+actor "User" as User
+boundary "PlantView" as View
+control "PlantController" as Controller
+entity "Plant" as Plant
+entity "PlantType" as PlantType
+entity "PlantingLocation" as PlantingLocation
+
+User -> View: akses halaman kelola tanaman()
+View -> Controller: index()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Plant: with('type')->get()
+activate Plant
+Plant -> Plant: load('type')
+Plant --> Controller: return plants[]
+deactivate Plant
+Controller --> View: return data[]
+deactivate Controller
+View --> User: tampilkan daftar tanaman()
+
+User -> View: klik tombol tambah tanaman()
+View -> Controller: create()
+activate Controller
+Controller -> PlantType: all()
+activate PlantType
+PlantType --> Controller: return plant_types[]
+deactivate PlantType
+
+Controller -> PlantingLocation: all()
+activate PlantingLocation
+PlantingLocation --> Controller: return planting_locations[]
+deactivate PlantingLocation
+
+Controller --> View: return plant_types[] dan planting_locations[]
+deactivate Controller
+View --> User: tampilkan form tambah tanaman()
+
+User -> View: isi form data tanaman()
+View -> Controller: store(request)
+activate Controller
+Controller -> Controller: validate(request)
+Controller -> PlantType: findOrFail(plant_type_id)
+activate PlantType
+PlantType --> Controller: return plant_type
+deactivate PlantType
+
+Controller -> PlantingLocation: findOrFail(planting_location_id)
+activate PlantingLocation
+PlantingLocation --> Controller: return planting_location
+deactivate PlantingLocation
+
+alt Data Valid
+    Controller -> Plant: create(data)
+    activate Plant
+    Plant -> Plant: save()
+    Plant --> Controller: return plant
+    deactivate Plant
+    Controller --> View: redirect dengan pesan sukses
+    View --> User: tampilkan pesan tanaman berhasil ditambahkan()
+else Data Tidak Valid
+    Controller --> View: redirect back dengan validation errors()
+    View --> User: tampilkan form dengan pesan error()
+end
+deactivate Controller
+
+@enduml

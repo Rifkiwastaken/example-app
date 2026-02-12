@@ -1,0 +1,107 @@
+@startuml Use Case Diagram - Modul Penjualan (SIBESTI)
+!theme plain
+skinparam usecase {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 12
+}
+skinparam actor {
+    BackgroundColor #FFF9C4
+    BorderColor #F57F17
+}
+
+left to right direction
+
+actor "Petugas BBI / Petugas Gudang" as Petugas
+actor "Sistem" as Sistem
+
+rectangle "Modul Penjualan" {
+    
+    usecase "Akses Halaman Penjualan" as UC_Access
+    usecase "Lihat Daftar Penjualan" as UC_List
+    usecase "Input Data Penjualan" as UC_Input
+    usecase "Pilih Gudang dan Bin" as UC_PilihGudangBin
+    usecase "Pilih Lot untuk Dijual" as UC_PilihLot
+    usecase "Input Quantity dan Harga" as UC_InputQuantity
+    usecase "Proses Penjualan" as UC_Proses
+    usecase "Lihat Detail Penjualan" as UC_Detail
+    usecase "Batalkan Penjualan" as UC_Batal
+    
+    ' Use case sistem
+    usecase "Validasi Role Pengguna" as UC_ValidasiRole
+    usecase "Query Data Gudang" as UC_QueryGudang
+    usecase "Query Data Bin" as UC_QueryBin
+    usecase "Generate Nomor Nota" as UC_GenerateNota
+    usecase "Validasi Data Penjualan" as UC_ValidasiPenjualan
+    usecase "Check Nomor Nota Unik" as UC_CheckNota
+    usecase "Check Stok Tersedia" as UC_CheckStok
+    usecase "Simpan Data Penjualan" as UC_SimpanPenjualan
+    usecase "Simpan Item Penjualan" as UC_SimpanItem
+    usecase "Kurangi Stok (FIFO)" as UC_KurangiStok
+    usecase "Catat Transaksi Penjualan" as UC_CatatTransaksi
+    usecase "Restore Stok" as UC_RestoreStok
+}
+
+' Relasi Petugas BBI / Petugas Gudang
+Petugas --> UC_Access
+Petugas --> UC_List
+Petugas --> UC_Input
+Petugas --> UC_PilihGudangBin
+Petugas --> UC_PilihLot
+Petugas --> UC_InputQuantity
+Petugas --> UC_Proses
+Petugas --> UC_Detail
+Petugas --> UC_Batal
+
+' Relasi Sistem
+Sistem --> UC_ValidasiRole
+Sistem --> UC_QueryGudang
+Sistem --> UC_QueryBin
+Sistem --> UC_GenerateNota
+Sistem --> UC_ValidasiPenjualan
+Sistem --> UC_CheckNota
+Sistem --> UC_CheckStok
+Sistem --> UC_SimpanPenjualan
+Sistem --> UC_SimpanItem
+Sistem --> UC_KurangiStok
+Sistem --> UC_CatatTransaksi
+Sistem --> UC_RestoreStok
+
+' Relasi Include
+UC_Access ..> UC_ValidasiRole : <<include>>
+UC_Input ..> UC_QueryGudang : <<include>>
+UC_Input ..> UC_QueryBin : <<include>>
+UC_Input ..> UC_GenerateNota : <<include>>
+UC_Input ..> UC_PilihGudangBin : <<include>>
+UC_Input ..> UC_PilihLot : <<include>>
+UC_Input ..> UC_InputQuantity : <<include>>
+UC_Input ..> UC_ValidasiPenjualan : <<include>>
+UC_ValidasiPenjualan ..> UC_CheckNota : <<include>>
+UC_ValidasiPenjualan ..> UC_CheckStok : <<include>>
+UC_Proses ..> UC_SimpanPenjualan : <<include>>
+UC_Proses ..> UC_SimpanItem : <<include>>
+UC_Proses ..> UC_KurangiStok : <<include>>
+UC_Proses ..> UC_CatatTransaksi : <<include>>
+UC_Batal ..> UC_RestoreStok : <<include>>
+
+' Relasi Extend
+UC_List ..> UC_Detail : <<extend>>
+UC_List ..> UC_Batal : <<extend>>
+
+@enduml
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

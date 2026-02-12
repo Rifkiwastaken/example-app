@@ -1,0 +1,46 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Lihat History Transaksi
+
+actor "Petugas Gudang/Admin" as User
+participant "InventoryTypeController" as Controller
+participant "InventoryType" as InvType
+participant "SeedHistory" as History
+participant "InventoryTransaction" as Transaction
+participant "Database" as DB
+
+User -> User: akses halaman history transaksi()
+User -> User: pilih tipe benih atau gudang()
+User -> Controller: history(inventory_type_id)
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> InvType: InventoryType::findOrFail(inventory_type_id)
+activate InvType
+InvType -> DB: SELECT * FROM inventory_types WHERE id = ?
+DB --> InvType: return inventory_type data
+InvType --> Controller: return InvType
+deactivate InvType
+
+Controller -> History: SeedHistory::where('inventory_type_seed_id', IN (...))->orderBy('created_at', 'DESC')->get()
+activate History
+History -> DB: SELECT * FROM seed_histories WHERE inventory_type_seed_id IN ? ORDER BY created_at DESC
+DB --> History: return histories[]
+History --> Controller: return histories[]
+deactivate History
+
+Controller -> Transaction: InventoryTransaction::where('inventory_type_id', inventory_type_id)->orderBy('created_at', 'DESC')->get()
+activate Transaction
+Transaction -> DB: SELECT * FROM inventory_transactions WHERE inventory_type_id = ? ORDER BY created_at DESC
+DB --> Transaction: return transactions[]
+Transaction --> Controller: return transactions[]
+deactivate Transaction
+
+Controller --> User: return view history dengan data dan pagination()
+deactivate Controller
+User -> User: tampilkan daftar history transaksi()
+
+@enduml

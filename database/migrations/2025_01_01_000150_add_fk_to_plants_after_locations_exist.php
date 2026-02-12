@@ -12,7 +12,7 @@ return new class extends Migration
             if (!app('db')->getSchemaBuilder()->hasColumn('plants', 'planting_location_id')) {
                 $table->foreignId('planting_location_id')->nullable();
             }
-            $table->foreign('planting_location_id')->references('id')->on('planting_locations')->nullOnDelete();
+            $table->foreign('planting_location_id')->references('planting_location_id')->on('planting_locations')->nullOnDelete();
         });
     }
 
@@ -23,6 +23,9 @@ return new class extends Migration
         });
     }
 };
+
+
+
 
 
 

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('task_templates', function (Blueprint $table) {
-            $table->id();
+            $table->string('task_template_id', 36)->primary();
             $table->string('name');
             $table->text('description')->nullable();
             $table->json('tasks_list')->nullable(); // JSON array of task configurations
@@ -30,6 +30,9 @@ return new class extends Migration
         Schema::dropIfExists('task_templates');
     }
 };
+
+
+
 
 
 

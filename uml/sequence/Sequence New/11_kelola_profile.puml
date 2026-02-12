@@ -1,0 +1,64 @@
+@startuml
+' SIBESTI - Sequence Diagram | UC11: Mengelola Profile (Use Case Overview)
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - UC11 Mengelola Profile
+
+actor "User" as User
+boundary "ProfileView" as View
+control "ProfileController" as Controller
+entity "User" as UserModel
+
+User -> View: akses halaman profile()
+View -> Controller: show()
+activate Controller
+Controller -> Controller: validateSession()
+Controller -> UserModel: Auth::user()
+activate UserModel
+UserModel -> UserModel: find()
+UserModel --> Controller: return user
+deactivate UserModel
+Controller --> View: return user
+deactivate Controller
+View --> User: tampilkan data profile()
+
+alt Edit Profile
+    User -> View: klik tombol edit profile()
+    View -> Controller: update(request)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> UserModel: Auth::user()
+    activate UserModel
+    UserModel -> UserModel: update(data)
+    UserModel --> Controller: return user
+    deactivate UserModel
+    Controller --> View: redirect dengan pesan sukses
+    View --> User: tampilkan pesan sukses()
+    deactivate Controller
+else Ubah Password
+    User -> View: klik tombol ubah password()
+    View -> Controller: updatePassword(request)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> UserModel: Auth::user()
+    activate UserModel
+    Controller -> Controller: Hash::check(request.old_password, user.password)
+    alt Password lama salah
+        Controller --> View: return back dengan error[]
+        View --> User: tampilkan form dengan error()
+        deactivate Controller
+    else Password lama benar
+        Controller -> Controller: Hash::make(request.new_password)
+        UserModel -> UserModel: update(['password' => hashed_password])
+        UserModel --> Controller: return success
+        deactivate UserModel
+        Controller --> View: redirect dengan pesan sukses
+        View --> User: tampilkan pesan sukses()
+        deactivate Controller
+    end
+end
+
+@enduml

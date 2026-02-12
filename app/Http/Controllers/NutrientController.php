@@ -40,7 +40,7 @@ class NutrientController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $data['planting_location_id'] = $plantingLocation->id;
+        $data['planting_location_id'] = $plantingLocation->planting_location_id;
         Nutrient::create($data);
         
         return redirect()->route('planting-locations.nutrients.index', $plantingLocation)
@@ -92,6 +92,9 @@ class NutrientController extends Controller
             ->with('success', 'Data nutrisi berhasil dihapus');
     }
 }
+
+
+
 
 
 

@@ -1,0 +1,426 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.0.0">
+  <bpmn:process id="ProsesPenanaman" name="Proses Penanaman" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Penanaman" name="Mulai Proses Penanaman">
+      <bpmn:outgoing>Flow_LoadDataTanaman</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_LoadDataTanaman" name="Mengambil Data Tanaman dan Lokasi">
+      <bpmn:incoming>Flow_LoadDataTanaman</bpmn:incoming>
+      <bpmn:outgoing>Flow_QueryPlants</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_QueryPlants" name="Mengambil Daftar Tanaman dari Database">
+      <bpmn:incoming>Flow_QueryPlants</bpmn:incoming>
+      <bpmn:outgoing>Flow_QueryLocations</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_QueryLocations" name="Mengambil Daftar Lokasi dari Database">
+      <bpmn:incoming>Flow_QueryLocations</bpmn:incoming>
+      <bpmn:outgoing>Flow_RenderForm</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_RenderForm" name="Menampilkan Form Input Penanaman">
+      <bpmn:incoming>Flow_RenderForm</bpmn:incoming>
+      <bpmn:outgoing>Flow_UserInput</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_UserInput" name="Pengguna Mengisi Data Penanaman">
+      <bpmn:incoming>Flow_UserInput</bpmn:incoming>
+      <bpmn:outgoing>Flow_SubmitForm</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_SubmitForm" name="Mengirim Data Penanaman">
+      <bpmn:incoming>Flow_SubmitForm</bpmn:incoming>
+      <bpmn:outgoing>Flow_ValidasiData</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_ValidasiData" name="Memvalidasi Data Penanaman">
+      <bpmn:incoming>Flow_ValidasiData</bpmn:incoming>
+      <bpmn:outgoing>Flow_CheckPlantExists</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_CheckPlantExists" name="Memeriksa Tanaman Terdaftar di Database">
+      <bpmn:incoming>Flow_CheckPlantExists</bpmn:incoming>
+      <bpmn:outgoing>Flow_CheckLocationExists</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_CheckLocationExists" name="Memeriksa Lokasi Terdaftar di Database">
+      <bpmn:incoming>Flow_CheckLocationExists</bpmn:incoming>
+      <bpmn:outgoing>Flow_GatewayValidasi</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_Validasi" name="Data Valid?">
+      <bpmn:incoming>Flow_GatewayValidasi</bpmn:incoming>
+      <bpmn:outgoing>Flow_DataValid</bpmn:outgoing>
+      <bpmn:outgoing>Flow_DataTidakValid</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_SimpanDataPenanaman" name="Menyimpan Data Penanaman ke Database">
+      <bpmn:incoming>Flow_DataValid</bpmn:incoming>
+      <bpmn:outgoing>Flow_InsertPlanting</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_InsertPlanting" name="Menyimpan ke Tabel Plantings">
+      <bpmn:incoming>Flow_InsertPlanting</bpmn:incoming>
+      <bpmn:outgoing>Flow_QueryPlantForRedirect</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_QueryPlantForRedirect" name="Mengambil Data Tanaman untuk Redirect">
+      <bpmn:incoming>Flow_QueryPlantForRedirect</bpmn:incoming>
+      <bpmn:outgoing>Flow_ResponseSuccess</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_ResponseSuccess" name="Menampilkan Pesan Sukses">
+      <bpmn:incoming>Flow_ResponseSuccess</bpmn:incoming>
+      <bpmn:outgoing>Flow_TrackingPerkembangan</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_TrackingPerkembangan" name="Pengguna Melakukan Tracking Perkembangan">
+      <bpmn:incoming>Flow_TrackingPerkembangan</bpmn:incoming>
+      <bpmn:outgoing>Flow_UpdateTahap</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_UpdateTahapGerminasi" name="Memperbarui Tahap Perkembangan di Database">
+      <bpmn:incoming>Flow_UpdateTahap</bpmn:incoming>
+      <bpmn:outgoing>Flow_UpdateGerminationStage</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_UpdateGerminationStage" name="Memperbarui Status Germinasi">
+      <bpmn:incoming>Flow_UpdateGerminationStage</bpmn:incoming>
+      <bpmn:outgoing>Flow_CheckSiapPanen</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_CheckSiapPanen" name="Memeriksa Apakah Siap Panen">
+      <bpmn:incoming>Flow_CheckSiapPanen</bpmn:incoming>
+      <bpmn:outgoing>Flow_GatewaySiapPanen</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_SiapPanen" name="Siap Panen?">
+      <bpmn:incoming>Flow_GatewaySiapPanen</bpmn:incoming>
+      <bpmn:outgoing>Flow_BelumSiap</bpmn:outgoing>
+      <bpmn:outgoing>Flow_SiapPanen</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_PencatatanPanen" name="Pengguna Mencatat Hasil Panen">
+      <bpmn:incoming>Flow_SiapPanen</bpmn:incoming>
+      <bpmn:outgoing>Flow_SimpanPanen</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_SimpanPanen" name="Menyimpan Data Panen ke Database">
+      <bpmn:incoming>Flow_SimpanPanen</bpmn:incoming>
+      <bpmn:outgoing>Flow_InsertHarvest</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_InsertHarvest" name="Menyimpan ke Tabel Harvests">
+      <bpmn:incoming>Flow_InsertHarvest</bpmn:incoming>
+      <bpmn:outgoing>Flow_UpdatePlantingStatus</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_UpdatePlantingStatus" name="Memperbarui Status Penanaman Menjadi Selesai">
+      <bpmn:incoming>Flow_UpdatePlantingStatus</bpmn:incoming>
+      <bpmn:outgoing>Flow_EndPanen</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_Panen" name="Proses Panen Selesai">
+      <bpmn:incoming>Flow_EndPanen</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_DataTidakValid" name="Data Tidak Valid">
+      <bpmn:incoming>Flow_DataTidakValid</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:intermediateCatchEvent id="Event_TungguPerkembangan" name="Menunggu Perkembangan Tanaman">
+      <bpmn:incoming>Flow_BelumSiap</bpmn:incoming>
+      <bpmn:outgoing>Flow_KembaliTracking</bpmn:outgoing>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:dataStore id="Database" name="Database" />
+    <bpmn:dataStoreReference id="DataStore_Database" name="Database">
+      <bpmn:dataStoreRef>Database</bpmn:dataStoreRef>
+    </bpmn:dataStoreReference>
+    <bpmn:sequenceFlow id="Flow_LoadDataTanaman" sourceRef="StartEvent_Penanaman" targetRef="Task_LoadDataTanaman" />
+    <bpmn:sequenceFlow id="Flow_QueryPlants" sourceRef="Task_LoadDataTanaman" targetRef="Task_QueryPlants" />
+    <bpmn:sequenceFlow id="Flow_QueryLocations" sourceRef="Task_QueryPlants" targetRef="Task_QueryLocations" />
+    <bpmn:sequenceFlow id="Flow_RenderForm" sourceRef="Task_QueryLocations" targetRef="Task_RenderForm" />
+    <bpmn:sequenceFlow id="Flow_UserInput" sourceRef="Task_RenderForm" targetRef="Task_UserInput" />
+    <bpmn:sequenceFlow id="Flow_SubmitForm" sourceRef="Task_UserInput" targetRef="Task_SubmitForm" />
+    <bpmn:sequenceFlow id="Flow_ValidasiData" sourceRef="Task_SubmitForm" targetRef="Task_ValidasiData" />
+    <bpmn:sequenceFlow id="Flow_CheckPlantExists" sourceRef="Task_ValidasiData" targetRef="Task_CheckPlantExists" />
+    <bpmn:sequenceFlow id="Flow_CheckLocationExists" sourceRef="Task_CheckPlantExists" targetRef="Task_CheckLocationExists" />
+    <bpmn:sequenceFlow id="Flow_GatewayValidasi" sourceRef="Task_CheckLocationExists" targetRef="Gateway_Validasi" />
+    <bpmn:sequenceFlow id="Flow_DataValid" name="Ya" sourceRef="Gateway_Validasi" targetRef="Task_SimpanDataPenanaman" />
+    <bpmn:sequenceFlow id="Flow_DataTidakValid" name="Tidak" sourceRef="Gateway_Validasi" targetRef="EndEvent_DataTidakValid" />
+    <bpmn:sequenceFlow id="Flow_InsertPlanting" sourceRef="Task_SimpanDataPenanaman" targetRef="Task_InsertPlanting" />
+    <bpmn:sequenceFlow id="Flow_QueryPlantForRedirect" sourceRef="Task_InsertPlanting" targetRef="Task_QueryPlantForRedirect" />
+    <bpmn:sequenceFlow id="Flow_ResponseSuccess" sourceRef="Task_QueryPlantForRedirect" targetRef="Task_ResponseSuccess" />
+    <bpmn:sequenceFlow id="Flow_TrackingPerkembangan" sourceRef="Task_ResponseSuccess" targetRef="Task_TrackingPerkembangan" />
+    <bpmn:sequenceFlow id="Flow_UpdateTahap" sourceRef="Task_TrackingPerkembangan" targetRef="Task_UpdateTahapGerminasi" />
+    <bpmn:sequenceFlow id="Flow_UpdateGerminationStage" sourceRef="Task_UpdateTahapGerminasi" targetRef="Task_UpdateGerminationStage" />
+    <bpmn:sequenceFlow id="Flow_CheckSiapPanen" sourceRef="Task_UpdateGerminationStage" targetRef="Task_CheckSiapPanen" />
+    <bpmn:sequenceFlow id="Flow_GatewaySiapPanen" sourceRef="Task_CheckSiapPanen" targetRef="Gateway_SiapPanen" />
+    <bpmn:sequenceFlow id="Flow_BelumSiap" name="Belum" sourceRef="Gateway_SiapPanen" targetRef="Event_TungguPerkembangan" />
+    <bpmn:sequenceFlow id="Flow_SiapPanen" name="Ya" sourceRef="Gateway_SiapPanen" targetRef="Task_PencatatanPanen" />
+    <bpmn:sequenceFlow id="Flow_SimpanPanen" sourceRef="Task_PencatatanPanen" targetRef="Task_SimpanPanen" />
+    <bpmn:sequenceFlow id="Flow_InsertHarvest" sourceRef="Task_SimpanPanen" targetRef="Task_InsertHarvest" />
+    <bpmn:sequenceFlow id="Flow_UpdatePlantingStatus" sourceRef="Task_InsertHarvest" targetRef="Task_UpdatePlantingStatus" />
+    <bpmn:sequenceFlow id="Flow_EndPanen" sourceRef="Task_UpdatePlantingStatus" targetRef="EndEvent_Panen" />
+    <bpmn:sequenceFlow id="Flow_KembaliTracking" sourceRef="Event_TungguPerkembangan" targetRef="Task_TrackingPerkembangan" />
+    <bpmn:association id="Association_QueryPlants" sourceRef="Task_QueryPlants" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_QueryLocations" sourceRef="Task_QueryLocations" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_CheckPlant" sourceRef="Task_CheckPlantExists" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_CheckLocation" sourceRef="Task_CheckLocationExists" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_InsertPlanting" sourceRef="Task_InsertPlanting" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_QueryPlantRedirect" sourceRef="Task_QueryPlantForRedirect" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_UpdateGermination" sourceRef="Task_UpdateGerminationStage" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_InsertHarvest" sourceRef="Task_InsertHarvest" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_UpdatePlantingStatus" sourceRef="Task_UpdatePlantingStatus" targetRef="DataStore_Database" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="ProsesPenanaman">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_Penanaman">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="120" y="145" width="100" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_LoadDataTanaman" bpmnElement="Task_LoadDataTanaman">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_QueryPlants" bpmnElement="Task_QueryPlants">
+        <dc:Bounds x="380" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_QueryLocations" bpmnElement="Task_QueryLocations">
+        <dc:Bounds x="520" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_RenderForm" bpmnElement="Task_RenderForm">
+        <dc:Bounds x="660" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_UserInput" bpmnElement="Task_UserInput">
+        <dc:Bounds x="800" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_SubmitForm" bpmnElement="Task_SubmitForm">
+        <dc:Bounds x="940" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ValidasiData" bpmnElement="Task_ValidasiData">
+        <dc:Bounds x="1080" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_CheckPlantExists" bpmnElement="Task_CheckPlantExists">
+        <dc:Bounds x="1220" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_CheckLocationExists" bpmnElement="Task_CheckLocationExists">
+        <dc:Bounds x="1360" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Validasi" bpmnElement="Gateway_Validasi" isMarkerVisible="true">
+        <dc:Bounds x="1525" y="95" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1510" y="68" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_SimpanDataPenanaman" bpmnElement="Task_SimpanDataPenanaman">
+        <dc:Bounds x="1635" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InsertPlanting" bpmnElement="Task_InsertPlanting">
+        <dc:Bounds x="1775" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_QueryPlantForRedirect" bpmnElement="Task_QueryPlantForRedirect">
+        <dc:Bounds x="1915" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ResponseSuccess" bpmnElement="Task_ResponseSuccess">
+        <dc:Bounds x="2055" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_Tracking" bpmnElement="Task_TrackingPerkembangan">
+        <dc:Bounds x="2195" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_UpdateTahap" bpmnElement="Task_UpdateTahapGerminasi">
+        <dc:Bounds x="2335" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_UpdateGerminationStage" bpmnElement="Task_UpdateGerminationStage">
+        <dc:Bounds x="2475" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_CheckSiapPanen" bpmnElement="Task_CheckSiapPanen">
+        <dc:Bounds x="2615" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_SiapPanen" bpmnElement="Gateway_SiapPanen" isMarkerVisible="true">
+        <dc:Bounds x="2780" y="95" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2765" y="68" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_Panen" bpmnElement="Task_PencatatanPanen">
+        <dc:Bounds x="2890" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_SimpanPanen" bpmnElement="Task_SimpanPanen">
+        <dc:Bounds x="3030" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InsertHarvest" bpmnElement="Task_InsertHarvest">
+        <dc:Bounds x="3170" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_UpdatePlantingStatus" bpmnElement="Task_UpdatePlantingStatus">
+        <dc:Bounds x="3310" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndPanen" bpmnElement="EndEvent_Panen">
+        <dc:Bounds x="3465" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3446" y="145" width="100" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndTidakValid" bpmnElement="EndEvent_DataTidakValid">
+        <dc:Bounds x="1635" y="253" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1616" y="296" width="100" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_Tunggu" bpmnElement="Event_TungguPerkembangan">
+        <dc:Bounds x="2780" y="253" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2761" y="296" width="120" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataStore_Database" bpmnElement="DataStore_Database">
+        <dc:Bounds x="800" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_LoadDataTanaman" bpmnElement="Flow_LoadDataTanaman">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_QueryPlants" bpmnElement="Flow_QueryPlants">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="380" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_QueryLocations" bpmnElement="Flow_QueryLocations">
+        <di:waypoint x="480" y="120" />
+        <di:waypoint x="520" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RenderForm" bpmnElement="Flow_RenderForm">
+        <di:waypoint x="620" y="120" />
+        <di:waypoint x="660" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_UserInput" bpmnElement="Flow_UserInput">
+        <di:waypoint x="760" y="120" />
+        <di:waypoint x="800" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_SubmitForm" bpmnElement="Flow_SubmitForm">
+        <di:waypoint x="900" y="120" />
+        <di:waypoint x="940" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ValidasiData" bpmnElement="Flow_ValidasiData">
+        <di:waypoint x="1040" y="120" />
+        <di:waypoint x="1080" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CheckPlantExists" bpmnElement="Flow_CheckPlantExists">
+        <di:waypoint x="1180" y="120" />
+        <di:waypoint x="1220" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CheckLocationExists" bpmnElement="Flow_CheckLocationExists">
+        <di:waypoint x="1320" y="120" />
+        <di:waypoint x="1360" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_GatewayValidasi" bpmnElement="Flow_GatewayValidasi">
+        <di:waypoint x="1460" y="120" />
+        <di:waypoint x="1525" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_DataValid" bpmnElement="Flow_DataValid">
+        <di:waypoint x="1575" y="120" />
+        <di:waypoint x="1635" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1590" y="102" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_DataTidakValid" bpmnElement="Flow_DataTidakValid">
+        <di:waypoint x="1550" y="145" />
+        <di:waypoint x="1550" y="253" />
+        <di:waypoint x="1653" y="271" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1560" y="200" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InsertPlanting" bpmnElement="Flow_InsertPlanting">
+        <di:waypoint x="1735" y="120" />
+        <di:waypoint x="1775" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_QueryPlantForRedirect" bpmnElement="Flow_QueryPlantForRedirect">
+        <di:waypoint x="1875" y="120" />
+        <di:waypoint x="1915" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ResponseSuccess" bpmnElement="Flow_ResponseSuccess">
+        <di:waypoint x="2015" y="120" />
+        <di:waypoint x="2055" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_TrackingPerkembangan" bpmnElement="Flow_TrackingPerkembangan">
+        <di:waypoint x="2155" y="120" />
+        <di:waypoint x="2195" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_UpdateTahap" bpmnElement="Flow_UpdateTahap">
+        <di:waypoint x="2295" y="120" />
+        <di:waypoint x="2335" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_UpdateGerminationStage" bpmnElement="Flow_UpdateGerminationStage">
+        <di:waypoint x="2435" y="120" />
+        <di:waypoint x="2475" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CheckSiapPanen" bpmnElement="Flow_CheckSiapPanen">
+        <di:waypoint x="2575" y="120" />
+        <di:waypoint x="2615" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_GatewaySiapPanen" bpmnElement="Flow_GatewaySiapPanen">
+        <di:waypoint x="2715" y="120" />
+        <di:waypoint x="2780" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_BelumSiap" bpmnElement="Flow_BelumSiap">
+        <di:waypoint x="2805" y="145" />
+        <di:waypoint x="2805" y="253" />
+        <di:waypoint x="2798" y="271" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2815" y="200" width="40" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_SiapPanen" bpmnElement="Flow_SiapPanen">
+        <di:waypoint x="2830" y="120" />
+        <di:waypoint x="2890" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2845" y="102" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_SimpanPanen" bpmnElement="Flow_SimpanPanen">
+        <di:waypoint x="2990" y="120" />
+        <di:waypoint x="3030" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InsertHarvest" bpmnElement="Flow_InsertHarvest">
+        <di:waypoint x="3130" y="120" />
+        <di:waypoint x="3170" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_UpdatePlantingStatus" bpmnElement="Flow_UpdatePlantingStatus">
+        <di:waypoint x="3270" y="120" />
+        <di:waypoint x="3310" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EndPanen" bpmnElement="Flow_EndPanen">
+        <di:waypoint x="3410" y="120" />
+        <di:waypoint x="3465" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_KembaliTracking" bpmnElement="Flow_KembaliTracking">
+        <di:waypoint x="2798" y="271" />
+        <di:waypoint x="2245" y="271" />
+        <di:waypoint x="2245" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_QueryPlants" bpmnElement="Association_QueryPlants">
+        <di:waypoint x="430" y="160" />
+        <di:waypoint x="430" y="250" />
+        <di:waypoint x="850" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_QueryLocations" bpmnElement="Association_QueryLocations">
+        <di:waypoint x="570" y="160" />
+        <di:waypoint x="570" y="250" />
+        <di:waypoint x="850" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_CheckPlant" bpmnElement="Association_CheckPlant">
+        <di:waypoint x="1270" y="160" />
+        <di:waypoint x="1270" y="250" />
+        <di:waypoint x="850" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_CheckLocation" bpmnElement="Association_CheckLocation">
+        <di:waypoint x="1410" y="160" />
+        <di:waypoint x="1410" y="250" />
+        <di:waypoint x="850" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_InsertPlanting" bpmnElement="Association_InsertPlanting">
+        <di:waypoint x="1825" y="160" />
+        <di:waypoint x="1825" y="250" />
+        <di:waypoint x="850" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_QueryPlantRedirect" bpmnElement="Association_QueryPlantRedirect">
+        <di:waypoint x="1965" y="160" />
+        <di:waypoint x="1965" y="250" />
+        <di:waypoint x="850" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_UpdateGermination" bpmnElement="Association_UpdateGermination">
+        <di:waypoint x="2525" y="160" />
+        <di:waypoint x="2525" y="250" />
+        <di:waypoint x="850" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_InsertHarvest" bpmnElement="Association_InsertHarvest">
+        <di:waypoint x="3220" y="160" />
+        <di:waypoint x="3220" y="250" />
+        <di:waypoint x="850" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_UpdatePlantingStatus" bpmnElement="Association_UpdatePlantingStatus">
+        <di:waypoint x="3360" y="160" />
+        <di:waypoint x="3360" y="250" />
+        <di:waypoint x="850" y="290" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

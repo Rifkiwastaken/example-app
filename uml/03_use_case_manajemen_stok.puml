@@ -1,0 +1,146 @@
+@startuml Use Case Diagram - Modul Manajemen Stok dan Gudang (SIBESTI)
+!theme plain
+skinparam usecase {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 12
+}
+skinparam actor {
+    BackgroundColor #FFF9C4
+    BorderColor #F57F17
+}
+
+left to right direction
+
+actor "Petugas Gudang" as PetugasGudang
+actor "Penangkar" as Penangkar
+actor "Sistem" as Sistem
+
+rectangle "Modul Manajemen Stok dan Gudang" {
+    
+    package "Manajemen Stok" {
+        usecase "Akses Halaman Stok" as UC_AccessStok
+        usecase "Lihat Daftar Stok" as UC_ListStok
+        usecase "Tambah Stok Baru" as UC_TambahStok
+        usecase "Pilih Tanaman untuk Stok" as UC_PilihTanaman
+        usecase "Input Data Stok" as UC_InputStok
+        usecase "Pilih Gudang dan Bin" as UC_PilihGudangBin
+        usecase "Input Data Lot" as UC_InputLot
+        usecase "Adjustment Stok" as UC_Adjustment
+        usecase "Lihat History Transaksi" as UC_History
+        usecase "Lihat Detail Stok" as UC_DetailStok
+    }
+    
+    package "Manajemen Gudang" {
+        usecase "Akses Halaman Gudang" as UC_AccessGudang
+        usecase "Lihat Daftar Gudang" as UC_ListGudang
+        usecase "Buat Gudang Baru" as UC_BuatGudang
+        usecase "Input Data Gudang" as UC_InputGudang
+        usecase "Kelola Bin" as UC_KelolaBin
+        usecase "Buat Bin Baru" as UC_BuatBin
+        usecase "Input Data Bin" as UC_InputBin
+        usecase "Edit Data Gudang" as UC_EditGudang
+        usecase "Hapus Gudang" as UC_DeleteGudang
+        usecase "Lihat Detail Gudang" as UC_DetailGudang
+    }
+    
+    ' Use case sistem
+    usecase "Validasi Role Pengguna" as UC_ValidasiRole
+    usecase "Validasi Data Stok" as UC_ValidasiStok
+    usecase "Check SKU Unik" as UC_CheckSKU
+    usecase "Simpan Tipe Inventory" as UC_SimpanInventoryType
+    usecase "Simpan Lot Inventory" as UC_SimpanLot
+    usecase "Catat Transaksi Inventory" as UC_CatatTransaksi
+    usecase "Validasi Data Gudang" as UC_ValidasiGudang
+    usecase "Check Internal ID Unik" as UC_CheckInternalID
+    usecase "Simpan Data Gudang" as UC_SimpanGudang
+    usecase "Simpan Data Bin" as UC_SimpanBin
+    usecase "Check Stok Tersedia" as UC_CheckStokTersedia
+    usecase "Update Stok Lot" as UC_UpdateStokLot
+}
+
+' Relasi Petugas Gudang
+PetugasGudang --> UC_AccessStok
+PetugasGudang --> UC_ListStok
+PetugasGudang --> UC_TambahStok
+PetugasGudang --> UC_Adjustment
+PetugasGudang --> UC_History
+PetugasGudang --> UC_DetailStok
+PetugasGudang --> UC_AccessGudang
+PetugasGudang --> UC_ListGudang
+PetugasGudang --> UC_BuatGudang
+PetugasGudang --> UC_KelolaBin
+PetugasGudang --> UC_BuatBin
+PetugasGudang --> UC_EditGudang
+PetugasGudang --> UC_DeleteGudang
+PetugasGudang --> UC_DetailGudang
+
+' Relasi Penangkar
+Penangkar --> UC_AccessStok
+Penangkar --> UC_ListStok
+Penangkar --> UC_TambahStok
+Penangkar --> UC_DetailStok
+
+' Relasi Sistem
+Sistem --> UC_ValidasiRole
+Sistem --> UC_ValidasiStok
+Sistem --> UC_CheckSKU
+Sistem --> UC_SimpanInventoryType
+Sistem --> UC_SimpanLot
+Sistem --> UC_CatatTransaksi
+Sistem --> UC_ValidasiGudang
+Sistem --> UC_CheckInternalID
+Sistem --> UC_SimpanGudang
+Sistem --> UC_SimpanBin
+Sistem --> UC_CheckStokTersedia
+Sistem --> UC_UpdateStokLot
+
+' Relasi Include - Stok
+UC_AccessStok ..> UC_ValidasiRole : <<include>>
+UC_TambahStok ..> UC_PilihTanaman : <<include>>
+UC_TambahStok ..> UC_InputStok : <<include>>
+UC_TambahStok ..> UC_PilihGudangBin : <<include>>
+UC_TambahStok ..> UC_InputLot : <<include>>
+UC_TambahStok ..> UC_ValidasiStok : <<include>>
+UC_ValidasiStok ..> UC_CheckSKU : <<include>>
+UC_TambahStok ..> UC_SimpanInventoryType : <<include>>
+UC_TambahStok ..> UC_SimpanLot : <<include>>
+UC_TambahStok ..> UC_CatatTransaksi : <<include>>
+UC_Adjustment ..> UC_CheckStokTersedia : <<include>>
+UC_Adjustment ..> UC_UpdateStokLot : <<include>>
+UC_Adjustment ..> UC_CatatTransaksi : <<include>>
+
+' Relasi Include - Gudang
+UC_AccessGudang ..> UC_ValidasiRole : <<include>>
+UC_BuatGudang ..> UC_InputGudang : <<include>>
+UC_BuatGudang ..> UC_ValidasiGudang : <<include>>
+UC_ValidasiGudang ..> UC_CheckInternalID : <<include>>
+UC_BuatGudang ..> UC_SimpanGudang : <<include>>
+UC_KelolaBin ..> UC_BuatBin : <<include>>
+UC_BuatBin ..> UC_InputBin : <<include>>
+UC_BuatBin ..> UC_SimpanBin : <<include>>
+
+' Relasi Extend
+UC_ListStok ..> UC_DetailStok : <<extend>>
+UC_ListGudang ..> UC_DetailGudang : <<extend>>
+UC_ListGudang ..> UC_EditGudang : <<extend>>
+UC_ListGudang ..> UC_DeleteGudang : <<extend>>
+UC_ListGudang ..> UC_KelolaBin : <<extend>>
+
+@enduml
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

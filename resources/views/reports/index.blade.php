@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Laporan - SIBIT')
+@section('title', 'Laporan - SIBESTI')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -39,6 +39,14 @@
                         <br>
                         <small class="text-muted ms-4">Rekap penggunaan pupuk dan pestisida untuk audit biaya</small>
                     </li>
+                    <li class="mb-2">
+                        <a href="{{ route('reports.by-location') }}" class="text-decoration-none">
+                            <i class="fas fa-map-marker-alt me-2 text-primary"></i>
+                            Laporan Per Lokasi Lahan
+                        </a>
+                        <br>
+                        <small class="text-muted ms-4">Laporan lengkap semua data pelaporan per lokasi lahan</small>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -72,14 +80,6 @@
                         <br>
                         <small class="text-muted ms-4">Melacak pergerakan masuk dan keluar benih (Audit trail)</small>
                     </li>
-                    <li class="mb-2">
-                        <a href="{{ route('reports.expiry-monitoring') }}" class="text-decoration-none">
-                            <i class="fas fa-clock me-2 text-warning"></i>
-                            Laporan Monitoring Masa Edar (Kadaluarsa)
-                        </a>
-                        <br>
-                        <small class="text-muted ms-4">Menjadwalkan uji ulang sertifikasi</small>
-                    </li>
                 </ul>
             </div>
         </div>
@@ -104,14 +104,6 @@
                         </a>
                         <br>
                         <small class="text-muted ms-4">Laporan keuangan sederhana untuk pendapatan (PAD)</small>
-                    </li>
-                    <li class="mb-2">
-                        <a href="{{ route('reports.distribution') }}" class="text-decoration-none">
-                            <i class="fas fa-map-marked-alt me-2 text-info"></i>
-                            Laporan Sebaran Benih (Distribusi)
-                        </a>
-                        <br>
-                        <small class="text-muted ms-4">Peta sebaran benih BBI - Siapa yang beli dan dibawa kemana</small>
                     </li>
                 </ul>
             </div>
@@ -157,5 +149,8 @@
     </ul>
 </div>
 @endsection
+
+
+
 
 

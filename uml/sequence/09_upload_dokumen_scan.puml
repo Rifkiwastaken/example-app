@@ -1,0 +1,47 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Upload Dokumen Scan
+
+actor "Petugas Sertifikasi" as User
+participant "CertificationController" as Controller
+participant "CertificationReport" as Report
+participant "Storage" as Storage
+participant "Database" as DB
+
+User -> User: dalam proses buat laporan()
+User -> User: klik upload dokumen scan()
+User -> Controller: uploadDocument(Request, certification_id)
+activate Controller
+Controller -> Controller: validateFile(Request)
+Controller -> Storage: Storage::store(file, 'certifications')
+activate Storage
+Storage -> Storage: generateUniqueFileName()
+Storage -> Storage: saveFile()
+Storage --> Controller: return file_path
+deactivate Storage
+
+alt File Valid
+    Controller -> Report: CertificationReport::where('certification_id', certification_id)->first()
+    activate Report
+    Report -> DB: SELECT * FROM certification_reports WHERE certification_id = ?
+    DB --> Report: return report data
+    Report --> Controller: return Report
+    Report -> Report: Report::update(['document_path' => file_path])
+    Report -> DB: UPDATE certification_reports SET document_path = ? WHERE id = ?
+    DB --> Report: return updated
+    Report --> Controller: return updated
+    deactivate Report
+    
+    Controller --> User: redirect back dengan success message()
+    User -> User: tampilkan pesan dokumen berhasil diupload()
+else File Tidak Valid
+    Controller --> User: redirect back dengan error message()
+    User -> User: tampilkan pesan format file tidak valid()
+end
+deactivate Controller
+
+@enduml

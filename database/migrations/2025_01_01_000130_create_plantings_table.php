@@ -9,9 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('plantings', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('plant_id')->constrained('plants')->cascadeOnDelete();
-            $table->foreignId('planting_location_id')->nullable()->constrained('planting_locations')->nullOnDelete();
+            $table->string('planting_id', 36)->primary();
+            $table->string('plant_id', 36)->cascadeOnDelete();
+            $table->string('planting_location_id', 36)->nullable()->nullOnDelete();
             $table->string('bed_label')->nullable();
             // Detail Penanaman
             $table->unsignedInteger('days_to_emerge')->nullable(); // in days
@@ -45,6 +45,9 @@ return new class extends Migration
         Schema::dropIfExists('plantings');
     }
 };
+
+
+
 
 
 

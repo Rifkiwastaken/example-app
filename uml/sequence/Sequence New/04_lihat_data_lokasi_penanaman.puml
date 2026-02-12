@@ -1,0 +1,53 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - UC04 Melihat Data Lokasi Penanaman
+
+actor "User" as User
+boundary "PlantingLocationView" as View
+control "PlantingLocationController" as Controller
+entity "PlantingLocation" as Location
+
+User -> View: akses halaman lihat lokasi()
+View -> Controller: index()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Location: all()
+activate Location
+Location --> Controller: return planting_locations[]
+deactivate Location
+Controller --> View: return planting_locations[]
+deactivate Controller
+View --> User: tampilkan daftar lokasi()
+
+alt Filter atau Cari
+    User -> View: pilih filter atau cari()
+    View -> Controller: index(request dengan filter)
+    activate Controller
+    Controller -> Location: where(...)->get()
+    activate Location
+    Location -> Location: applyFilter()
+    Location --> Controller: return filtered_locations[]
+    deactivate Location
+    Controller --> View: return filtered_locations[]
+    deactivate Controller
+    View --> User: tampilkan daftar lokasi terfilter()
+end
+
+alt Lihat Detail
+    User -> View: klik tombol lihat detail()
+    View -> Controller: show(id)
+    activate Controller
+    Controller -> Location: findOrFail(id)
+    activate Location
+    Location --> Controller: return planting_location
+    deactivate Location
+    Controller --> View: return location
+    deactivate Controller
+    View --> User: tampilkan detail lokasi()
+end
+
+@enduml

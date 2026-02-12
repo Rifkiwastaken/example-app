@@ -1,0 +1,86 @@
+@startuml Sequence Diagram - Batalkan Penjualan
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Batalkan Penjualan
+
+actor "Petugas BBI" as User
+participant "SaleController" as Controller
+participant "Sale Model" as Sale
+participant "SaleItem Model" as SaleItem
+participant "InventoryLot Model" as Lot
+participant "InventoryTransaction Model" as Transaction
+participant "Database" as DB
+
+User -> Controller: DELETE /sales/{id}/cancel
+activate Controller
+Controller -> Controller: validateRole
+Controller -> Sale: findById
+activate Sale
+Sale -> DB: SELECT * FROM sales WHERE id = ?
+DB --> Sale: sale data
+Sale --> Controller: Sale
+deactivate Sale
+
+Controller -> Controller: checkCanCancel
+
+alt Can Cancel
+    Controller -> SaleItem: getBySaleId
+    activate SaleItem
+    SaleItem -> DB: SELECT * FROM sale_items WHERE sale_id = ?
+    DB --> SaleItem: sale_items[]
+    SaleItem --> Controller: sale_items[]
+    deactivate SaleItem
+    
+    Controller -> DB: BEGIN TRANSACTION
+    
+    loop For each sale item
+        Controller -> Transaction: getBySaleAndLot
+        activate Transaction
+        Transaction -> DB: SELECT * FROM inventory_transactions WHERE sale_id = ? AND inventory_lot_id = ?
+        DB --> Transaction: transactions[]
+        Transaction --> Controller: transactions[]
+        deactivate Transaction
+        
+        loop For each transaction
+            Controller -> Lot: findById
+            activate Lot
+            Lot -> DB: SELECT * FROM inventory_lots WHERE id = ?
+            DB --> Lot: lot data
+            Lot --> Controller: Lot
+            deactivate Lot
+            
+            Controller -> Lot: restoreStock
+            activate Lot
+            Lot -> DB: UPDATE inventory_lots SET quantity = quantity + ? status = available WHERE id = ?
+            DB --> Lot: restored
+            Lot --> Controller: restored
+            deactivate Lot
+        end
+    end
+    
+    Controller -> Sale: update status cancelled
+    activate Sale
+    Sale -> DB: UPDATE sales SET status = cancelled WHERE id = ?
+    DB --> Sale: updated
+    Sale --> Controller: updated
+    deactivate Sale
+    
+    Controller -> Transaction: create transaction cancellation
+    activate Transaction
+    Transaction -> DB: INSERT INTO inventory_transactions transaction_type quantity
+    DB --> Transaction: transaction_id
+    Transaction --> Controller: created
+    deactivate Transaction
+    
+    Controller -> DB: COMMIT TRANSACTION
+    Controller --> User: response success
+else Not Allowed
+    Controller --> User: show message
+end
+deactivate Controller
+
+@enduml
+

@@ -1,0 +1,73 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Edit Data Penanaman
+
+actor "Admin/Kepala Satgas" as User
+participant "PlantingController" as Controller
+participant "Planting" as Planting
+participant "Plant" as Plant
+participant "PlantingLocation" as PlantingLocation
+participant "Database" as DB
+
+User -> User: klik edit penanaman()
+User -> Controller: edit(planting_id)
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Planting: Planting::findOrFail(planting_id)
+activate Planting
+Planting -> DB: SELECT * FROM plantings WHERE id = ?
+DB --> Planting: return data penanaman
+Planting --> Controller: return Planting
+deactivate Planting
+
+Controller -> Plant: Plant::orderBy('name')->get()
+activate Plant
+Plant -> DB: SELECT * FROM plants ORDER BY name
+DB --> Plant: return plants[]
+Plant --> Controller: return plants[]
+deactivate Plant
+
+Controller -> PlantingLocation: PlantingLocation::orderBy('name')->get()
+activate PlantingLocation
+PlantingLocation -> DB: SELECT * FROM planting_locations ORDER BY name
+DB --> PlantingLocation: return locations[]
+PlantingLocation --> Controller: return locations[]
+deactivate PlantingLocation
+
+Controller --> User: return view edit dengan data()
+deactivate Controller
+User -> User: tampilkan form edit penanaman()
+
+User -> User: ubah data penanaman()
+User -> Controller: update(Request, planting_id)
+activate Controller
+Controller -> Controller: validate(Request)
+Controller -> Planting: Planting::findOrFail(planting_id)
+activate Planting
+Planting -> DB: SELECT * FROM plantings WHERE id = ?
+DB --> Planting: return data penanaman
+Planting --> Controller: return Planting
+deactivate Planting
+
+alt Data Valid
+    Controller -> Planting: Planting::update(data)
+    activate Planting
+    Planting -> DB: UPDATE plantings SET plant_id = ? WHERE id = ?
+    DB --> Planting: return updated
+    Planting --> Controller: return updated Planting
+    deactivate Planting
+    
+    Controller --> User: redirect back dengan success message()
+    User -> User: tampilkan pesan penanaman berhasil diupdate()
+else Data Tidak Valid
+    Controller --> User: redirect back dengan validation errors()
+    User -> User: tampilkan form dengan pesan error()
+end
+deactivate Controller
+
+@enduml
+

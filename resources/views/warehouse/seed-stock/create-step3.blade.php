@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Tambah Tipe Bibit Baru - Langkah 3 - SIBIT')
+@section('title', 'Tambah Tipe Benih Baru - Langkah 3 - SIBESTI')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -20,7 +20,7 @@
         </p>
 
         <div class="alert alert-info text-start mb-4">
-            <strong>Catatan:</strong> Anda belum menambahkan jumlah stok. Stok akan bertambah secara otomatis saat Anda menerima benih dari Modul Produksi/Sertifikasi ke dalam Lot, atau secara manual melalui halaman detail bibit.
+            <strong>Catatan:</strong> Anda belum menambahkan jumlah stok. Stok akan bertambah secara otomatis saat Anda menerima benih dari Modul Produksi/Sertifikasi ke dalam Lot, atau secara manual melalui halaman detail benih.
         </div>
 
         <form action="{{ route('seed-stock.store') }}" method="POST">

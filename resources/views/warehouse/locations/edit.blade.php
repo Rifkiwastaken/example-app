@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Edit Lokasi Gudang - SIBIT')
+@section('title', 'Edit Lokasi Gudang - SIBESTI')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -12,7 +12,7 @@
 
 <div class="card">
     <div class="card-body">
-        <form action="{{ route('warehouse-locations.update', ['warehouse_location' => $warehouse->id]) }}" method="POST">
+        <form action="{{ route('warehouse-locations.update', $warehouse) }}" method="POST">
             @csrf
             @method('PUT')
             
@@ -67,9 +67,26 @@
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
+
+            <div class="mb-3">
+                <label for="responsible_person_id" class="form-label">Penanggung Jawab Gudang</label>
+                <select class="form-select @error('responsible_person_id') is-invalid @enderror" 
+                        id="responsible_person_id" name="responsible_person_id">
+                    <option value="">-- Pilih User --</option>
+                    @foreach($users as $user)
+                        <option value="{{ $user->user_id }}" {{ old('responsible_person_id', $warehouse->responsible_person_id) == $user->user_id ? 'selected' : '' }}>
+                            {{ $user->name }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('responsible_person_id')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+                <small class="text-muted">Pilih user yang bertanggung jawab untuk gudang ini</small>
+            </div>
             
             <div class="d-flex justify-content-end gap-2">
-                <a href="{{ route('warehouse-locations.show', ['warehouse_location' => $warehouse->id]) }}" class="btn btn-secondary">
+                <a href="{{ route('warehouse-locations.show', $warehouse) }}" class="btn btn-secondary">
                     <i class="fas fa-times me-2"></i>Batal
                 </a>
                 <button type="submit" class="btn btn-success">

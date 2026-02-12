@@ -1,0 +1,76 @@
+@startuml
+' Referensi: Use Case Overview (00_use_case_overview.puml)
+' Use case 13: Mengakses Dashboard
+' Aktor: Admin/Kepala Sek, Petugas BBI, Penangkar/Kepala Satgas, Petugas Gudang
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Mengakses Dashboard
+
+|#LightBlue|User|
+start
+:Masuk ke halaman dashboard;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Load data statistik berdasarkan role;
+
+if (Role pengguna?) then (Admin)
+    |#LightGreen|Sistem|
+    :Load grafik tren produksi (12 bulan terakhir);
+    :Load pie chart komposisi stok;
+    :Load grafik tren pendapatan (12 bulan terakhir);
+    :Load data tabel produksi, stok, dan pendapatan;
+    :Load data cuaca;
+elseif (Admin/Kepala Satgas/Penangkar) then
+    |#LightGreen|Sistem|
+    :Load statistik tugas (upcoming tasks);
+    :Load notifikasi tugas;
+    :Load notifikasi catatan;
+else (Semua User)
+    |#LightGreen|Sistem|
+    :Load notifikasi benih yang mendekati kadaluarsa;
+end
+
+if (Role Admin atau Petugas Gudang?) then (Ya)
+    |#LightGreen|Sistem|
+    :Load notifikasi benih di bin yang kadaluarsa;
+    :Load notifikasi stok benih rendah;
+end
+
+if (Role Admin?) then (Ya)
+    |#LightGreen|Sistem|
+    :Load notifikasi sertifikasi yang melewati masa edar;
+end
+
+|#LightGreen|Sistem|
+:Menampilkan dashboard dengan semua data yang relevan;
+
+|#LightBlue|User|
+:Lihat dashboard dengan statistik dan grafik;
+:Lihat notifikasi yang relevan;
+
+if (Ada filter?) then (Ya)
+    |#LightBlue|User|
+    :Pilih filter (tanaman, tipe inventory);
+    :Submit filter;
+    |#LightGreen|Sistem|
+    :Update data berdasarkan filter;
+    :Menampilkan dashboard dengan data terfilter;
+    |#LightBlue|User|
+    :Lihat dashboard dengan data terfilter;
+endif
+
+stop
+
+@enduml

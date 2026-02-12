@@ -1,0 +1,76 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Pilih List untuk dijual
+
+actor "Petugas BBI/Petugas Gudang" as User
+participant "SaleController" as Controller
+participant "InventoryType" as InvType
+participant "InventoryLot" as Lot
+participant "Warehouse" as Warehouse
+participant "Bin" as Bin
+participant "Database" as DB
+
+User -> User: dalam form input penjualan()
+User -> User: klik pilih list untuk dijual()
+User -> Controller: getAvailableStock()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> InvType: InventoryType::where('status', 'available')->get()
+activate InvType
+InvType -> DB: SELECT * FROM inventory_types WHERE status = 'available'
+DB --> InvType: return inventory_types[]
+InvType --> Controller: return inventory_types[]
+deactivate InvType
+
+Controller -> Lot: InventoryLot::getStockSummary()
+activate Lot
+Lot -> DB: SELECT inventory_type_id, SUM(quantity) as total FROM inventory_lots WHERE status = 'available' GROUP BY inventory_type_id
+DB --> Lot: return stock_summary[]
+Lot --> Controller: return stock_summary[]
+deactivate Lot
+
+Controller -> Warehouse: Warehouse::get()
+activate Warehouse
+Warehouse -> DB: SELECT * FROM warehouses
+DB --> Warehouse: return warehouses[]
+Warehouse --> Controller: return warehouses[]
+deactivate Warehouse
+
+Controller --> User: return JSON response stok tersedia()
+deactivate Controller
+User -> User: tampilkan daftar stok tersedia()
+
+User -> User: pilih tipe benih()
+User -> User: input quantity()
+User -> Controller: validateStock(Request)
+activate Controller
+Controller -> Controller: validate(Request)
+Controller -> InvType: InventoryType::findOrFail(inventory_type_id)
+activate InvType
+InvType -> DB: SELECT * FROM inventory_types WHERE id = ?
+DB --> InvType: return inventory_type data
+InvType --> Controller: return InvType
+deactivate InvType
+
+Controller -> Lot: InventoryLot::getAvailableQuantity(inventory_type_id)
+activate Lot
+Lot -> DB: SELECT SUM(quantity) FROM inventory_lots WHERE inventory_type_id = ?
+DB --> Lot: return available_quantity
+Lot --> Controller: return available_quantity
+deactivate Lot
+
+alt Stok Tersedia
+    Controller -> Controller: calculateTotalPrice()
+    Controller --> User: return JSON response valid()
+    User -> User: tampilkan preview item()
+else Stok Tidak Cukup
+    Controller --> User: return JSON response error()
+    User -> User: tampilkan pesan stok tidak cukup()
+end
+deactivate Controller
+
+@enduml

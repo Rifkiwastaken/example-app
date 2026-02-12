@@ -1,0 +1,29 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Lihat Daftar Sertifikasi
+
+actor "Petugas Sertifikasi/Admin" as User
+participant "CertificationController" as Controller
+participant "Certification" as Certification
+participant "Database" as DB
+
+User -> User: akses halaman kelola sertifikasi()
+User -> Controller: index()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Certification: Certification::with('harvest', 'certificationReport')->paginate(15)
+activate Certification
+Certification -> DB: SELECT * FROM certifications LEFT JOIN harvests LEFT JOIN certification_reports LIMIT 15 OFFSET ?
+DB --> Certification: return certifications dengan data lengkap[]
+Certification --> Controller: return certifications[]
+deactivate Certification
+
+Controller --> User: return view index dengan data dan pagination()
+deactivate Controller
+User -> User: tampilkan daftar sertifikasi dan statistik()
+
+@enduml

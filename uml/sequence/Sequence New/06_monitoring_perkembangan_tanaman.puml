@@ -1,0 +1,116 @@
+@startuml
+' SIBESTI - Sequence Diagram | UC06: Monitoring Perkembangan Tanaman (Use Case Overview)
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - UC06 Monitoring Perkembangan Tanaman
+
+actor "Admin / Penangkar" as User
+boundary "MonitoringView" as View
+control "PlantingLocationController" as Controller
+entity "Planting" as Planting
+entity "Treatment" as Treatment
+entity "Nutrient" as Nutrient
+entity "PlantingLocationNote" as Note
+entity "Expense" as Expense
+
+User -> View: akses halaman monitoring()
+View -> Controller: showPlantingReports(planting_location_id, planting_id)
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Planting: findOrFail(planting_id)
+activate Planting
+Planting -> Planting: load('plant')
+Planting --> Controller: return Planting
+deactivate Planting
+
+Controller -> Treatment: where('planting_id', planting_id)->get()
+activate Treatment
+Treatment --> Controller: return treatments[]
+deactivate Treatment
+
+Controller -> Nutrient: where('planting_id', planting_id)->get()
+activate Nutrient
+Nutrient --> Controller: return nutrients[]
+deactivate Nutrient
+
+Controller -> Note: where('planting_location_id', location_id)->get()
+activate Note
+Note --> Controller: return notes[]
+deactivate Note
+
+Controller --> View: return data lengkap
+deactivate Controller
+View --> User: tampilkan halaman monitoring()
+
+alt Tambah Laporan
+    User -> View: klik tombol tambah laporan()
+    View -> Controller: storeNote(request, planting_location_id)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> Note: create(data)
+    activate Note
+    Note -> Note: save()
+    Note --> Controller: return Note
+    deactivate Note
+    Controller --> View: redirect dengan pesan sukses
+    deactivate Controller
+    View --> User: tampilkan pesan sukses()
+else Tambah Nutrisi
+    User -> View: klik tombol tambah nutrisi()
+    View -> Controller: storeNutrient(request, planting_location_id)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> Nutrient: create(data)
+    activate Nutrient
+    Nutrient -> Nutrient: save()
+    Nutrient --> Controller: return Nutrient
+    deactivate Nutrient
+    alt Ada Total Cost
+        Controller -> Expense: create(expense_data)
+        activate Expense
+        Expense -> Expense: save()
+        Expense --> Controller: return Expense
+        deactivate Expense
+    end
+    Controller --> View: redirect dengan pesan sukses
+    deactivate Controller
+    View --> User: tampilkan pesan sukses()
+else Tambah Perawatan
+    User -> View: klik tombol tambah perawatan()
+    View -> Controller: storeTreatment(request, planting_location_id)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> Treatment: create(data)
+    activate Treatment
+    Treatment -> Treatment: save()
+    Treatment --> Controller: return Treatment
+    deactivate Treatment
+    alt Ada Total Cost
+        Controller -> Expense: create(expense_data)
+        activate Expense
+        Expense -> Expense: save()
+        Expense --> Controller: return Expense
+        deactivate Expense
+    end
+    Controller --> View: redirect dengan pesan sukses
+    deactivate Controller
+    View --> User: tampilkan pesan sukses()
+else Tambah Catatan
+    User -> View: klik tombol tambah catatan()
+    View -> Controller: storeNote(request, planting_location_id)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> Note: create(data)
+    activate Note
+    Note -> Note: save()
+    Note --> Controller: return Note
+    deactivate Note
+    Controller --> View: redirect dengan pesan sukses
+    deactivate Controller
+    View --> User: tampilkan pesan sukses()
+end
+
+@enduml

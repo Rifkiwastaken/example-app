@@ -1,0 +1,88 @@
+@startuml
+' Referensi: Use Case Overview (00_use_case_overview.puml)
+' Use case 15: Mengelola data stok benih (include dari Menambahkan data stok benih)
+' Aktor: Petugas Gudang
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Mengelola data stok benih
+
+|#LightBlue|User|
+start
+:Masuk ke halaman kelola stok benih;
+
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data stok benih dari database;
+:Load data tanaman dan lokasi terkait;
+:Menampilkan daftar stok benih;
+
+|#LightBlue|User|
+:Lihat daftar stok benih;
+
+if (Pilih aksi?) then (Edit)
+    |#LightBlue|User|
+    :Klik tombol edit;
+    |#LightGreen|Sistem|
+    :Tampilkan form edit dengan data terisi;
+    |#LightBlue|User|
+    :Edit data stok benih;
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data;
+    if (Data valid?) then (Ya)
+        :Update data stok benih di database;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Tampilkan pesan error;
+    endif
+elseif (Kurangi Stok) then
+    |#LightBlue|User|
+    :Klik tombol kurangi stok;
+    |#LightGreen|Sistem|
+    :Tampilkan form kurangi stok;
+    |#LightBlue|User|
+    :Masukkan jumlah yang dikurangi;
+    :Masukkan alasan;
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data;
+    if (Data valid?) then (Ya)
+        :Kurangi stok benih di database;
+        :Update stok di bin penyimpanan;
+        :Buat history record;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Tampilkan pesan error;
+    endif
+elseif (Tambahkan ke Gudang) then
+    |#LightBlue|User|
+    :Klik tombol gudang;
+    |#LightGreen|Sistem|
+    :Redirect ke halaman daftar stok di bin;
+    :Buka modal daftar stok;
+    |#LightBlue|User|
+    :Lihat daftar stok di bin;
+else (Lihat Detail)
+    |#LightBlue|User|
+    :Klik tombol lihat detail;
+    |#LightGreen|Sistem|
+    :Tampilkan detail data stok benih;
+    |#LightBlue|User|
+    :Lihat detail stok benih;
+endif
+
+stop
+
+@enduml

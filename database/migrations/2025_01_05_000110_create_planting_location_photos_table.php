@@ -13,8 +13,8 @@ return new class extends Migration
     {
         if (!Schema::hasTable('planting_location_photos')) {
             Schema::create('planting_location_photos', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('planting_location_id')->constrained('planting_locations')->onDelete('cascade');
+                $table->string('planting_location_photo_id', 36)->primary();
+                $table->string('planting_location_id', 36)->onDelete('cascade');
                 $table->string('file_path');
                 $table->string('file_name')->nullable();
                 $table->integer('file_size')->nullable();

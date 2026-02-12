@@ -1,0 +1,271 @@
+@startuml ERD - SIBESTI (Inventory & Sales Module)
+!theme plain
+left to right direction
+scale 0.9
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam roundcorner 8
+skinparam shadowing false
+
+title SIBESTI Inventory & Sales Module ERD
+' Sistem Informasi Benih Bersertifikat
+' Semua ID menggunakan VARCHAR(36) dengan format {nama_tabel}_id
+' Tanggal Update: Februari 2026
+
+entity "warehouses" as warehouses {
+    * **warehouse_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    internal_id : VARCHAR(50) <<UNIQUE>>
+    tracking_type : ENUM('bin_separated','warehouse_only')
+    description : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "bins" as bins {
+    * **bin_id** : VARCHAR(36) <<PK>>
+    --
+    warehouse_id : VARCHAR(36) <<FK>>
+    name : VARCHAR(255)
+    internal_id : VARCHAR(50)
+    max_capacity : DECIMAL(15,2)
+    capacity_unit : VARCHAR(50)
+    description : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "inventory_types" as inventory_types {
+    * **inventory_type_id** : VARCHAR(36) <<PK>>
+    --
+    category : VARCHAR(255)
+    name : VARCHAR(255)
+    sku : VARCHAR(100) <<UNIQUE>>
+    electronic_id : VARCHAR(255)
+    unit : VARCHAR(50)
+    estimated_value_per_unit : DECIMAL(15,2)
+    estimated_kg_per_unit : DECIMAL(10,2)
+    track_individual_lots : BOOLEAN
+    low_stock_threshold : DECIMAL(10,2)
+    low_stock_unit : VARCHAR(50)
+    low_stock_email : VARCHAR(255)
+    description : TEXT
+    plant_id : VARCHAR(36) <<FK>>
+    responsible_person_id : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "inventory_lots" as inventory_lots {
+    * **inventory_lot_id** : VARCHAR(36) <<PK>>
+    --
+    inventory_type_id : VARCHAR(36) <<FK>>
+    production_id : VARCHAR(255)
+    expiry_date : DATE
+    status : ENUM('tersedia','segera_kadaluarsa','kadaluarsa','habis')
+    initial_stock : DECIMAL(15,2)
+    current_stock : DECIMAL(15,2)
+    stock_unit : VARCHAR(50)
+    warehouse_id : VARCHAR(36) <<FK>> [nullable]
+    bin_id : VARCHAR(36) <<FK>> [nullable]
+    certification_id : VARCHAR(36) <<FK>> [nullable]
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "inventory_transactions" as inventory_transactions {
+    * **inventory_transaction_id** : VARCHAR(36) <<PK>>
+    --
+    inventory_type_id : VARCHAR(36) <<FK>>
+    inventory_lot_id : VARCHAR(36) <<FK>> [nullable]
+    transaction_type : ENUM('stok_masuk','stok_keluar','penyesuaian_tambah','penyesuaian_kurang','distribusi','pindah_lokasi')
+    quantity : DECIMAL(15,2)
+    unit : VARCHAR(50)
+    warehouse_id : VARCHAR(36) <<FK>> [nullable]
+    bin_id : VARCHAR(36) <<FK>> [nullable]
+    reason : VARCHAR(255)
+    notes : TEXT
+    user_id : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "inventory_type_warehouses" as inventory_type_warehouses {
+    * **inventory_type_warehouse_id** : VARCHAR(36) <<PK>>
+    --
+    inventory_type_id : VARCHAR(36) <<FK>>
+    warehouse_id : VARCHAR(36) <<FK>>
+    bin_id : VARCHAR(36) <<FK>>
+    warehouse_only : TINYINT(1)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "inventory_notes" as inventory_notes {
+    * **inventory_note_id** : VARCHAR(36) <<PK>>
+    --
+    inventory_type_id : VARCHAR(36) <<FK>>
+    content : TEXT
+    user_id : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "inventory_photos" as inventory_photos {
+    * **inventory_photo_id** : VARCHAR(36) <<PK>>
+    --
+    inventory_type_id : VARCHAR(36) <<FK>>
+    photo_path : VARCHAR(255)
+    caption : TEXT
+    user_id : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "inventory_type_seeds" as inventory_type_seeds {
+    * **inventory_type_seed_id** : VARCHAR(36) <<PK>>
+    --
+    inventory_type_id : VARCHAR(36) <<FK>>
+    plant_id : VARCHAR(36) <<FK>>
+    planting_location_id : VARCHAR(36) <<FK>>
+    certification_report_id : VARCHAR(36) <<FK>> [nullable]
+    quantity : DECIMAL(12,2)
+    seed_unit : VARCHAR(50)
+    seed_unit_quantity : DECIMAL(12,2)
+    seed_per_unit : DECIMAL(12,2)
+    seed_per_unit_unit : VARCHAR(50)
+    total_seed_quantity : DECIMAL(12,2)
+    total_seed_unit : VARCHAR(50)
+    estimated_sale_price_per_kg : DECIMAL(12,2)
+    expiry_date : DATE
+    filled_by_user_id : VARCHAR(36) <<FK>>
+    edited_at : TIMESTAMP
+    edited_by : VARCHAR(36) <<FK>>
+    storage_number : VARCHAR(50)
+    report_type : VARCHAR(50)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "inventory_type_certification_reports" as inv_type_cert_reports {
+    * **inventory_type_certification_report_id** : VARCHAR(36) <<PK>>
+    --
+    inventory_type_id : VARCHAR(36) <<FK>>
+    certification_report_id : VARCHAR(36) <<FK>>
+    quantity : DECIMAL(12,2)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "sales" as sales {
+    * **sale_id** : VARCHAR(36) <<PK>>
+    --
+    receipt_number : VARCHAR(50) <<UNIQUE>>
+    sale_date : DATE
+    buyer_name : VARCHAR(255)
+    buyer_contact : VARCHAR(255)
+    total_amount : DECIMAL(15,2)
+    payment_method : ENUM('cash','transfer_bank')
+    payment_status : ENUM('lunas','belum_lunas')
+    planting_location_id : VARCHAR(36) <<FK>> [nullable]
+    notes : TEXT
+    user_id : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "sale_items" as sale_items {
+    * **sale_item_id** : VARCHAR(36) <<PK>>
+    --
+    sale_id : VARCHAR(36) <<FK>>
+    inventory_type_id : VARCHAR(36) <<FK>>
+    inventory_lot_id : VARCHAR(36) <<FK>>
+    quantity : DECIMAL(15,2)
+    unit : VARCHAR(50)
+    unit_price : DECIMAL(15,2)
+    subtotal : DECIMAL(15,2)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "seed_histories" as seed_histories {
+    * **seed_history_id** : VARCHAR(36) <<PK>>
+    --
+    inventory_type_seed_id : VARCHAR(36) <<FK>> [nullable]
+    inventory_type_id : VARCHAR(36) [nullable]
+    action : VARCHAR(50)
+    description : TEXT
+    old_data : JSON
+    new_data : JSON
+    user_id : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "users" as users {
+    * **user_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    email : VARCHAR(255) <<UNIQUE>>
+    role : ENUM
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "certifications" as certifications {
+    * **certification_id** : VARCHAR(36) <<PK>>
+    --
+    harvest_id : VARCHAR(36) <<FK>>
+    certification_status : VARCHAR(255)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+' Relationships
+warehouses ||--o{ bins : "warehouse_id"
+warehouses ||--o{ inventory_lots : "warehouse_id"
+warehouses ||--o{ inventory_transactions : "warehouse_id"
+warehouses ||--o{ inventory_type_warehouses : "warehouse_id"
+
+bins ||--o{ inventory_lots : "bin_id"
+bins ||--o{ inventory_transactions : "bin_id"
+bins ||--o{ inventory_type_warehouses : "bin_id"
+
+inventory_types ||--o{ inventory_lots : "inventory_type_id"
+inventory_types ||--o{ inventory_transactions : "inventory_type_id"
+inventory_types ||--o{ inventory_type_warehouses : "inventory_type_id"
+inventory_types ||--o{ inventory_notes : "inventory_type_id"
+inventory_types ||--o{ inventory_photos : "inventory_type_id"
+inventory_types ||--o{ inventory_type_seeds : "inventory_type_id"
+inventory_types ||--o{ inv_type_cert_reports : "inventory_type_id"
+inventory_types ||--o{ sale_items : "inventory_type_id"
+inventory_types }o--|| plants : "plant_id"
+inventory_types }o--|| users : "responsible_person_id"
+
+inventory_type_seeds ||--o{ seed_histories : "inventory_type_seed_id"
+
+inventory_lots ||--o{ inventory_transactions : "inventory_lot_id"
+inventory_lots ||--o{ sale_items : "inventory_lot_id"
+inventory_lots }o--|| certifications : "certification_id"
+
+sales ||--o{ sale_items : "sale_id"
+sales }o--|| users : "user_id"
+
+users ||--o{ inventory_transactions : "user_id"
+users ||--o{ inventory_notes : "user_id"
+users ||--o{ inventory_photos : "user_id"
+users ||--o{ inventory_type_seeds : "filled_by_user_id"
+users ||--o{ seed_histories : "user_id"
+
+note as Ninv
+SIBESTI Inventory & Sales Module
+Mengelola gudang, stok, dan penjualan benih.
+tracking_type: bin_separated, warehouse_only
+inventory_lots.status: tersedia, segera_kadaluarsa, kadaluarsa, habis
+transaction_type: stok_masuk, stok_keluar, penyesuaian_tambah, penyesuaian_kurang, distribusi, pindah_lokasi
+payment_method: cash, transfer_bank
+payment_status: lunas, belum_lunas
+end note
+
+@enduml

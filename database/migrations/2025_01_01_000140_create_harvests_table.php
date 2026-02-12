@@ -9,10 +9,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('harvests', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('plant_id')->constrained('plants')->cascadeOnDelete();
-            $table->foreignId('planting_id')->nullable()->constrained('plantings')->nullOnDelete();
-            $table->foreignId('planting_location_id')->nullable()->constrained('planting_locations')->nullOnDelete();
+            $table->string('harvest_id', 36)->primary();
+            $table->string('plant_id', 36)->cascadeOnDelete();
+            $table->string('planting_id', 36)->nullable()->nullOnDelete();
+            $table->string('planting_location_id', 36)->nullable()->nullOnDelete();
             $table->date('harvested_at');
             $table->string('batch_no')->nullable();
             $table->text('note')->nullable();
@@ -30,6 +30,9 @@ return new class extends Migration
         Schema::dropIfExists('harvests');
     }
 };
+
+
+
 
 
 

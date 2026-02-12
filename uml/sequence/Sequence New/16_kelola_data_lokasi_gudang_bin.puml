@@ -1,0 +1,129 @@
+@startuml
+' SIBESTI - Sequence Diagram | UC16: Mengelola Data Lokasi Gudang dan Bin (Use Case Overview)
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - UC16 Mengelola Data Lokasi Gudang dan Bin
+
+actor "User" as User
+boundary "WarehouseView" as View
+control "WarehouseController" as Controller
+entity "Warehouse" as Warehouse
+entity "Bin" as Bin
+
+User -> View: akses halaman kelola gudang()
+View -> Controller: index()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Warehouse: with('bins')->get()
+activate Warehouse
+Warehouse -> Warehouse: load('bins')
+Warehouse --> Controller: return warehouses[]
+deactivate Warehouse
+Controller --> View: return warehouses[]
+deactivate Controller
+View --> User: tampilkan daftar gudang()
+
+alt Kelola Gudang
+    alt Tambah Gudang
+        User -> View: klik tombol tambah gudang()
+        View -> Controller: create()
+        activate Controller
+        Controller --> View: return view create
+        deactivate Controller
+        View --> User: tampilkan form tambah gudang()
+        
+        User -> View: isi form data gudang()
+        View -> Controller: store(request)
+        activate Controller
+        Controller -> Controller: validate(request)
+        Controller -> Warehouse: create(data)
+        activate Warehouse
+        Warehouse -> Warehouse: save()
+        Warehouse --> Controller: return warehouse
+        deactivate Warehouse
+        Controller --> View: redirect dengan pesan sukses
+        View --> User: tampilkan pesan sukses()
+        deactivate Controller
+    else Edit Gudang
+        User -> View: klik tombol edit gudang()
+        View -> Controller: edit(warehouse_id)
+        activate Controller
+        Controller -> Warehouse: findOrFail(warehouse_id)
+        activate Warehouse
+        Warehouse --> Controller: return warehouse
+        deactivate Warehouse
+        Controller --> View: return warehouse
+        deactivate Controller
+        View --> User: tampilkan form edit gudang()
+        
+        User -> View: edit data gudang()
+        View -> Controller: update(warehouse_id, request)
+        activate Controller
+        Controller -> Controller: validate(request)
+        Controller -> Warehouse: findOrFail(warehouse_id)
+        activate Warehouse
+        Warehouse -> Warehouse: update(data)
+        Warehouse --> Controller: return warehouse
+        deactivate Warehouse
+        Controller --> View: redirect dengan pesan sukses
+        View --> User: tampilkan pesan sukses()
+        deactivate Controller
+    end
+else Kelola Bin
+    User -> View: klik tombol kelola bin()
+    View -> Controller: show(warehouse_id)
+    activate Controller
+    Controller -> Warehouse: with('bins')->findOrFail(warehouse_id)
+    activate Warehouse
+    Warehouse -> Warehouse: load('bins')
+    Warehouse --> Controller: return warehouse
+    deactivate Warehouse
+    Controller --> View: return warehouse dan bins[]
+    deactivate Controller
+    View --> User: tampilkan daftar bin()
+    
+    alt Tambah Bin
+        User -> View: klik tombol tambah bin()
+        View -> Controller: storeBin(warehouse_id, request)
+        activate Controller
+        Controller -> Controller: validate(request)
+        Controller -> Bin: create(data)
+        activate Bin
+        Bin -> Bin: save()
+        Bin --> Controller: return bin
+        deactivate Bin
+        Controller --> View: redirect dengan pesan sukses
+        View --> User: tampilkan pesan sukses()
+        deactivate Controller
+    else Edit Bin
+        User -> View: klik tombol edit bin()
+        View -> Controller: updateBin(warehouse_id, bin_id, request)
+        activate Controller
+        Controller -> Controller: validate(request)
+        Controller -> Bin: findOrFail(bin_id)
+        activate Bin
+        Bin -> Bin: update(data)
+        Bin --> Controller: return bin
+        deactivate Bin
+        Controller --> View: redirect dengan pesan sukses
+        View --> User: tampilkan pesan sukses()
+        deactivate Controller
+    else Hapus Bin
+        User -> View: klik tombol hapus bin()
+        View -> Controller: destroyBin(warehouse_id, bin_id)
+        activate Controller
+        Controller -> Bin: findOrFail(bin_id)
+        activate Bin
+        Bin -> Bin: delete()
+        Bin --> Controller: return success
+        deactivate Bin
+        Controller --> View: redirect dengan pesan sukses
+        View --> User: tampilkan pesan sukses()
+        deactivate Controller
+    end
+end
+
+@enduml

@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_2" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.0.0">
+  <bpmn:process id="ProsesSertifikasi" name="Proses Sertifikasi Benih" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Sertifikasi" name="Mulai Proses Sertifikasi">
+      <bpmn:outgoing>Flow_PilihPanen</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_PilihPanen" name="Pengguna Memilih Hasil Panen">
+      <bpmn:incoming>Flow_PilihPanen</bpmn:incoming>
+      <bpmn:outgoing>Flow_LoadHarvestData</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_LoadHarvestData" name="Mengambil Data Panen dari Database">
+      <bpmn:incoming>Flow_LoadHarvestData</bpmn:incoming>
+      <bpmn:outgoing>Flow_BuatSertifikasi</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_BuatSertifikasi" name="Membuat Sertifikasi Baru di Database">
+      <bpmn:incoming>Flow_BuatSertifikasi</bpmn:incoming>
+      <bpmn:outgoing>Flow_PilihKelasBenih</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_PilihKelasBenih" name="Pengguna Memilih Kelas Benih (BS/BP/BR)">
+      <bpmn:incoming>Flow_PilihKelasBenih</bpmn:incoming>
+      <bpmn:outgoing>Flow_BuatLaporan</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_BuatLaporanPemeriksaan" name="Pengguna Membuat Laporan Pemeriksaan">
+      <bpmn:incoming>Flow_BuatLaporan</bpmn:incoming>
+      <bpmn:outgoing>Flow_InputDataInspeksi</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_InputDataInspeksi" name="Pengguna Mengisi Data Inspeksi">
+      <bpmn:incoming>Flow_InputDataInspeksi</bpmn:incoming>
+      <bpmn:outgoing>Flow_UploadDokumen</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_UploadDokumen" name="Menyimpan Dokumen Scan ke Storage">
+      <bpmn:incoming>Flow_UploadDokumen</bpmn:incoming>
+      <bpmn:outgoing>Flow_ValidasiLaporan</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_ValidasiLaporan" name="Memvalidasi Data Laporan">
+      <bpmn:incoming>Flow_ValidasiLaporan</bpmn:incoming>
+      <bpmn:outgoing>Flow_CheckReportNumber</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_CheckReportNumber" name="Memeriksa Nomor Laporan Unik di Database">
+      <bpmn:incoming>Flow_CheckReportNumber</bpmn:incoming>
+      <bpmn:outgoing>Flow_GatewayValidasi</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_ValidasiLaporan" name="Laporan Valid?">
+      <bpmn:incoming>Flow_GatewayValidasi</bpmn:incoming>
+      <bpmn:outgoing>Flow_LaporanValid</bpmn:outgoing>
+      <bpmn:outgoing>Flow_LaporanTidakValid</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_SimpanLaporan" name="Menyimpan Laporan Pemeriksaan ke Database">
+      <bpmn:incoming>Flow_LaporanValid</bpmn:incoming>
+      <bpmn:outgoing>Flow_InsertReport</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_InsertReport" name="Menyimpan ke Tabel Certification Reports">
+      <bpmn:incoming>Flow_InsertReport</bpmn:incoming>
+      <bpmn:outgoing>Flow_EvaluasiHasil</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_EvaluasiHasil" name="Pengguna Mengevaluasi Hasil Pemeriksaan">
+      <bpmn:incoming>Flow_EvaluasiHasil</bpmn:incoming>
+      <bpmn:outgoing>Flow_GatewayKesimpulan</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_Kesimpulan" name="Kesimpulan">
+      <bpmn:incoming>Flow_GatewayKesimpulan</bpmn:incoming>
+      <bpmn:outgoing>Flow_Lulus</bpmn:outgoing>
+      <bpmn:outgoing>Flow_TidakLulus</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_UpdateStatusLulus" name="Memperbarui Status Sertifikasi Menjadi Lulus">
+      <bpmn:incoming>Flow_Lulus</bpmn:incoming>
+      <bpmn:outgoing>Flow_UpdateCertificationLulus</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_UpdateCertificationLulus" name="Update Status di Database: LULUS">
+      <bpmn:incoming>Flow_UpdateCertificationLulus</bpmn:incoming>
+      <bpmn:outgoing>Flow_TambahKeStok</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_UpdateStatusTidakLulus" name="Memperbarui Status Sertifikasi Menjadi Tidak Lulus">
+      <bpmn:incoming>Flow_TidakLulus</bpmn:incoming>
+      <bpmn:outgoing>Flow_UpdateCertificationTidakLulus</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_UpdateCertificationTidakLulus" name="Update Status di Database: TIDAK LULUS">
+      <bpmn:incoming>Flow_UpdateCertificationTidakLulus</bpmn:incoming>
+      <bpmn:outgoing>Flow_EndTidakLulus</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_TambahKeStok" name="Pengguna Menambahkan Benih ke Stok">
+      <bpmn:incoming>Flow_TambahKeStok</bpmn:incoming>
+      <bpmn:outgoing>Flow_InsertSeed</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_InsertSeed" name="Menyimpan Data Benih ke Database">
+      <bpmn:incoming>Flow_InsertSeed</bpmn:incoming>
+      <bpmn:outgoing>Flow_LinkCertificationReport</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_LinkCertificationReport" name="Menghubungkan Laporan Sertifikasi dengan Stok">
+      <bpmn:incoming>Flow_LinkCertificationReport</bpmn:incoming>
+      <bpmn:outgoing>Flow_EndLulus</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_Lulus" name="Sertifikasi Lulus - Benih Ditambahkan ke Stok">
+      <bpmn:incoming>Flow_EndLulus</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_TidakLulus" name="Sertifikasi Tidak Lulus">
+      <bpmn:incoming>Flow_EndTidakLulus</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_LaporanTidakValid" name="Laporan Tidak Valid">
+      <bpmn:incoming>Flow_LaporanTidakValid</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:dataStore id="Database" name="Database" />
+    <bpmn:dataStoreReference id="DataStore_Database" name="Database">
+      <bpmn:dataStoreRef>Database</bpmn:dataStoreRef>
+    </bpmn:dataStoreReference>
+    <bpmn:sequenceFlow id="Flow_PilihPanen" sourceRef="StartEvent_Sertifikasi" targetRef="Task_PilihPanen" />
+    <bpmn:sequenceFlow id="Flow_LoadHarvestData" sourceRef="Task_PilihPanen" targetRef="Task_LoadHarvestData" />
+    <bpmn:sequenceFlow id="Flow_BuatSertifikasi" sourceRef="Task_LoadHarvestData" targetRef="Task_BuatSertifikasi" />
+    <bpmn:sequenceFlow id="Flow_PilihKelasBenih" sourceRef="Task_BuatSertifikasi" targetRef="Task_PilihKelasBenih" />
+    <bpmn:sequenceFlow id="Flow_BuatLaporan" sourceRef="Task_PilihKelasBenih" targetRef="Task_BuatLaporanPemeriksaan" />
+    <bpmn:sequenceFlow id="Flow_InputDataInspeksi" sourceRef="Task_BuatLaporanPemeriksaan" targetRef="Task_InputDataInspeksi" />
+    <bpmn:sequenceFlow id="Flow_UploadDokumen" sourceRef="Task_InputDataInspeksi" targetRef="Task_UploadDokumen" />
+    <bpmn:sequenceFlow id="Flow_ValidasiLaporan" sourceRef="Task_UploadDokumen" targetRef="Task_ValidasiLaporan" />
+    <bpmn:sequenceFlow id="Flow_CheckReportNumber" sourceRef="Task_ValidasiLaporan" targetRef="Task_CheckReportNumber" />
+    <bpmn:sequenceFlow id="Flow_GatewayValidasi" sourceRef="Task_CheckReportNumber" targetRef="Gateway_ValidasiLaporan" />
+    <bpmn:sequenceFlow id="Flow_LaporanValid" name="Ya" sourceRef="Gateway_ValidasiLaporan" targetRef="Task_SimpanLaporan" />
+    <bpmn:sequenceFlow id="Flow_LaporanTidakValid" name="Tidak" sourceRef="Gateway_ValidasiLaporan" targetRef="EndEvent_LaporanTidakValid" />
+    <bpmn:sequenceFlow id="Flow_InsertReport" sourceRef="Task_SimpanLaporan" targetRef="Task_InsertReport" />
+    <bpmn:sequenceFlow id="Flow_EvaluasiHasil" sourceRef="Task_InsertReport" targetRef="Task_EvaluasiHasil" />
+    <bpmn:sequenceFlow id="Flow_GatewayKesimpulan" sourceRef="Task_EvaluasiHasil" targetRef="Gateway_Kesimpulan" />
+    <bpmn:sequenceFlow id="Flow_Lulus" name="LULUS" sourceRef="Gateway_Kesimpulan" targetRef="Task_UpdateStatusLulus" />
+    <bpmn:sequenceFlow id="Flow_TidakLulus" name="TIDAK LULUS" sourceRef="Gateway_Kesimpulan" targetRef="Task_UpdateStatusTidakLulus" />
+    <bpmn:sequenceFlow id="Flow_UpdateCertificationLulus" sourceRef="Task_UpdateStatusLulus" targetRef="Task_UpdateCertificationLulus" />
+    <bpmn:sequenceFlow id="Flow_UpdateCertificationTidakLulus" sourceRef="Task_UpdateStatusTidakLulus" targetRef="Task_UpdateCertificationTidakLulus" />
+    <bpmn:sequenceFlow id="Flow_TambahKeStok" sourceRef="Task_UpdateCertificationLulus" targetRef="Task_TambahKeStok" />
+    <bpmn:sequenceFlow id="Flow_InsertSeed" sourceRef="Task_TambahKeStok" targetRef="Task_InsertSeed" />
+    <bpmn:sequenceFlow id="Flow_LinkCertificationReport" sourceRef="Task_InsertSeed" targetRef="Task_LinkCertificationReport" />
+    <bpmn:sequenceFlow id="Flow_EndLulus" sourceRef="Task_LinkCertificationReport" targetRef="EndEvent_Lulus" />
+    <bpmn:sequenceFlow id="Flow_EndTidakLulus" sourceRef="Task_UpdateCertificationTidakLulus" targetRef="EndEvent_TidakLulus" />
+    <bpmn:association id="Association_LoadHarvest" sourceRef="Task_LoadHarvestData" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_CreateCertification" sourceRef="Task_BuatSertifikasi" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_CheckReportNumber" sourceRef="Task_CheckReportNumber" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_InsertReport" sourceRef="Task_InsertReport" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_UpdateLulus" sourceRef="Task_UpdateCertificationLulus" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_UpdateTidakLulus" sourceRef="Task_UpdateCertificationTidakLulus" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_InsertSeed" sourceRef="Task_InsertSeed" targetRef="DataStore_Database" />
+    <bpmn:association id="Association_LinkReport" sourceRef="Task_LinkCertificationReport" targetRef="DataStore_Database" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_2">
+    <bpmndi:BPMNPlane id="BPMNPlane_2" bpmnElement="ProsesSertifikasi">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_Sertifikasi">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="160" y="142" width="120" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_PilihPanen" bpmnElement="Task_PilihPanen">
+        <dc:Bounds x="270" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_LoadHarvestData" bpmnElement="Task_LoadHarvestData">
+        <dc:Bounds x="410" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_BuatSertifikasi" bpmnElement="Task_BuatSertifikasi">
+        <dc:Bounds x="550" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_PilihKelas" bpmnElement="Task_PilihKelasBenih">
+        <dc:Bounds x="690" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_BuatLaporan" bpmnElement="Task_BuatLaporanPemeriksaan">
+        <dc:Bounds x="830" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InputInspeksi" bpmnElement="Task_InputDataInspeksi">
+        <dc:Bounds x="970" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_Upload" bpmnElement="Task_UploadDokumen">
+        <dc:Bounds x="1110" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_Validasi" bpmnElement="Task_ValidasiLaporan">
+        <dc:Bounds x="1250" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_CheckReportNumber" bpmnElement="Task_CheckReportNumber">
+        <dc:Bounds x="1390" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Validasi" bpmnElement="Gateway_ValidasiLaporan" isMarkerVisible="true">
+        <dc:Bounds x="1555" y="92" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1540" y="65" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_SimpanLaporan" bpmnElement="Task_SimpanLaporan">
+        <dc:Bounds x="1665" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InsertReport" bpmnElement="Task_InsertReport">
+        <dc:Bounds x="1805" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_Evaluasi" bpmnElement="Task_EvaluasiHasil">
+        <dc:Bounds x="1945" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Kesimpulan" bpmnElement="Gateway_Kesimpulan" isMarkerVisible="true">
+        <dc:Bounds x="2110" y="92" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2095" y="65" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_UpdateLulus" bpmnElement="Task_UpdateStatusLulus">
+        <dc:Bounds x="2220" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_UpdateCertLulus" bpmnElement="Task_UpdateCertificationLulus">
+        <dc:Bounds x="2360" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_UpdateTidakLulus" bpmnElement="Task_UpdateStatusTidakLulus">
+        <dc:Bounds x="2220" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_UpdateCertTidakLulus" bpmnElement="Task_UpdateCertificationTidakLulus">
+        <dc:Bounds x="2360" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_TambahStok" bpmnElement="Task_TambahKeStok">
+        <dc:Bounds x="2520" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InsertSeed" bpmnElement="Task_InsertSeed">
+        <dc:Bounds x="2660" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_LinkReport" bpmnElement="Task_LinkCertificationReport">
+        <dc:Bounds x="2800" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndLulus" bpmnElement="EndEvent_Lulus">
+        <dc:Bounds x="2955" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2900" y="142" width="150" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndTidakLulus" bpmnElement="EndEvent_TidakLulus">
+        <dc:Bounds x="2515" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2496" y="315" width="120" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndTidakValid" bpmnElement="EndEvent_LaporanTidakValid">
+        <dc:Bounds x="1665" y="250" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1646" y="293" width="120" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataStore_Database" bpmnElement="DataStore_Database">
+        <dc:Bounds x="1100" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_PilihPanen" bpmnElement="Flow_PilihPanen">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="270" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_LoadHarvestData" bpmnElement="Flow_LoadHarvestData">
+        <di:waypoint x="370" y="117" />
+        <di:waypoint x="410" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_BuatSertifikasi" bpmnElement="Flow_BuatSertifikasi">
+        <di:waypoint x="510" y="117" />
+        <di:waypoint x="550" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_PilihKelasBenih" bpmnElement="Flow_PilihKelasBenih">
+        <di:waypoint x="650" y="117" />
+        <di:waypoint x="690" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_BuatLaporan" bpmnElement="Flow_BuatLaporan">
+        <di:waypoint x="790" y="117" />
+        <di:waypoint x="830" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InputDataInspeksi" bpmnElement="Flow_InputDataInspeksi">
+        <di:waypoint x="930" y="117" />
+        <di:waypoint x="970" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_UploadDokumen" bpmnElement="Flow_UploadDokumen">
+        <di:waypoint x="1070" y="117" />
+        <di:waypoint x="1110" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ValidasiLaporan" bpmnElement="Flow_ValidasiLaporan">
+        <di:waypoint x="1210" y="117" />
+        <di:waypoint x="1250" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CheckReportNumber" bpmnElement="Flow_CheckReportNumber">
+        <di:waypoint x="1350" y="117" />
+        <di:waypoint x="1390" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_GatewayValidasi" bpmnElement="Flow_GatewayValidasi">
+        <di:waypoint x="1490" y="117" />
+        <di:waypoint x="1555" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_LaporanValid" bpmnElement="Flow_LaporanValid">
+        <di:waypoint x="1605" y="117" />
+        <di:waypoint x="1665" y="117" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1620" y="99" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_LaporanTidakValid" bpmnElement="Flow_LaporanTidakValid">
+        <di:waypoint x="1580" y="142" />
+        <di:waypoint x="1580" y="250" />
+        <di:waypoint x="1683" y="268" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1590" y="200" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InsertReport" bpmnElement="Flow_InsertReport">
+        <di:waypoint x="1765" y="117" />
+        <di:waypoint x="1805" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EvaluasiHasil" bpmnElement="Flow_EvaluasiHasil">
+        <di:waypoint x="1905" y="117" />
+        <di:waypoint x="1945" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_GatewayKesimpulan" bpmnElement="Flow_GatewayKesimpulan">
+        <di:waypoint x="2045" y="117" />
+        <di:waypoint x="2110" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Lulus" bpmnElement="Flow_Lulus">
+        <di:waypoint x="2160" y="117" />
+        <di:waypoint x="2220" y="117" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2175" y="99" width="40" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_TidakLulus" bpmnElement="Flow_TidakLulus">
+        <di:waypoint x="2135" y="142" />
+        <di:waypoint x="2135" y="250" />
+        <di:waypoint x="2270" y="290" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2145" y="200" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_UpdateCertificationLulus" bpmnElement="Flow_UpdateCertificationLulus">
+        <di:waypoint x="2320" y="117" />
+        <di:waypoint x="2360" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_UpdateCertificationTidakLulus" bpmnElement="Flow_UpdateCertificationTidakLulus">
+        <di:waypoint x="2320" y="290" />
+        <di:waypoint x="2360" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_TambahKeStok" bpmnElement="Flow_TambahKeStok">
+        <di:waypoint x="2460" y="117" />
+        <di:waypoint x="2520" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InsertSeed" bpmnElement="Flow_InsertSeed">
+        <di:waypoint x="2620" y="117" />
+        <di:waypoint x="2660" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_LinkCertificationReport" bpmnElement="Flow_LinkCertificationReport">
+        <di:waypoint x="2760" y="117" />
+        <di:waypoint x="2800" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EndLulus" bpmnElement="Flow_EndLulus">
+        <di:waypoint x="2900" y="117" />
+        <di:waypoint x="2955" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EndTidakLulus" bpmnElement="Flow_EndTidakLulus">
+        <di:waypoint x="2460" y="290" />
+        <di:waypoint x="2533" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_LoadHarvest" bpmnElement="Association_LoadHarvest">
+        <di:waypoint x="460" y="157" />
+        <di:waypoint x="460" y="250" />
+        <di:waypoint x="1150" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_CreateCertification" bpmnElement="Association_CreateCertification">
+        <di:waypoint x="600" y="157" />
+        <di:waypoint x="600" y="250" />
+        <di:waypoint x="1150" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_CheckReportNumber" bpmnElement="Association_CheckReportNumber">
+        <di:waypoint x="1440" y="157" />
+        <di:waypoint x="1440" y="250" />
+        <di:waypoint x="1150" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_InsertReport" bpmnElement="Association_InsertReport">
+        <di:waypoint x="1855" y="157" />
+        <di:waypoint x="1855" y="250" />
+        <di:waypoint x="1150" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_UpdateLulus" bpmnElement="Association_UpdateLulus">
+        <di:waypoint x="2410" y="157" />
+        <di:waypoint x="2410" y="250" />
+        <di:waypoint x="1150" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_UpdateTidakLulus" bpmnElement="Association_UpdateTidakLulus">
+        <di:waypoint x="2410" y="330" />
+        <di:waypoint x="2410" y="250" />
+        <di:waypoint x="1150" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_InsertSeed" bpmnElement="Association_InsertSeed">
+        <di:waypoint x="2710" y="157" />
+        <di:waypoint x="2710" y="250" />
+        <di:waypoint x="1150" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_LinkReport" bpmnElement="Association_LinkReport">
+        <di:waypoint x="2850" y="157" />
+        <di:waypoint x="2850" y="250" />
+        <di:waypoint x="1150" y="290" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

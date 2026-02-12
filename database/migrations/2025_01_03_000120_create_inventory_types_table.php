@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('inventory_types', function (Blueprint $table) {
-            $table->id();
+            $table->string('inventory_type_id', 36)->primary();
             $table->string('category');
             $table->string('name'); // Nama Varietas/Komoditas
             $table->string('sku')->unique(); // ID Internal / SKU

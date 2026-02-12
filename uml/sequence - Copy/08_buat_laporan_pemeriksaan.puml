@@ -1,0 +1,76 @@
+@startuml Sequence Diagram - Buat Laporan Pemeriksaan
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Buat Laporan Pemeriksaan
+
+actor "Petugas Sertifikasi" as User
+participant "CertificationController" as Controller
+participant "Certification Model" as Certification
+participant "CertificationReport Model" as Report
+participant "Harvest Model" as Harvest
+participant "Plant Model" as Plant
+participant "Database" as DB
+
+User -> Controller: GET /certifications/create
+activate Controller
+Controller -> Controller: validateRole
+Controller -> Harvest: getAll
+activate Harvest
+Harvest -> DB: SELECT * FROM harvests WHERE status = ready
+DB --> Harvest: harvests[]
+Harvest --> Controller: harvests[]
+deactivate Harvest
+
+Controller -> Plant: getAll
+activate Plant
+Plant -> DB: SELECT * FROM plants
+DB --> Plant: plants[]
+Plant --> Controller: plants[]
+deactivate Plant
+
+Controller --> User: render form buat laporan
+deactivate Controller
+
+User -> Controller: POST /certifications data laporan
+activate Controller
+Controller -> Controller: validate
+Controller -> Harvest: findById
+activate Harvest
+Harvest -> DB: SELECT * FROM harvests WHERE id = ?
+DB --> Harvest: harvest data
+Harvest --> Controller: Harvest
+deactivate Harvest
+
+Controller -> Plant: findById
+activate Plant
+Plant -> DB: SELECT * FROM plants WHERE id = ?
+DB --> Plant: plant data
+Plant --> Controller: Plant
+deactivate Plant
+
+alt Validation Success
+    Controller -> Certification: create certification data
+    activate Certification
+    Certification -> DB: INSERT INTO certifications (harvest_id, plant_id, ...)
+    DB --> Certification: certification_id
+    Certification --> Controller: Certification
+    deactivate Certification
+    
+    Controller -> Report: create report data
+    activate Report
+    Report -> DB: INSERT INTO certification_reports certification_id report_number_bpsb
+    DB --> Report: report_id
+    Report --> Controller: Report
+    deactivate Report
+    
+    Controller --> User: redirect with success message
+else Validation Failed
+    Controller --> User: redirect errors
+endif
+deactivate Controller
+
+@enduml
+

@@ -4,18 +4,34 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasCustomId;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Sale extends Model
 {
     use HasFactory;
+    use HasCustomId;
+
+    protected $primaryKey = 'sale_id';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'receipt_number',
         'sale_date',
         'buyer_name',
         'buyer_contact',
+        'buyer_nik',
+        'buyer_category',
+        'buyer_category_custom',
+        'destination_province',
+        'destination_city',
+        'destination_district',
+        'destination_village',
+        'planned_location_name',
+        'estimated_planting_area',
+        'planting_location_id', // Tetap ada untuk backward compatibility
         'total_amount',
         'payment_method',
         'payment_status',
@@ -26,6 +42,7 @@ class Sale extends Model
     protected $casts = [
         'sale_date' => 'date',
         'total_amount' => 'decimal:2',
+        'estimated_planting_area' => 'decimal:2',
     ];
 
     /**
@@ -33,7 +50,15 @@ class Sale extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id', 'user_id');
+    }
+
+    /**
+     * Get the planting location where seeds were planted
+     */
+    public function plantingLocation(): BelongsTo
+    {
+        return $this->belongsTo(PlantingLocation::class, 'planting_location_id', 'planting_location_id');
     }
 
     /**
@@ -41,7 +66,7 @@ class Sale extends Model
      */
     public function items(): HasMany
     {
-        return $this->hasMany(SaleItem::class);
+        return $this->hasMany(SaleItem::class, 'sale_id', 'sale_id');
     }
 
     /**
@@ -87,7 +112,8 @@ class Sale extends Model
     {
         $year = date('Y');
         $lastSale = self::whereYear('sale_date', $year)
-            ->orderBy('id', 'desc')
+            ->orderBy('sale_date', 'desc')
+            ->orderBy('sale_id', 'desc')
             ->first();
 
         if ($lastSale) {

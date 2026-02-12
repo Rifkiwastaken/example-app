@@ -4,11 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasCustomId;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SaleItem extends Model
 {
     use HasFactory;
+    use HasCustomId;
+
+    protected $primaryKey = 'sale_item_id';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'sale_id',
@@ -31,7 +37,7 @@ class SaleItem extends Model
      */
     public function sale(): BelongsTo
     {
-        return $this->belongsTo(Sale::class);
+        return $this->belongsTo(Sale::class, 'sale_id', 'sale_id');
     }
 
     /**
@@ -39,7 +45,7 @@ class SaleItem extends Model
      */
     public function inventoryType(): BelongsTo
     {
-        return $this->belongsTo(InventoryType::class);
+        return $this->belongsTo(InventoryType::class, 'inventory_type_id', 'inventory_type_id');
     }
 
     /**
@@ -47,7 +53,7 @@ class SaleItem extends Model
      */
     public function inventoryLot(): BelongsTo
     {
-        return $this->belongsTo(InventoryLot::class);
+        return $this->belongsTo(InventoryLot::class, 'inventory_lot_id', 'inventory_lot_id');
     }
 }
 

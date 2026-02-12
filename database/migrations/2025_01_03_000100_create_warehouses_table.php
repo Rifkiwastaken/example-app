@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('warehouses', function (Blueprint $table) {
-            $table->id();
+            $table->string('warehouse_id', 36)->primary();
             $table->string('name');
             $table->string('internal_id')->unique();
             $table->enum('tracking_type', ['bin_separated', 'warehouse_only'])->default('warehouse_only');

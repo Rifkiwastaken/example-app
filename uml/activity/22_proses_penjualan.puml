@@ -1,0 +1,54 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Proses Penjualan
+
+|#LightBlue|Petugas BBI|
+start
+:Setelah pilih list untuk dijual;
+:Semua item sudah dipilih;
+:Klik proses penjualan;
+
+|#LightGreen|Sistem|
+:Validasi semua item penjualan;
+:Check stok untuk setiap item;
+:Calculate total harga keseluruhan;
+:Apply metode FIFO untuk pengurangan stok;
+
+if (Semua item valid?) then (Ya)
+    :Begin database transaction;
+    :Create record penjualan di tabel sales;
+    :Create record sale items di tabel sale_items;
+    :Update stok di database menggunakan FIFO;
+    :Create transaction records di inventory_transactions;
+    :Generate nomor nota penjualan;
+    :Commit transaction;
+    :Success message;
+    :Redirect ke halaman detail penjualan;
+    |#LightBlue|Petugas BBI|
+    :Lihat nota penjualan;
+    :Print/cetak nota (jika perlu);
+    :Lihat detail penjualan;
+else (Tidak)
+    :Rollback transaction;
+    :Error: ada item yang stok tidak cukup;
+    :Tampilkan item yang bermasalah;
+    :Kembali ke form;
+    |#LightBlue|Petugas BBI|
+    :Lihat form dengan pesan error;
+endif
+
+stop
+
+@enduml

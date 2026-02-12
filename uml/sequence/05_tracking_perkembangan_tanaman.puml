@@ -1,0 +1,58 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Trading Perkembangan Tanaman
+
+actor "Kepala Satgas/Penangkar" as User
+participant "PlantingController" as Controller
+participant "Planting" as Planting
+participant "Plant" as Plant
+participant "Database" as DB
+
+User -> User: akses halaman tracking perkembangan()
+User -> User: pilih penanaman yang akan di-track()
+User -> Controller: show(planting_id)
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Planting: Planting::with('plant')->findOrFail(planting_id)
+activate Planting
+Planting -> DB: SELECT * FROM plantings LEFT JOIN plants WHERE plantings.id = ?
+DB --> Planting: return planting dengan data lengkap
+Planting --> Controller: return Planting
+deactivate Planting
+
+Controller --> User: return view tracking dengan data()
+deactivate Controller
+User -> User: tampilkan form tracking perkembangan()
+
+User -> User: input perkembangan tanaman()
+User -> Controller: update(Request, planting_id)
+activate Controller
+Controller -> Controller: validate(Request)
+Controller -> Planting: Planting::findOrFail(planting_id)
+activate Planting
+Planting -> DB: SELECT * FROM plantings WHERE id = ?
+DB --> Planting: return data penanaman
+Planting --> Controller: return Planting
+deactivate Planting
+
+alt Data Valid
+    Controller -> Planting: Planting::update(data)
+    activate Planting
+    Planting -> DB: UPDATE plantings SET germination_stage = ? WHERE id = ?
+    DB --> Planting: return updated
+    Planting --> Controller: return updated Planting
+    deactivate Planting
+    
+    Controller --> User: redirect back dengan success message()
+    User -> User: tampilkan pesan perkembangan berhasil diupdate()
+else Data Tidak Valid
+    Controller --> User: redirect back dengan validation errors()
+    User -> User: tampilkan form dengan pesan error()
+end
+deactivate Controller
+
+@enduml

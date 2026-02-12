@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Detail Penjualan: ' . $sale->receipt_number . ' - SIBIT')
+@section('title', 'Detail Penjualan: ' . $sale->receipt_number . ' - SIBESTI')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">

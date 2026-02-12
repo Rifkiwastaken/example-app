@@ -18,19 +18,19 @@ return new class extends Migration
             $table->json('attachments')->nullable()->after('checklist');
             $table->enum('association', ['penanaman', 'sertifikasi', 'gudang', 'penjualan'])->nullable()->after('attachments');
             $table->enum('new_status', ['dilakukan', 'dalam_progress', 'selesai', 'tidak_selesai', 'terlewat', 'ditinggalkan'])->default('dilakukan')->after('association');
-            $table->foreignId('assigned_to')->nullable()->constrained('users')->onDelete('set null')->after('new_status');
+            $table->string('assigned_to', 36)->nullable()->foreign('user_id')->references('user_id')->on('users')->onDelete('set null')->after('new_status');
             $table->enum('new_priority', ['tertinggi', 'tinggi', 'medium', 'rendah', 'sangat_rendah'])->default('medium')->after('assigned_to');
             $table->date('start_date')->nullable()->after('new_priority');
             $table->time('start_time')->nullable()->after('start_date');
             $table->time('due_time')->nullable()->after('due_date');
-            $table->foreignId('template_id')->nullable()->after('due_time');
-            $table->foreignId('series_id')->nullable()->after('template_id');
+            $table->string('template_id', 36)->nullable()->after('due_time');
+            $table->string('series_id', 36)->nullable()->after('template_id');
         });
 
         // Add foreign key constraints after table modification
         Schema::table('tasks', function (Blueprint $table) {
-            $table->foreign('template_id')->references('id')->on('task_templates')->onDelete('set null');
-            $table->foreign('series_id')->references('id')->on('task_series')->onDelete('set null');
+            $table->foreign('template_id')->references('task_template_id')->on('task_templates')->onDelete('set null');
+            $table->foreign('series_id')->references('task_series_id')->on('task_series')->onDelete('set null');
         });
     }
 
@@ -52,6 +52,9 @@ return new class extends Migration
         });
     }
 };
+
+
+
 
 
 

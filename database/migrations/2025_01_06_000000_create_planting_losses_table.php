@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('planting_losses', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('planting_id')->constrained('plantings')->cascadeOnDelete();
+            $table->string('planting_loss_id', 36)->primary();
+            $table->string('planting_id', 36)->cascadeOnDelete();
             $table->date('loss_date');
             $table->decimal('loss_amount', 12, 2);
             $table->string('loss_reason')->nullable();
@@ -30,5 +30,8 @@ return new class extends Migration
         Schema::dropIfExists('planting_losses');
     }
 };
+
+
+
 
 

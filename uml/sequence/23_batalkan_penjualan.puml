@@ -1,0 +1,88 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Batalkan Penjualan
+
+actor "Petugas BBI" as User
+participant "SaleController" as Controller
+participant "Sale" as Sale
+participant "SaleItem" as SaleItem
+participant "InventoryLot" as Lot
+participant "InventoryTransaction" as Transaction
+participant "Database" as DB
+
+User -> User: dari daftar penjualan()
+User -> User: pilih penjualan yang akan dibatalkan()
+User -> User: klik batalkan penjualan()
+User -> User: konfirmasi pembatalan()
+User -> Controller: cancel(sale_id)
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Sale: Sale::findOrFail(sale_id)
+activate Sale
+Sale -> DB: SELECT * FROM sales WHERE id = ?
+DB --> Sale: return sale data
+Sale --> Controller: return Sale
+deactivate Sale
+
+Controller -> Controller: checkCanCancel()
+
+alt Dapat Dibatalkan
+    Controller -> SaleItem: SaleItem::where('sale_id', sale_id)->get()
+    activate SaleItem
+    SaleItem -> DB: SELECT * FROM sale_items WHERE sale_id = ?
+    DB --> SaleItem: return sale_items[]
+    SaleItem --> Controller: return sale_items[]
+    deactivate SaleItem
+    
+    Controller -> DB: BEGIN TRANSACTION
+    
+    loop For each sale item
+        Controller -> Transaction: InventoryTransaction::where('sale_id', sale_id)->get()
+        activate Transaction
+        Transaction -> DB: SELECT * FROM inventory_transactions WHERE sale_id = ?
+        DB --> Transaction: return transactions[]
+        Transaction --> Controller: return transactions[]
+        deactivate Transaction
+        
+        loop For each transaction
+            Controller -> Lot: InventoryLot::findOrFail(lot_id)
+            activate Lot
+            Lot -> DB: SELECT * FROM inventory_lots WHERE id = ?
+            DB --> Lot: return lot data
+            Lot --> Controller: return Lot
+            Lot -> Lot: Lot::restoreStock()
+            Lot -> DB: UPDATE inventory_lots SET quantity = quantity + ?, status = 'available' WHERE id = ?
+            DB --> Lot: return restored
+            Lot --> Controller: return restored
+            deactivate Lot
+        end
+    end
+    
+    Controller -> Sale: Sale::update(['status' => 'dibatalkan'])
+    activate Sale
+    Sale -> DB: UPDATE sales SET status = 'dibatalkan' WHERE id = ?
+    DB --> Sale: return updated
+    Sale --> Controller: return updated
+    deactivate Sale
+    
+    Controller -> Transaction: InventoryTransaction::create(['transaction_type' => 'cancellation'])
+    activate Transaction
+    Transaction -> DB: INSERT INTO inventory_transactions VALUES
+    DB --> Transaction: return transaction_id
+    Transaction --> Controller: return created
+    deactivate Transaction
+    
+    Controller -> DB: COMMIT TRANSACTION
+    Controller --> User: redirect back dengan success message()
+    User -> User: tampilkan pesan penjualan berhasil dibatalkan()
+else Tidak Dapat Dibatalkan
+    Controller --> User: redirect back dengan error message()
+    User -> User: tampilkan pesan penjualan tidak dapat dibatalkan()
+end
+deactivate Controller
+
+@enduml

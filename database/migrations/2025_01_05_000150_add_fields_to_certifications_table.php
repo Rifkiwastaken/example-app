@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::table('certifications', function (Blueprint $table) {
             if (!Schema::hasColumn('certifications', 'planting_location_id')) {
-                $table->foreignId('planting_location_id')->nullable()->after('harvest_id')->constrained('planting_locations')->onDelete('set null');
+                $table->string('planting_location_id', 36)->nullable()->after('harvest_id')->foreign('planting_location_id')->references('planting_location_id')->on('planting_locations')->onDelete('set null');
             }
             if (!Schema::hasColumn('certifications', 'plant_id')) {
-                $table->foreignId('plant_id')->nullable()->after('planting_location_id')->constrained('plants')->onDelete('set null');
+                $table->string('plant_id', 36)->nullable()->after('planting_location_id')->foreign('plant_id')->references('plant_id')->on('plants')->onDelete('set null');
             }
         });
     }
@@ -38,6 +38,9 @@ return new class extends Migration
         });
     }
 };
+
+
+
 
 
 

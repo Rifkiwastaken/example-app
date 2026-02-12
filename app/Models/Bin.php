@@ -4,12 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasCustomId;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Bin extends Model
 {
     use HasFactory;
+    use HasCustomId;
+
+    protected $primaryKey = 'bin_id';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'warehouse_id',
@@ -29,7 +35,7 @@ class Bin extends Model
      */
     public function warehouse(): BelongsTo
     {
-        return $this->belongsTo(Warehouse::class);
+        return $this->belongsTo(Warehouse::class, 'warehouse_id', 'warehouse_id');
     }
 
     /**
@@ -37,7 +43,7 @@ class Bin extends Model
      */
     public function inventoryLots(): HasMany
     {
-        return $this->hasMany(InventoryLot::class);
+        return $this->hasMany(InventoryLot::class, 'bin_id', 'bin_id');
     }
 
     /**

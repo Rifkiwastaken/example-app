@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Tambah Akun - SIBIT')
+@section('title', 'Tambah Akun - SIBESTI')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -84,10 +84,9 @@
                         <div class="form-text">
                             <small>
                                 <strong>Admin/Kepala Seksi:</strong> Akses penuh ke semua menu dan fitur<br>
-                                <strong>Kepala Satuan Tugas:</strong> Akses fitur penanaman dan tugas<br>
-                                <strong>Petugas Sertifikasi:</strong> Akses fitur sertifikasi dan tugas<br>
-                                <strong>Petugas Gudang:</strong> Akses fitur gudang/stok dan tugas<br>
-                                <strong>Petugas BBI:</strong> Akses fitur penjualan dan tugas<br>
+                                <strong>Kepala Satuan Tugas:</strong> Akses fitur penanaman<br>
+                                <strong>Petugas Gudang:</strong> Akses fitur gudang/stok<br>
+                                <strong>Petugas BBI:</strong> Akses fitur penjualan<br>
                                 <strong>Penangkar:</strong> Akses khusus untuk penangkar benih
                             </small>
                         </div>

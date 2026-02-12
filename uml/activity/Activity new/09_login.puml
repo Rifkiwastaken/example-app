@@ -1,0 +1,60 @@
+@startuml
+' Referensi: Use Case Overview (00_use_case_overview.puml)
+' Use case 09: Login
+' Aktor: Admin/Kepala Sek, Petugas BBI, Penangkar/Kepala Satgas, Petugas Gudang
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Login
+
+|#LightBlue|User|
+start
+:Masuk ke halaman login;
+
+|#LightGreen|Sistem|
+:Tampilkan form login;
+
+|#LightBlue|User|
+:Masukkan email/username;
+:Masukkan password;
+:Klik tombol login;
+
+|#LightGreen|Sistem|
+:Validasi input;
+if (Input valid?) then (Tidak)
+    :Tampilkan pesan error;
+    stop
+endif
+
+:Query user dari database;
+if (User ditemukan?) then (Tidak)
+    :Tampilkan pesan error;
+    stop
+endif
+
+:Verifikasi password;
+if (Password benar?) then (Tidak)
+    :Tampilkan pesan error;
+    stop
+endif
+
+:Generate session;
+:Set role dan permissions;
+:Redirect ke dashboard;
+
+|#LightBlue|User|
+:Masuk ke dashboard;
+
+stop
+
+@enduml

@@ -1,0 +1,259 @@
+@startuml Sequence Diagram - Modul Manajemen Stok dan Gudang
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Modul Manajemen Stok dan Gudang
+
+actor "Petugas Gudang/Admin" as User
+participant "InventoryTypeController" as InvController
+participant "WarehouseController" as WhController
+participant "InventoryType Model" as InvType
+participant "InventoryTypeSeed Model" as Seed
+participant "Warehouse Model" as Warehouse
+participant "Bin Model" as Bin
+participant "InventoryLot Model" as Lot
+participant "InventoryTransaction Model" as Transaction
+participant "SeedHistory Model" as History
+participant "Database" as DB
+
+' ============================================
+' Use Case: Lihat Daftar Stok
+' ============================================
+== Lihat Daftar Stok ==
+
+User -> InvController: GET /seed-stock
+activate InvController
+InvController -> InvController: validateRole()
+InvController -> InvType: with('seeds', 'lots')->get()
+activate InvType
+InvType -> DB: SELECT * FROM inventory_types\nLEFT JOIN inventory_type_seeds ON ...
+DB --> InvType: inventory_types[]
+InvType --> InvController: inventory_types[]
+deactivate InvType
+
+InvController -> Seed: calculateTotalStock()
+activate Seed
+Seed -> DB: SELECT SUM(total_seed_quantity) FROM inventory_type_seeds\nWHERE inventory_type_id = ?
+DB --> Seed: total_stock
+Seed --> InvController: total_stock
+deactivate Seed
+
+InvController --> User: render daftar stok
+deactivate InvController
+
+' ============================================
+' Use Case: Tambah Stok Baru
+' ============================================
+== Tambah Stok Baru ==
+
+User -> InvController: GET /seed-stock/{id}/certified-seeds
+activate InvController
+InvController -> InvController: validateRole()
+InvController -> InvType: find(id)
+activate InvType
+InvType -> DB: SELECT * FROM inventory_types WHERE id = ?
+DB --> InvType: inventory_type data
+InvType --> Controller: InvType
+deactivate InvType
+
+InvController -> DB: SELECT * FROM certification_reports\nWHERE seed_class_result = 'LULUS'\nAND NOT EXISTS (SELECT 1 FROM inventory_type_seeds\nWHERE certification_report_id = ?)
+DB --> InvController: available_certifications[]
+InvController --> User: render form tambah stok
+deactivate InvController
+
+User -> InvController: POST /seed-stock/{id}/add-certified-seed (data)
+activate InvController
+InvController -> InvController: validate(request)
+InvController -> InvType: find(id)
+activate InvType
+InvType -> DB: SELECT * FROM inventory_types WHERE id = ?
+DB --> InvType: inventory_type data
+InvType --> InvController: InvType
+deactivate InvType
+
+alt Validation Success
+    InvController -> Seed: create(seed data)
+    activate Seed
+    Seed -> DB: INSERT INTO inventory_type_seeds\n(inventory_type_id, plant_id, quantity, ...)
+    DB --> Seed: seed_id
+    Seed --> InvController: Seed
+    deactivate Seed
+    
+    InvController -> History: create(['action' => 'create', ...])
+    activate History
+    History -> DB: INSERT INTO seed_histories\n(inventory_type_seed_id, action, ...)
+    DB --> History: history_id
+    History --> InvController: created
+    deactivate History
+    
+    InvController --> User: redirect with success message
+else Validation Failed
+    InvController --> User: redirect back with errors
+endif
+deactivate InvController
+
+' ============================================
+' Use Case: Kelola Gudang
+' ============================================
+== Kelola Gudang ==
+
+User -> WhController: GET /warehouse-locations
+activate WhController
+WhController -> WhController: validateRole()
+WhController -> Warehouse: getAll()
+activate Warehouse
+Warehouse -> DB: SELECT * FROM warehouses
+DB --> Warehouse: warehouses[]
+Warehouse --> WhController: warehouses[]
+deactivate Warehouse
+
+WhController --> User: render daftar gudang
+deactivate WhController
+
+' Tambah Gudang
+User -> WhController: POST /warehouse-locations (data)
+activate WhController
+WhController -> WhController: validate(request)
+WhController -> Warehouse: create(data)
+activate Warehouse
+Warehouse -> DB: INSERT INTO warehouses (name, address, capacity, ...)
+DB --> Warehouse: warehouse_id
+Warehouse --> WhController: Warehouse
+deactivate Warehouse
+
+WhController --> User: redirect with success message
+deactivate WhController
+
+' Edit Gudang
+User -> WhController: PUT /warehouse-locations/{id} (data)
+activate WhController
+WhController -> Warehouse: find(id)
+activate Warehouse
+Warehouse -> DB: SELECT * FROM warehouses WHERE id = ?
+DB --> Warehouse: warehouse data
+Warehouse --> WhController: Warehouse
+deactivate Warehouse
+
+WhController -> Warehouse: update(data)
+activate Warehouse
+Warehouse -> DB: UPDATE warehouses SET ... WHERE id = ?
+DB --> Warehouse: updated
+Warehouse --> WhController: updated
+deactivate Warehouse
+
+WhController --> User: redirect with success message
+deactivate WhController
+
+' ============================================
+' Use Case: Kelola Bin
+' ============================================
+== Kelola Bin ==
+
+User -> WhController: POST /warehouse-locations/{id}/bins (data)
+activate WhController
+WhController -> WhController: validate(request)
+WhController -> Warehouse: find(warehouse_id)
+activate Warehouse
+Warehouse -> DB: SELECT * FROM warehouses WHERE id = ?
+DB --> Warehouse: warehouse data
+Warehouse --> WhController: Warehouse
+deactivate Warehouse
+
+WhController -> Bin: create(data)
+activate Bin
+Bin -> DB: INSERT INTO bins (warehouse_id, name, internal_id, ...)
+DB --> Bin: bin_id
+Bin --> WhController: Bin
+deactivate Bin
+
+WhController --> User: redirect with success message
+deactivate WhController
+
+' ============================================
+' Use Case: Adjustment Stok
+' ============================================
+== Adjustment Stok ==
+
+User -> InvController: POST /seed-stock/{id}/stock-adjustment (data)
+activate InvController
+InvController -> InvController: validateRole()
+InvController -> InvController: validate(request)
+InvController -> Seed: find(seed_id)
+activate Seed
+Seed -> DB: SELECT * FROM inventory_type_seeds WHERE id = ?
+DB --> Seed: seed data
+Seed --> InvController: Seed
+deactivate Seed
+
+alt Adjustment Type = Penambahan
+    InvController -> Seed: update(['total_seed_quantity' => old + adjustment])
+    activate Seed
+    Seed -> DB: UPDATE inventory_type_seeds\nSET total_seed_quantity = ? WHERE id = ?
+    DB --> Seed: updated
+    Seed --> InvController: updated
+    deactivate Seed
+else Adjustment Type = Pengurangan
+    alt Stok Cukup
+        InvController -> Seed: update(['total_seed_quantity' => old - adjustment])
+        activate Seed
+        Seed -> DB: UPDATE inventory_type_seeds\nSET total_seed_quantity = ? WHERE id = ?
+        DB --> Seed: updated
+        Seed --> InvController: updated
+        deactivate Seed
+    else Stok Tidak Cukup
+        InvController --> User: error: stok tidak cukup
+    endif
+endif
+
+InvController -> Transaction: create(['transaction_type' => 'adjustment', ...])
+activate Transaction
+Transaction -> DB: INSERT INTO inventory_transactions\n(transaction_type, quantity, ...)
+DB --> Transaction: transaction_id
+Transaction --> InvController: created
+deactivate Transaction
+
+InvController -> History: create(['action' => 'adjustment', ...])
+activate History
+History -> DB: INSERT INTO seed_histories\n(inventory_type_seed_id, action, ...)
+DB --> History: history_id
+History --> InvController: created
+deactivate History
+
+InvController --> User: redirect with success message
+deactivate InvController
+
+' ============================================
+' Use Case: Lihat History Transaksi
+' ============================================
+== Lihat History Transaksi ==
+
+User -> InvController: GET /seed-stock/{id}?tab=history
+activate InvController
+InvController -> InvController: validateRole()
+InvController -> InvType: find(id)
+activate InvType
+InvType -> DB: SELECT * FROM inventory_types WHERE id = ?
+DB --> InvType: inventory_type data
+InvType --> InvController: InvType
+deactivate InvType
+
+InvController -> History: where('inventory_type_seed_id', ...)->get()
+activate History
+History -> DB: SELECT * FROM seed_histories\nWHERE inventory_type_seed_id IN (...)\nORDER BY created_at DESC
+DB --> History: histories[]
+History --> InvController: histories[]
+deactivate History
+
+InvController -> Transaction: where('inventory_type_id', id)->get()
+activate Transaction
+Transaction -> DB: SELECT * FROM inventory_transactions\nWHERE inventory_type_id = ?\nORDER BY created_at DESC
+DB --> Transaction: transactions[]
+Transaction --> InvController: transactions[]
+deactivate Transaction
+
+InvController --> User: render halaman history
+deactivate InvController
+
+@enduml

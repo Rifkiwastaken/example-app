@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::table('tasks', function (Blueprint $table) {
             if (!Schema::hasColumn('tasks', 'planting_location_id')) {
-                $table->foreignId('planting_location_id')->nullable()->after('location_tagged')->constrained('planting_locations')->onDelete('cascade');
+                $table->string('planting_location_id', 36)->nullable()->after('location_tagged')->foreign('planting_location_id')->references('planting_location_id')->on('planting_locations')->onDelete('cascade');
             }
             if (!Schema::hasColumn('tasks', 'planting_id')) {
-                $table->foreignId('planting_id')->nullable()->after('planting_location_id')->constrained('plantings')->onDelete('cascade');
+                $table->string('planting_id', 36)->nullable()->after('planting_location_id')->foreign('planting_id')->references('planting_id')->on('plantings')->onDelete('cascade');
             }
             if (!Schema::hasColumn('tasks', 'task_color')) {
                 $table->string('task_color')->nullable()->after('planting_id');

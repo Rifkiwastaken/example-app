@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" id="Defs_Sertifikasi_Clean" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_Sertifikasi" name="Proses Sertifikasi" isExecutable="true">
+    <bpmn:startEvent id="Start_Sertifikasi" name="Mulai" />
+    <bpmn:userTask id="User_PilihPanen" name="Pilih Hasil Panen" />
+    <bpmn:userTask id="User_PilihKelas" name="Pilih Kelas Benih" />
+    <bpmn:userTask id="User_BuatLaporan" name="Isi Laporan Inspeksi" />
+    <bpmn:serviceTask id="Srv_ValidasiLaporan" name="Validasi Laporan" />
+    <bpmn:exclusiveGateway id="Gw_LaporanValid" name="Laporan Valid?" />
+    <bpmn:serviceTask id="Srv_SimpanLaporan" name="Simpan Laporan" />
+    <bpmn:userTask id="User_Evaluasi" name="Evaluasi Hasil" />
+    <bpmn:exclusiveGateway id="Gw_Kesimpulan" name="Kesimpulan" />
+    <bpmn:serviceTask id="Srv_UpdateLulus" name="Update Status LULUS" />
+    <bpmn:serviceTask id="Srv_UpdateTidakLulus" name="Update Status TIDAK LULUS" />
+    <bpmn:serviceTask id="Srv_TambahStok" name="Tambah ke Stok (Jika Lulus)" />
+    <bpmn:endEvent id="End_Sertifikasi" name="Selesai" />
+
+    <bpmn:sequenceFlow id="SFlow_1" sourceRef="Start_Sertifikasi" targetRef="User_PilihPanen" />
+    <bpmn:sequenceFlow id="SFlow_2" sourceRef="User_PilihPanen" targetRef="User_PilihKelas" />
+    <bpmn:sequenceFlow id="SFlow_3" sourceRef="User_PilihKelas" targetRef="User_BuatLaporan" />
+    <bpmn:sequenceFlow id="SFlow_4" sourceRef="User_BuatLaporan" targetRef="Srv_ValidasiLaporan" />
+    <bpmn:sequenceFlow id="SFlow_5" sourceRef="Srv_ValidasiLaporan" targetRef="Gw_LaporanValid" />
+    <bpmn:sequenceFlow id="SFlow_6" sourceRef="Gw_LaporanValid" targetRef="Srv_SimpanLaporan">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[valid]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SFlow_7" sourceRef="Gw_LaporanValid" targetRef="User_BuatLaporan">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[!valid]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SFlow_8" sourceRef="Srv_SimpanLaporan" targetRef="User_Evaluasi" />
+    <bpmn:sequenceFlow id="SFlow_9" sourceRef="User_Evaluasi" targetRef="Gw_Kesimpulan" />
+    <bpmn:sequenceFlow id="SFlow_10" sourceRef="Gw_Kesimpulan" targetRef="Srv_UpdateLulus">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[lulus]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SFlow_11" sourceRef="Gw_Kesimpulan" targetRef="Srv_UpdateTidakLulus">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[!lulus]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SFlow_12" sourceRef="Srv_UpdateLulus" targetRef="Srv_TambahStok" />
+    <bpmn:sequenceFlow id="SFlow_13" sourceRef="Srv_TambahStok" targetRef="End_Sertifikasi" />
+    <bpmn:sequenceFlow id="SFlow_14" sourceRef="Srv_UpdateTidakLulus" targetRef="End_Sertifikasi" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diag_Sertifikasi_Clean">
+    <bpmndi:BPMNPlane id="Plane_Sertifikasi_Clean" bpmnElement="Process_Sertifikasi">
+      <bpmndi:BPMNShape id="DI_Start_Sertifikasi" bpmnElement="Start_Sertifikasi">
+        <omgdc:Bounds x="120" y="140" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_User_PilihPanen" bpmnElement="User_PilihPanen">
+        <omgdc:Bounds x="190" y="120" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_User_PilihKelas" bpmnElement="User_PilihKelas">
+        <omgdc:Bounds x="360" y="120" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_User_BuatLaporan" bpmnElement="User_BuatLaporan">
+        <omgdc:Bounds x="530" y="120" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Srv_ValidasiLaporan" bpmnElement="Srv_ValidasiLaporan">
+        <omgdc:Bounds x="700" y="120" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Gw_LaporanValid" bpmnElement="Gw_LaporanValid" isMarkerVisible="true">
+        <omgdc:Bounds x="880" y="135" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Srv_SimpanLaporan" bpmnElement="Srv_SimpanLaporan">
+        <omgdc:Bounds x="1000" y="120" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_User_Evaluasi" bpmnElement="User_Evaluasi">
+        <omgdc:Bounds x="1180" y="120" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Gw_Kesimpulan" bpmnElement="Gw_Kesimpulan" isMarkerVisible="true">
+        <omgdc:Bounds x="1360" y="135" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Srv_UpdateLulus" bpmnElement="Srv_UpdateLulus">
+        <omgdc:Bounds x="1480" y="80" width="160" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Srv_UpdateTidakLulus" bpmnElement="Srv_UpdateTidakLulus">
+        <omgdc:Bounds x="1480" y="200" width="160" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Srv_TambahStok" bpmnElement="Srv_TambahStok">
+        <omgdc:Bounds x="1680" y="80" width="160" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_End_Sertifikasi" bpmnElement="End_Sertifikasi">
+        <omgdc:Bounds x="1880" y="140" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="DI_SFlow_1" bpmnElement="SFlow_1">
+        <omgdi:waypoint x="156" y="158" />
+        <omgdi:waypoint x="190" y="158" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_SFlow_2" bpmnElement="SFlow_2">
+        <omgdi:waypoint x="330" y="158" />
+        <omgdi:waypoint x="360" y="158" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_SFlow_3" bpmnElement="SFlow_3">
+        <omgdi:waypoint x="500" y="158" />
+        <omgdi:waypoint x="530" y="158" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_SFlow_4" bpmnElement="SFlow_4">
+        <omgdi:waypoint x="670" y="158" />
+        <omgdi:waypoint x="700" y="158" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_SFlow_5" bpmnElement="SFlow_5">
+        <omgdi:waypoint x="840" y="158" />
+        <omgdi:waypoint x="880" y="158" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_SFlow_6" bpmnElement="SFlow_6">
+        <omgdi:waypoint x="930" y="158" />
+        <omgdi:waypoint x="1000" y="158" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_SFlow_7" bpmnElement="SFlow_7">
+        <omgdi:waypoint x="905" y="185" />
+        <omgdi:waypoint x="905" y="240" />
+        <omgdi:waypoint x="600" y="240" />
+        <omgdi:waypoint x="600" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_SFlow_8" bpmnElement="SFlow_8">
+        <omgdi:waypoint x="1140" y="158" />
+        <omgdi:waypoint x="1180" y="158" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_SFlow_9" bpmnElement="SFlow_9">
+        <omgdi:waypoint x="1320" y="158" />
+        <omgdi:waypoint x="1360" y="158" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_SFlow_10" bpmnElement="SFlow_10">
+        <omgdi:waypoint x="1410" y="158" />
+        <omgdi:waypoint x="1480" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_SFlow_11" bpmnElement="SFlow_11">
+        <omgdi:waypoint x="1410" y="158" />
+        <omgdi:waypoint x="1480" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_SFlow_12" bpmnElement="SFlow_12">
+        <omgdi:waypoint x="1640" y="120" />
+        <omgdi:waypoint x="1680" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_SFlow_13" bpmnElement="SFlow_13">
+        <omgdi:waypoint x="1840" y="120" />
+        <omgdi:waypoint x="1880" y="158" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_SFlow_14" bpmnElement="SFlow_14">
+        <omgdi:waypoint x="1640" y="240" />
+        <omgdi:waypoint x="1880" y="176" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

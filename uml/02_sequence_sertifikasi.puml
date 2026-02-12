@@ -1,0 +1,245 @@
+@startuml Sequence Diagram - Modul Sertifikasi
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Modul Sertifikasi
+
+actor "Petugas Sertifikasi" as User
+participant "CertificationController" as Controller
+participant "Certification Model" as Certification
+participant "CertificationReport Model" as Report
+participant "Harvest Model" as Harvest
+participant "Plant Model" as Plant
+participant "Database" as DB
+participant "Storage" as Storage
+
+' ============================================
+' Use Case: Lihat Daftar Sertifikasi
+' ============================================
+== Lihat Daftar Sertifikasi ==
+
+User -> Controller: GET /certifications
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Certification: with('harvest', 'plant')->get()
+activate Certification
+Certification -> DB: SELECT * FROM certifications\nLEFT JOIN harvests ON ...
+DB --> Certification: certifications[]
+Certification --> Controller: certifications[]
+deactivate Certification
+
+Controller --> User: render daftar sertifikasi
+deactivate Controller
+
+' ============================================
+' Use Case: Buat Laporan Pemeriksaan
+' ============================================
+== Buat Laporan Pemeriksaan ==
+
+User -> Controller: GET /certifications/create
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Harvest: getAll()
+activate Harvest
+Harvest -> DB: SELECT * FROM harvests WHERE status = 'ready'
+DB --> Harvest: harvests[]
+Harvest --> Controller: harvests[]
+deactivate Harvest
+
+Controller -> Plant: getAll()
+activate Plant
+Plant -> DB: SELECT * FROM plants
+DB --> Plant: plants[]
+Plant --> Controller: plants[]
+deactivate Plant
+
+Controller --> User: render form buat laporan
+deactivate Controller
+
+User -> Controller: POST /certifications (data laporan)
+activate Controller
+Controller -> Controller: validate(request)
+Controller -> Harvest: find(harvest_id)
+activate Harvest
+Harvest -> DB: SELECT * FROM harvests WHERE id = ?
+DB --> Harvest: harvest data
+Harvest --> Controller: Harvest
+deactivate Harvest
+
+Controller -> Plant: find(plant_id)
+activate Plant
+Plant -> DB: SELECT * FROM plants WHERE id = ?
+DB --> Plant: plant data
+Plant --> Controller: Plant
+deactivate Plant
+
+alt Validation Success
+    Controller -> Certification: create(certification data)
+    activate Certification
+    Certification -> DB: INSERT INTO certifications (harvest_id, plant_id, ...)
+    DB --> Certification: certification_id
+    Certification --> Controller: Certification
+    deactivate Certification
+    
+    Controller -> Report: create(report data)
+    activate Report
+    Report -> DB: INSERT INTO certification_reports\n(certification_id, report_number_bpsb, ...)
+    DB --> Report: report_id
+    Report --> Controller: Report
+    deactivate Report
+    
+    Controller --> User: redirect with success message
+else Validation Failed
+    Controller --> User: redirect back with errors
+endif
+deactivate Controller
+
+' ============================================
+' Use Case: Upload Dokumen Scan
+' ============================================
+== Upload Dokumen Scan ==
+
+User -> Controller: POST /certifications/{id}/reports (with file)
+activate Controller
+Controller -> Controller: validateFile(file)
+Controller -> Storage: store(file, 'certifications')
+activate Storage
+Storage -> Storage: generateUniqueFileName()
+Storage -> Storage: saveFile()
+Storage --> Controller: file_path
+deactivate Storage
+
+Controller -> Report: update(['document_path' => file_path])
+activate Report
+Report -> DB: UPDATE certification_reports\nSET document_path = ? WHERE id = ?
+DB --> Report: updated
+Report --> Controller: updated
+deactivate Report
+
+Controller --> User: success message
+deactivate Controller
+
+' ============================================
+' Use Case: Edit Laporan Pemeriksaan
+' ============================================
+== Edit Laporan Pemeriksaan ==
+
+User -> Controller: GET /certifications/reports/{id}/edit
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Report: find(id)
+activate Report
+Report -> DB: SELECT * FROM certification_reports WHERE id = ?
+DB --> Report: report data
+Report --> Controller: Report
+deactivate Report
+
+Controller --> User: render form edit
+deactivate Controller
+
+User -> Controller: PUT /certifications/reports/{id} (updated data)
+activate Controller
+Controller -> Controller: validate(request)
+Controller -> Report: find(id)
+activate Report
+Report -> DB: SELECT * FROM certification_reports WHERE id = ?
+DB --> Report: report data
+Report --> Controller: Report
+deactivate Report
+
+alt Validation Success
+    Controller -> Report: update(data)
+    activate Report
+    Report -> DB: UPDATE certification_reports SET ... WHERE id = ?
+    DB --> Report: updated
+    Report --> Controller: updated
+    deactivate Report
+    
+    Controller --> User: redirect with success message
+else Validation Failed
+    Controller --> User: redirect back with errors
+endif
+deactivate Controller
+
+' ============================================
+' Use Case: Evaluasi Hasil Pemeriksaan
+' ============================================
+== Evaluasi Hasil Pemeriksaan ==
+
+User -> Controller: GET /certifications/reports/{id}
+activate Controller
+Controller -> Report: with('certification')->find(id)
+activate Report
+Report -> DB: SELECT * FROM certification_reports\nLEFT JOIN certifications ON ...\nWHERE id = ?
+DB --> Report: report data
+Report --> Controller: Report
+deactivate Report
+
+Controller --> User: render halaman evaluasi
+deactivate Controller
+
+User -> Controller: PUT /certifications/reports/{id} (evaluasi result)
+activate Controller
+Controller -> Controller: validate(request)
+Controller -> Report: find(id)
+activate Report
+Report -> DB: SELECT * FROM certification_reports WHERE id = ?
+DB --> Report: report data
+Report --> Controller: Report
+deactivate Report
+
+alt Hasil Evaluasi LULUS
+    Controller -> Report: update(['seed_class_result' => 'LULUS', ...])
+    activate Report
+    Report -> DB: UPDATE certification_reports\nSET seed_class_result='LULUS', ... WHERE id = ?
+    DB --> Report: updated
+    Report --> Controller: updated
+    deactivate Report
+    
+    Controller --> User: redirect with success + opsi tambah ke stok
+else Hasil Evaluasi TIDAK LULUS
+    Controller -> Report: update(['seed_class_result' => 'TIDAK LULUS', ...])
+    activate Report
+    Report -> DB: UPDATE certification_reports\nSET seed_class_result='TIDAK LULUS', ... WHERE id = ?
+    DB --> Report: updated
+    Report --> Controller: updated
+    deactivate Report
+    
+    Controller --> User: redirect with success message
+endif
+deactivate Controller
+
+' ============================================
+' Use Case: Pilih hasil Panen
+' ============================================
+== Pilih hasil Panen ==
+
+User -> Controller: GET /certifications/create?harvest_id={id}
+activate Controller
+Controller -> Harvest: find(harvest_id)
+activate Harvest
+Harvest -> DB: SELECT * FROM harvests WHERE id = ?
+DB --> Harvest: harvest data
+Harvest --> Controller: Harvest
+deactivate Harvest
+
+Controller -> Plant: find(harvest->plant_id)
+activate Plant
+Plant -> DB: SELECT * FROM plants WHERE id = ?
+DB --> Plant: plant data
+Plant --> Controller: Plant
+deactivate Plant
+
+Controller -> Location: find(harvest->planting_location_id)
+activate Location
+Location -> DB: SELECT * FROM planting_locations WHERE id = ?
+DB --> Location: location data
+Location --> Controller: Location
+deactivate Location
+
+Controller --> User: render form dengan data panen terpilih
+deactivate Controller
+
+@enduml

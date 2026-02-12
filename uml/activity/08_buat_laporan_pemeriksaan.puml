@@ -1,0 +1,50 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Buat Laporan Pemeriksaan
+
+|#LightBlue|Petugas Sertifikasi|
+start
+:Masuk ke form buat laporan;
+:Pilih hasil panen;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data panen dari database;
+:Query data tanaman dari database;
+:Menampilkan form buat laporan;
+
+|#LightBlue|Petugas Sertifikasi|
+:Pilih kelas benih;
+:Input data inspeksi\n(inspeksi lapangan, uji laboratorium);
+:Input hasil pemeriksaan;
+:Upload dokumen scan sertifikat;
+:Submit form;
+
+|#LightGreen|Sistem|
+:Validasi data laporan;
+:Check nomor laporan unik;
+:Simpan dokumen scan;
+:Insert ke tabel certifications;
+:Insert ke tabel certification_reports;
+:Generate nomor laporan;
+:Success message;
+:Redirect ke halaman detail sertifikasi;
+
+|#LightBlue|Petugas Sertifikasi|
+:Lihat pesan laporan berhasil dibuat;
+
+stop
+
+@enduml

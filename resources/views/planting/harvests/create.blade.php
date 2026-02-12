@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Record Harvest - SIBIT')
+@section('title', 'Record Harvest - SIBESTI')
 
 @section('content')
 <!-- Breadcrumbs -->
@@ -240,6 +240,9 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 @endpush
 @endsection
+
+
+
 
 
 

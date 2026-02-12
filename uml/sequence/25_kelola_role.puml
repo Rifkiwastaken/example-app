@@ -1,0 +1,110 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Kelola Role
+
+actor "Admin" as User
+participant "UserController" as Controller
+participant "User" as UserModel
+participant "Role/Permission System" as RoleSystem
+participant "Database" as DB
+
+User -> User: akses halaman kelola role()
+User -> Controller: roles()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> RoleSystem: RoleSystem::getAvailableRoles()
+activate RoleSystem
+RoleSystem -> RoleSystem: getRolesFromConfig()
+RoleSystem --> Controller: return roles[]
+deactivate RoleSystem
+
+Controller -> UserModel: User::select('role')->distinct()->get()
+activate UserModel
+UserModel -> DB: SELECT DISTINCT role FROM users
+DB --> UserModel: return roles[]
+UserModel --> Controller: return roles[]
+deactivate UserModel
+
+Controller -> UserModel: User::getRoleCounts()
+activate UserModel
+UserModel -> DB: SELECT role, COUNT(*) as count FROM users GROUP BY role
+DB --> UserModel: return role_counts[]
+UserModel --> Controller: return role_counts[]
+deactivate UserModel
+
+Controller --> User: return view roles dengan data()
+deactivate Controller
+User -> User: tampilkan daftar role dan user per role()
+
+alt Aksi Lihat User per Role
+    User -> User: pilih role()
+    User -> Controller: showRole(role)
+    activate Controller
+    Controller -> Controller: validateRole()
+    Controller -> RoleSystem: RoleSystem::getRolePermissions(role)
+    activate RoleSystem
+    RoleSystem -> RoleSystem: getPermissionsFromConfig(role)
+    RoleSystem --> Controller: return permissions[]
+    deactivate RoleSystem
+    
+    Controller -> UserModel: User::where('role', role)->get()
+    activate UserModel
+    UserModel -> DB: SELECT * FROM users WHERE role = ?
+    DB --> UserModel: return users_with_role[]
+    UserModel --> Controller: return users_with_role[]
+    deactivate UserModel
+    
+    Controller --> User: return view detail role dengan data()
+    deactivate Controller
+    User -> User: tampilkan daftar user dengan role tersebut()
+else Aksi Ubah Role User
+    User -> User: pilih user()
+    User -> User: klik ubah role()
+    User -> Controller: updateRole(Request, user_id)
+    activate Controller
+    Controller -> Controller: validate(Request)
+    Controller -> UserModel: User::findOrFail(user_id)
+    activate UserModel
+    UserModel -> DB: SELECT * FROM users WHERE id = ?
+    DB --> UserModel: return user data
+    UserModel --> Controller: return User
+    UserModel -> UserModel: User::update(['role' => role_baru])
+    UserModel -> DB: UPDATE users SET role = ? WHERE id = ?
+    DB --> UserModel: return updated
+    UserModel --> Controller: return updated
+    deactivate UserModel
+    
+    Controller --> User: redirect back dengan success message()
+    deactivate Controller
+    User -> User: tampilkan pesan role berhasil diubah()
+else Aksi Lihat Permission per Role
+    User -> User: pilih role()
+    User -> User: klik lihat permission()
+    User -> Controller: showPermissions(role)
+    activate Controller
+    Controller -> Controller: validateRole()
+    Controller -> RoleSystem: RoleSystem::getRolePermissions(role)
+    activate RoleSystem
+    RoleSystem -> RoleSystem: load permission yang tersedia()
+    RoleSystem -> RoleSystem: load permission per role dari config()
+    RoleSystem --> Controller: return permissions[]
+    deactivate RoleSystem
+    
+    Controller --> User: return view permission dengan data()
+    deactivate Controller
+    User -> User: tampilkan daftar permission per role()
+end
+
+note right of RoleSystem
+Role management biasanya dilakukan
+melalui konfigurasi atau middleware,
+bukan melalui CRUD langsung di database.
+Permission bisa disimpan di config file
+atau tabel role_permissions.
+end note
+
+@enduml

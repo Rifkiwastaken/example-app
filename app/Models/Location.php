@@ -4,11 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasCustomId;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Location extends Model
 {
     use HasFactory;
+    use HasCustomId;
+
+    protected $primaryKey = 'location_id';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'name',
@@ -29,15 +35,7 @@ class Location extends Model
      */
     public function users(): HasMany
     {
-        return $this->hasMany(User::class);
-    }
-
-    /**
-     * Get the tasks for this location
-     */
-    public function tasks(): HasMany
-    {
-        return $this->hasMany(Task::class);
+        return $this->hasMany(User::class, 'location_id', 'location_id');
     }
 
     /**
@@ -67,18 +65,4 @@ class Location extends Model
         ];
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('plant_notes', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('plant_id')->constrained()->onDelete('cascade');
+            $table->string('plant_note_id', 36)->primary();
+            $table->string('plant_id', 36)->onDelete('cascade');
             $table->text('description');
             $table->date('note_date');
             $table->string('keywords')->nullable();
@@ -30,6 +30,9 @@ return new class extends Migration
         Schema::dropIfExists('plant_notes');
     }
 };
+
+
+
 
 
 

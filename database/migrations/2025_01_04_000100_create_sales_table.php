@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('sales', function (Blueprint $table) {
-            $table->id();
+            $table->string('sale_id', 36)->primary();
             $table->string('receipt_number')->unique(); // Nomor Struk/Referensi (PJ-2025-004)
             $table->date('sale_date');
             $table->string('buyer_name'); // Nama Pembeli
@@ -21,7 +21,7 @@ return new class extends Migration
             $table->enum('payment_method', ['cash', 'transfer_bank'])->default('cash');
             $table->enum('payment_status', ['lunas', 'belum_lunas'])->default('lunas');
             $table->text('notes')->nullable(); // Keterangan
-            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Dicatat Oleh
+            $table->string('user_id', 36)->onDelete('cascade'); // Dicatat Oleh
             $table->timestamps();
         });
     }

@@ -1,0 +1,30 @@
+@startuml Sequence Diagram - Pilih Hasil Panen
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Pilih Hasil Panen
+
+actor "Petugas Sertifikasi" as User
+participant "CertificationController" as Controller
+participant "Harvest Model" as Harvest
+participant "Plant Model" as Plant
+participant "PlantingLocation Model" as PlantingLocation
+participant "Database" as DB
+
+User -> Controller: GET /certifications/create?harvest_id={id}
+activate Controller
+Controller -> Controller: validateRole
+Controller -> Harvest: findById
+activate Harvest
+Harvest -> DB: SELECT * FROM harvests LEFT JOIN plants WHERE harvests.id = ?
+DB --> Harvest: harvest data
+Harvest --> Controller: Harvest
+deactivate Harvest
+
+Controller --> User: render form dengan data panen terpilih
+deactivate Controller
+
+@enduml
+

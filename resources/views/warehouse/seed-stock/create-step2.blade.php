@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Tambah Tipe Bibit Baru - Langkah 2 - SIBIT')
+@section('title', 'Tambah Tipe Benih Baru - Langkah 2 - SIBESTI')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -13,7 +13,7 @@
 <div class="card">
     <div class="card-body">
         <div class="alert alert-info mb-4">
-            <strong>Pilih Gudang dan Bin yang Diizinkan untuk:</strong> {{ $step1Data['name'] ?? 'Tipe Bibit Baru' }}
+            <strong>Pilih Gudang dan Bin yang Diizinkan untuk:</strong> {{ $step1Data['name'] ?? 'Tipe Benih Baru' }}
         </div>
 
         <form action="{{ route('seed-stock.store-step2') }}" method="POST">

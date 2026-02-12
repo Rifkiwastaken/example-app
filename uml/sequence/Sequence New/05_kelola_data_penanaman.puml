@@ -1,0 +1,105 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - UC05 Mengelola Data Penanaman
+
+actor "User" as User
+boundary "PlantingView" as View
+control "PlantingController" as Controller
+entity "Planting" as Planting
+entity "Plant" as Plant
+entity "PlantingLocation" as Location
+
+User -> View: akses halaman kelola penanaman()
+View -> Controller: index()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Planting: with('plant', 'plantingLocation')->paginate(15)
+activate Planting
+Planting -> Planting: load('plant', 'plantingLocation')
+Planting --> Controller: return plantings[]
+deactivate Planting
+Controller --> View: return data dan pagination[]
+deactivate Controller
+View --> User: tampilkan daftar penanaman()
+
+alt Tambah Baru
+    User -> View: klik tombol tambah penanaman()
+    View -> Controller: create()
+    activate Controller
+    Controller -> Plant: all()
+    activate Plant
+    Plant --> Controller: return plants[]
+    deactivate Plant
+    Controller -> Location: all()
+    activate Location
+Location --> Controller: return planting_locations[]
+deactivate Location
+    Controller --> View: return plants[] dan planting_locations[]
+    deactivate Controller
+    View --> User: tampilkan form tambah penanaman()
+    
+    User -> View: isi form data penanaman()
+    View -> Controller: store(request)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> Planting: create(data)
+    activate Planting
+    Planting -> Planting: save()
+    Planting --> Controller: return planting
+    deactivate Planting
+    Controller --> View: redirect dengan pesan sukses
+    View --> User: tampilkan pesan sukses()
+    deactivate Controller
+else Edit
+    User -> View: klik tombol edit()
+    View -> Controller: edit(id)
+    activate Controller
+    Controller -> Planting: with('plant', 'plantingLocation')->findOrFail(id)
+    activate Planting
+    Planting -> Planting: load('plant', 'plantingLocation')
+    Planting --> Controller: return planting
+    deactivate Planting
+    Controller -> Plant: all()
+    activate Plant
+    Plant --> Controller: return plants[]
+    deactivate Plant
+    Controller -> Location: all()
+    activate Location
+    Location --> Controller: return planting_locations[]
+    deactivate Location
+    Controller --> View: return planting, plants[] dan planting_locations[]
+    deactivate Controller
+    View --> User: tampilkan form edit()
+    
+    User -> View: edit data penanaman()
+    View -> Controller: update(id, request)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> Planting: findOrFail(id)
+    activate Planting
+    Planting -> Planting: update(data)
+    Planting --> Controller: return planting
+    deactivate Planting
+    Controller --> View: redirect dengan pesan sukses
+    View --> User: tampilkan pesan sukses()
+    deactivate Controller
+else Tracking
+    User -> View: klik tombol tracking()
+    View -> Controller: showTracking(id)
+    activate Controller
+    Controller -> Planting: with('notes', 'photos')->findOrFail(id)
+    activate Planting
+    Planting -> Planting: load('notes', 'photos')
+    Planting --> Controller: return planting
+    deactivate Planting
+    Controller --> View: return planting
+    deactivate Controller
+    View --> User: tampilkan halaman tracking()
+    User -> User: lihat dan update tracking()
+end
+
+@enduml

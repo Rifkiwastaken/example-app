@@ -30,7 +30,7 @@ return new class extends Migration
             // Add new fields
             $table->decimal('total_cost', 15, 2)->nullable()->after('application_method');
             $table->string('technician')->nullable()->after('total_cost');
-            $table->foreignId('planting_id')->nullable()->constrained('plantings')->onDelete('set null')->after('technician');
+            $table->string('planting_id', 36)->nullable()->foreign('planting_id')->references('planting_id')->on('plantings')->onDelete('set null')->after('technician');
         });
     }
 
@@ -59,4 +59,7 @@ return new class extends Migration
         });
     }
 };
+
+
+
 

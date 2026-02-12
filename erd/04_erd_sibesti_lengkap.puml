@@ -1,0 +1,514 @@
+@startuml ERD - SIBESTI Lengkap (04)
+!theme plain
+left to right direction
+scale 0.6
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam roundcorner 8
+skinparam shadowing false
+
+title SIBESTI - ERD Lengkap (Semua Modul)\nUpdate: Februari 2026
+' Semua ID: VARCHAR(36), format {nama_tabel}_id
+
+package "User Management" #LightBlue {
+    entity "users" as users {
+        * **user_id** : VARCHAR(36) <<PK>>
+        --
+        name : VARCHAR(255)
+        email : VARCHAR(255) <<UNIQUE>>
+        password : VARCHAR(255)
+        role : ENUM(admin, kepala_satuan_tugas, petugas_sertifikasi, petugas_gudang, petugas_bbi)
+        location_id : VARCHAR(36) <<FK>>
+        full_name : VARCHAR(255)
+        status : ENUM(active, inactive)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "locations" as locations {
+        * **location_id** : VARCHAR(36) <<PK>>
+        --
+        name : VARCHAR(255)
+        city : VARCHAR(255)
+        district : VARCHAR(255)
+        type : ENUM(lokasi_lahan, lokasi_sertifikasi, lokasi_gudang, lokasi_kantor_utama)
+        description : TEXT
+        google_maps_link : VARCHAR(500)
+        photo : VARCHAR(255)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+package "Planting Module" #LightGreen {
+    entity "plant_types" as plant_types {
+        * **plant_type_id** : VARCHAR(36) <<PK>>
+        --
+        name : VARCHAR(255)
+        category : VARCHAR(255)
+        variety : TEXT
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "plants" as plants {
+        * **plant_id** : VARCHAR(36) <<PK>>
+        --
+        name : VARCHAR(255)
+        plant_type_id : VARCHAR(36) <<FK>>
+        variety : VARCHAR(255)
+        status : ENUM
+        progress : INT
+        planting_location_id : VARCHAR(36) <<FK>>
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "planting_locations" as planting_locations {
+        * **planting_location_id** : VARCHAR(36) <<PK>>
+        --
+        name : VARCHAR(255)
+        location_id : VARCHAR(36) <<FK>>
+        location_type : ENUM
+        planting_format : ENUM
+        map_size : DECIMAL(10,2)
+        description : TEXT
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "plantings" as plantings {
+        * **planting_id** : VARCHAR(36) <<PK>>
+        --
+        plant_id : VARCHAR(36) <<FK>>
+        planting_location_id : VARCHAR(36) <<FK>>
+        bed_label : VARCHAR(255)
+        quantity_planted : DECIMAL(15,2)
+        planted_at : DATE
+        is_completed : TINYINT(1)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "harvests" as harvests {
+        * **harvest_id** : VARCHAR(36) <<PK>>
+        --
+        plant_id : VARCHAR(36) <<FK>>
+        planting_id : VARCHAR(36) <<FK>>
+        planting_location_id : VARCHAR(36) <<FK>>
+        harvested_at : DATE
+        batch_no : VARCHAR(255)
+        quantity : DECIMAL(15,2)
+        unit : VARCHAR(50)
+        quality : VARCHAR(255)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "planting_losses" as planting_losses {
+        * **planting_loss_id** : VARCHAR(36) <<PK>>
+        --
+        planting_id : VARCHAR(36) <<FK>>
+        loss_date : DATE
+        loss_amount : DECIMAL(15,2)
+        loss_reason : VARCHAR(255)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "treatments" as treatments {
+        * **treatment_id** : VARCHAR(36) <<PK>>
+        --
+        planting_location_id : VARCHAR(36) <<FK>>
+        planting_id : VARCHAR(36) <<FK>>
+        treatment_type : VARCHAR(255)
+        treatment_date : DATE
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "nutrients" as nutrients {
+        * **nutrient_id** : VARCHAR(36) <<PK>>
+        --
+        planting_location_id : VARCHAR(36) <<FK>>
+        planting_id : VARCHAR(36) <<FK>>
+        product_applied : VARCHAR(255)
+        application_date : DATE
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "plant_notes" as plant_notes {
+        * **plant_note_id** : VARCHAR(36) <<PK>>
+        --
+        plant_id : VARCHAR(36) <<FK>>
+        description : TEXT
+        note_date : DATE
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "plant_photos" as plant_photos {
+        * **plant_photo_id** : VARCHAR(36) <<PK>>
+        --
+        plant_id : VARCHAR(36) <<FK>>
+        file_path : VARCHAR(255)
+        description : TEXT
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "planting_location_notes" as planting_location_notes {
+        * **planting_location_note_id** : VARCHAR(36) <<PK>>
+        --
+        planting_location_id : VARCHAR(36) <<FK>>
+        title : VARCHAR(255)
+        description : TEXT
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "planting_location_photos" as planting_location_photos {
+        * **planting_location_photo_id** : VARCHAR(36) <<PK>>
+        --
+        planting_location_id : VARCHAR(36) <<FK>>
+        file_path : VARCHAR(255)
+        description : TEXT
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "expenses" as expenses {
+        * **expense_id** : VARCHAR(36) <<PK>>
+        --
+        planting_location_id : VARCHAR(36) <<FK>>
+        expense_name : VARCHAR(255)
+        amount : DECIMAL(15,2)
+        expense_type : ENUM
+        expense_date : DATE
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+package "Certification Module" #LightYellow {
+    entity "certifications" as certifications {
+        * **certification_id** : VARCHAR(36) <<PK>>
+        --
+        harvest_id : VARCHAR(36) <<FK>>
+        planting_location_id : VARCHAR(36) <<FK>>
+        plant_id : VARCHAR(36) <<FK>>
+        certification_status : VARCHAR(255)
+        seed_class_requested : VARCHAR(255)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "certification_reports" as certification_reports {
+        * **certification_report_id** : VARCHAR(36) <<PK>>
+        --
+        certification_id : VARCHAR(36) <<FK>>
+        report_number_bpsb : VARCHAR(255)
+        report_date : DATE
+        conclusion : ENUM
+        expiry_date : DATE
+        certified_seed_quantity : DECIMAL(15,2)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+package "Inventory Module" #LightCoral {
+    entity "warehouses" as warehouses {
+        * **warehouse_id** : VARCHAR(36) <<PK>>
+        --
+        name : VARCHAR(255)
+        internal_id : VARCHAR(50) <<UNIQUE>>
+        tracking_type : ENUM
+        description : TEXT
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "bins" as bins {
+        * **bin_id** : VARCHAR(36) <<PK>>
+        --
+        warehouse_id : VARCHAR(36) <<FK>>
+        name : VARCHAR(255)
+        internal_id : VARCHAR(50)
+        max_capacity : DECIMAL(15,2)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "inventory_types" as inventory_types {
+        * **inventory_type_id** : VARCHAR(36) <<PK>>
+        --
+        category : VARCHAR(255)
+        name : VARCHAR(255)
+        sku : VARCHAR(100) <<UNIQUE>>
+        unit : VARCHAR(50)
+        estimated_value_per_unit : DECIMAL(15,2)
+        responsible_person_id : VARCHAR(36) <<FK>>
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "inventory_lots" as inventory_lots {
+        * **inventory_lot_id** : VARCHAR(36) <<PK>>
+        --
+        inventory_type_id : VARCHAR(36) <<FK>>
+        production_id : VARCHAR(255)
+        status : ENUM
+        initial_stock : DECIMAL(15,2)
+        current_stock : DECIMAL(15,2)
+        warehouse_id : VARCHAR(36) <<FK>>
+        bin_id : VARCHAR(36) <<FK>>
+        certification_id : VARCHAR(36) <<FK>>
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "inventory_transactions" as inventory_transactions {
+        * **inventory_transaction_id** : VARCHAR(36) <<PK>>
+        --
+        inventory_type_id : VARCHAR(36) <<FK>>
+        inventory_lot_id : VARCHAR(36) <<FK>>
+        transaction_type : ENUM
+        quantity : DECIMAL(15,2)
+        user_id : VARCHAR(36) <<FK>>
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "inventory_type_warehouses" as inventory_type_warehouses {
+        * **inventory_type_warehouse_id** : VARCHAR(36) <<PK>>
+        --
+        inventory_type_id : VARCHAR(36) <<FK>>
+        warehouse_id : VARCHAR(36) <<FK>>
+        bin_id : VARCHAR(36) <<FK>>
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "inventory_notes" as inventory_notes {
+        * **inventory_note_id** : VARCHAR(36) <<PK>>
+        --
+        inventory_type_id : VARCHAR(36) <<FK>>
+        content : TEXT
+        user_id : VARCHAR(36) <<FK>>
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "inventory_photos" as inventory_photos {
+        * **inventory_photo_id** : VARCHAR(36) <<PK>>
+        --
+        inventory_type_id : VARCHAR(36) <<FK>>
+        photo_path : VARCHAR(255)
+        user_id : VARCHAR(36) <<FK>>
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "inventory_type_seeds" as inventory_type_seeds {
+        * **inventory_type_seed_id** : VARCHAR(36) <<PK>>
+        --
+        inventory_type_id : VARCHAR(36) <<FK>>
+        plant_id : VARCHAR(36) <<FK>>
+        planting_location_id : VARCHAR(36) <<FK>>
+        quantity : DECIMAL(15,2)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "inventory_type_certification_reports" as inv_type_cert_reports {
+        * **inventory_type_certification_report_id** : VARCHAR(36) <<PK>>
+        --
+        inventory_type_id : VARCHAR(36) <<FK>>
+        certification_report_id : VARCHAR(36) <<FK>>
+        quantity : DECIMAL(15,2)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+package "Sales Module" #LightPink {
+    entity "sales" as sales {
+        * **sale_id** : VARCHAR(36) <<PK>>
+        --
+        receipt_number : VARCHAR(50) <<UNIQUE>>
+        sale_date : DATE
+        buyer_name : VARCHAR(255)
+        total_amount : DECIMAL(15,2)
+        payment_status : ENUM
+        user_id : VARCHAR(36) <<FK>>
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "sale_items" as sale_items {
+        * **sale_item_id** : VARCHAR(36) <<PK>>
+        --
+        sale_id : VARCHAR(36) <<FK>>
+        inventory_type_id : VARCHAR(36) <<FK>>
+        inventory_lot_id : VARCHAR(36) <<FK>>
+        quantity : DECIMAL(15,2)
+        unit_price : DECIMAL(15,2)
+        subtotal : DECIMAL(15,2)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+package "Task Management" #LightGray {
+    entity "tasks" as tasks {
+        * **task_id** : VARCHAR(36) <<PK>>
+        --
+        title : VARCHAR(255)
+        description : TEXT
+        new_status : ENUM
+        new_priority : ENUM
+        due_date : DATE
+        assigned_to : VARCHAR(36) <<FK>>
+        planting_location_id : VARCHAR(36) <<FK>>
+        template_id : VARCHAR(36) <<FK>>
+        series_id : VARCHAR(36) <<FK>>
+        created_by : VARCHAR(36) <<FK>>
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "task_templates" as task_templates {
+        * **task_template_id** : VARCHAR(36) <<PK>>
+        --
+        name : VARCHAR(255)
+        description : TEXT
+        tasks_list : JSON
+        association : ENUM
+        is_active : TINYINT(1)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "task_series" as task_series {
+        * **task_series_id** : VARCHAR(36) <<PK>>
+        --
+        name : VARCHAR(255)
+        description : TEXT
+        template_id : VARCHAR(36) <<FK>>
+        series_tasks : JSON
+        is_active : TINYINT(1)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+package "Support Tables" #Lavender {
+    entity "attachments" as attachments {
+        * **attachment_id** : VARCHAR(36) <<PK>>
+        --
+        planting_location_id : VARCHAR(36) <<FK>>
+        title : VARCHAR(255)
+        file_path : VARCHAR(255)
+        created_by : VARCHAR(36) <<FK>>
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "landing_page_settings" as landing_page_settings {
+        * **id** : BIGINT <<PK>>
+        --
+        key : VARCHAR(255) <<UNIQUE>>
+        value : TEXT
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "user_planting_location_land_manager" as user_pl_manager {
+        * **user_planting_location_land_manager_id** : VARCHAR(36) <<PK>>
+        --
+        planting_location_id : VARCHAR(36) <<FK>>
+        user_id : VARCHAR(36) <<FK>>
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "user_planting_location_land_worker" as user_pl_worker {
+        * **user_planting_location_land_worker_id** : VARCHAR(36) <<PK>>
+        --
+        planting_location_id : VARCHAR(36) <<FK>>
+        user_id : VARCHAR(36) <<FK>>
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+' === RELATIONSHIPS ===
+users }o--o| locations : location_id
+plant_types ||--o{ plants
+plants }o--o| planting_locations
+plants ||--o{ plantings
+plants ||--o{ harvests
+plants ||--o{ plant_notes
+plants ||--o{ plant_photos
+plants ||--o{ certifications
+planting_locations }o--o| locations
+planting_locations ||--o{ plantings
+planting_locations ||--o{ harvests
+planting_locations ||--o{ treatments
+planting_locations ||--o{ nutrients
+planting_locations ||--o{ expenses
+planting_locations ||--o{ certifications
+planting_locations ||--o{ planting_location_notes
+planting_locations ||--o{ planting_location_photos
+planting_locations ||--o{ attachments
+planting_locations ||--o{ tasks
+planting_locations ||--o{ user_pl_manager
+planting_locations ||--o{ user_pl_worker
+plantings ||--o{ harvests
+plantings ||--o{ planting_losses
+plantings ||--o{ treatments
+plantings ||--o{ nutrients
+harvests ||--o{ certifications
+certifications ||--o{ certification_reports
+certification_reports ||--o{ inv_type_cert_reports
+warehouses ||--o{ bins
+warehouses ||--o{ inventory_lots
+warehouses ||--o{ inventory_transactions
+warehouses ||--o{ inventory_type_warehouses
+bins ||--o{ inventory_lots
+bins ||--o{ inventory_transactions
+bins ||--o{ inventory_type_warehouses
+inventory_types ||--o{ inventory_lots
+inventory_types ||--o{ inventory_transactions
+inventory_types ||--o{ inventory_type_warehouses
+inventory_types ||--o{ inventory_notes
+inventory_types ||--o{ inventory_photos
+inventory_types ||--o{ inventory_type_seeds
+inventory_types ||--o{ inv_type_cert_reports
+inventory_types ||--o{ sale_items
+inventory_types }o--o| users : responsible_person_id
+inventory_lots ||--o{ inventory_transactions
+inventory_lots ||--o{ sale_items
+inventory_lots }o--o| certifications
+sales ||--o{ sale_items
+sales }o--o| users
+tasks }o--o| users : assigned_to
+tasks }o--o| users : created_by
+tasks }o--o| task_templates : template_id
+tasks }o--o| task_series : series_id
+task_series }o--o| task_templates
+users ||--o{ inventory_transactions
+users ||--o{ inventory_notes
+users ||--o{ inventory_photos
+users ||--o{ user_pl_manager
+users ||--o{ user_pl_worker
+
+note bottom
+  ERD 04 - SIBESTI Lengkap
+  PK: VARCHAR(36), format {nama_tabel}_id
+  Update: Februari 2026
+end note
+
+@enduml

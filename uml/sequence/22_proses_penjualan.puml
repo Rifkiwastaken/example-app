@@ -1,0 +1,90 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Proses Penjualan
+
+actor "Petugas BBI" as User
+participant "SaleController" as Controller
+participant "Sale" as Sale
+participant "SaleItem" as SaleItem
+participant "InventoryLot" as Lot
+participant "InventoryTransaction" as Transaction
+participant "Database" as DB
+
+User -> User: setelah pilih list untuk dijual()
+User -> User: semua item sudah dipilih()
+User -> User: klik proses penjualan()
+User -> Controller: processSale(Request)
+activate Controller
+Controller -> Controller: validate(Request)
+Controller -> Controller: validateAllItems()
+
+loop For each item
+    Controller -> Lot: InventoryLot::getTotalAvailable(inventory_type_id)
+    activate Lot
+    Lot -> DB: SELECT SUM(quantity) FROM inventory_lots WHERE inventory_type_id = ?
+    DB --> Lot: return total_available
+    Lot --> Controller: return total_available
+    deactivate Lot
+    
+    Controller -> Controller: checkQuantity()
+end
+
+alt Semua Item Valid
+    Controller -> DB: BEGIN TRANSACTION
+    
+    Controller -> Sale: Sale::create(data)
+    activate Sale
+    Sale -> DB: INSERT INTO sales VALUES
+    DB --> Sale: return sale_id
+    Sale --> Controller: return Sale
+    deactivate Sale
+    
+    loop For each item
+        Controller -> SaleItem: SaleItem::create(data)
+        activate SaleItem
+        SaleItem -> DB: INSERT INTO sale_items VALUES
+        DB --> SaleItem: return item_id
+        SaleItem --> Controller: return SaleItem
+        deactivate SaleItem
+        
+        Controller -> Lot: reduceStockFIFO()
+        activate Lot
+        Lot -> DB: SELECT * FROM inventory_lots WHERE inventory_type_id = ? ORDER BY created_at ASC
+        DB --> Lot: return lots[]
+        
+        loop Reduce stock FIFO
+            alt Quantity Less Equal Lot Quantity
+                Lot -> DB: UPDATE inventory_lots SET quantity = quantity - ? WHERE id = ?
+                DB --> Lot: return updated
+            else Quantity Greater Lot Quantity
+                Lot -> DB: UPDATE inventory_lots SET quantity = 0, status = 'sold' WHERE id = ?
+                DB --> Lot: return updated
+                Lot -> Lot: reduceRemaining()
+            end
+        end
+        Lot --> Controller: return stock_reduced
+        deactivate Lot
+        
+        Controller -> Transaction: InventoryTransaction::create(['transaction_type' => 'sale'])
+        activate Transaction
+        Transaction -> DB: INSERT INTO inventory_transactions VALUES
+        DB --> Transaction: return transaction_id
+        Transaction --> Controller: return created
+        deactivate Transaction
+    end
+    
+    Controller -> DB: COMMIT TRANSACTION
+    Controller --> User: redirect back dengan success message()
+    User -> User: tampilkan pesan penjualan berhasil diproses()
+else Ada Item Tidak Valid
+    Controller -> DB: ROLLBACK TRANSACTION
+    Controller --> User: redirect back dengan error message()
+    User -> User: tampilkan pesan ada item yang stok tidak cukup()
+end
+deactivate Controller
+
+@enduml

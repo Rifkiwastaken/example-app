@@ -1,0 +1,42 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Hapus Data Penanaman
+
+|#LightBlue|Admin|
+start
+:Dari daftar penanaman;
+:Klik tombol Hapus;
+:Konfirmasi penghapusan;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Check relasi dengan data lain;
+
+if (Dapat dihapus?) then (Ya)
+    :Delete data dari tabel plantings;
+    :Success message;
+    :Redirect ke daftar penanaman;
+    |#LightBlue|Admin|
+    :Lihat pesan penanaman berhasil dihapus;
+else (Tidak)
+    :Error: penanaman memiliki relasi dengan panen;
+    :Tampilkan pesan error;
+    |#LightBlue|Admin|
+    :Lihat pesan penanaman memiliki relasi dengan panen;
+endif
+
+stop
+
+@enduml

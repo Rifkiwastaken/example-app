@@ -1,0 +1,175 @@
+@startuml Activity Diagram - Modul Sertifikasi
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Modul Sertifikasi
+
+' ============================================
+' Use Case: Lihat Daftar Sertifikasi
+' ============================================
+|#LightBlue|Petugas Sertifikasi/Admin|
+start
+:Masuk ke halaman daftar sertifikasi;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data sertifikasi dari database;
+:Load data laporan sertifikasi;
+:Display daftar sertifikasi;
+
+|#LightBlue|Petugas Sertifikasi/Admin|
+:Lihat daftar sertifikasi;
+
+stop
+
+' ============================================
+' Use Case: Buat Laporan Pemeriksaan
+' ============================================
+|#LightBlue|Petugas Sertifikasi|
+start
+:Masuk ke form buat laporan;
+:Pilih hasil panen;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data panen dari database;
+:Query data tanaman dari database;
+:Display form buat laporan;
+
+|#LightBlue|Petugas Sertifikasi|
+:Pilih kelas benih;
+:Input data inspeksi\n(inspeksi lapangan, uji laboratorium);
+:Input hasil pemeriksaan;
+:Upload dokumen scan sertifikat;
+:Submit form;
+
+|#LightGreen|Sistem|
+:Validasi data laporan;
+:Check nomor laporan unik;
+:Simpan dokumen scan;
+:Insert ke tabel certifications;
+:Insert ke tabel certification_reports;
+:Generate nomor laporan;
+:Success message;
+:Redirect ke halaman detail sertifikasi;
+
+stop
+
+' ============================================
+' Use Case: Upload Dokumen Scan
+' ============================================
+|#LightBlue|Petugas Sertifikasi|
+start
+:Dalam form buat laporan;
+:Pilih file dokumen scan;
+
+|#LightGreen|Sistem|
+:Validasi format file;
+:Validasi ukuran file;
+
+if (File valid?) then (Ya)
+    :Upload file ke storage;
+    :Simpan path file;
+    :Success message;
+else (Tidak)
+    :Error message;
+    :Minta upload ulang;
+endif
+
+stop
+
+' ============================================
+' Use Case: Edit Laporan Pemeriksaan
+' ============================================
+|#LightBlue|Petugas Sertifikasi|
+start
+:Dari daftar sertifikasi;
+:Klik tombol Edit;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Load data laporan dari database;
+:Display form edit dengan data existing;
+
+|#LightBlue|Petugas Sertifikasi|
+:Edit data laporan;
+:Update dokumen scan (jika perlu);
+:Submit form;
+
+|#LightGreen|Sistem|
+:Validasi data laporan;
+:Update data di tabel certification_reports;
+:Update dokumen (jika ada);
+:Success message;
+:Redirect ke halaman detail;
+
+stop
+
+' ============================================
+' Use Case: Evaluasi Hasil Pemeriksaan
+' ============================================
+|#LightBlue|Petugas Sertifikasi/Admin|
+start
+:Masuk ke halaman evaluasi;
+:Pilih hasil panen untuk dievaluasi;
+
+|#LightGreen|Sistem|
+:Load data laporan pemeriksaan;
+:Load data hasil inspeksi;
+:Display form evaluasi;
+
+|#LightBlue|Petugas Sertifikasi/Admin|
+:Review hasil pemeriksaan;
+:Input kesimpulan evaluasi;
+
+if (Hasil evaluasi?) then (LULUS)
+    |#LightGreen|Sistem|
+    :Update status menjadi LULUS;
+    :Generate sertifikat;
+    :Simpan data sertifikat;
+    :Tampilkan opsi tambah ke stok;
+else (TIDAK LULUS)
+    |#LightGreen|Sistem|
+    :Update status menjadi TIDAK LULUS;
+    :Simpan alasan tidak lulus;
+endif
+
+:Success message;
+:Redirect ke halaman detail;
+
+stop
+
+' ============================================
+' Use Case: Pilih hasil Panen
+' ============================================
+|#LightBlue|Petugas Sertifikasi|
+start
+:Dalam proses evaluasi;
+:Pilih hasil panen dari daftar;
+
+|#LightGreen|Sistem|
+:Query data panen dari database;
+:Load data tanaman terkait;
+:Load data lokasi penanaman;
+:Display detail hasil panen;
+
+|#LightBlue|Petugas Sertifikasi|
+:Konfirmasi pilihan hasil panen;
+
+|#LightGreen|Sistem|
+:Link hasil panen ke sertifikasi;
+:Simpan relasi;
+
+stop
+
+@enduml

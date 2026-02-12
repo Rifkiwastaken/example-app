@@ -1,0 +1,747 @@
+{
+    "users": {
+        "custom_id": "user_id",
+        "prefix": "USR",
+        "fk_columns": [],
+        "level": 0
+    },
+    "plant_types": {
+        "custom_id": "plant_type_id",
+        "prefix": "PTY",
+        "fk_columns": [],
+        "level": 0
+    },
+    "warehouses": {
+        "custom_id": "warehouse_id",
+        "prefix": "WHS",
+        "fk_columns": [
+            {
+                "old": "responsible_person_id",
+                "new": "new_responsible_person_id",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            }
+        ],
+        "level": 0
+    },
+    "task_templates": {
+        "custom_id": "task_template_id",
+        "prefix": "TTP",
+        "fk_columns": [],
+        "level": 0
+    },
+    "landing_page_settings": {
+        "custom_id": "landing_page_setting_id",
+        "prefix": "LPS",
+        "fk_columns": [],
+        "level": 0
+    },
+    "plants": {
+        "custom_id": "plant_id",
+        "prefix": "PLT",
+        "fk_columns": [
+            {
+                "old": "planting_location_id",
+                "new": "new_planting_location_id",
+                "ref_table": "planting_locations",
+                "ref_column": "planting_location_id"
+            },
+            {
+                "old": "plant_type_id",
+                "new": "new_plant_type_id",
+                "ref_table": "plant_types",
+                "ref_column": "plant_type_id"
+            }
+        ],
+        "level": 1
+    },
+    "planting_locations": {
+        "custom_id": "planting_location_id",
+        "prefix": "LOC",
+        "fk_columns": [],
+        "level": 1
+    },
+    "bins": {
+        "custom_id": "bin_id",
+        "prefix": "BIN",
+        "fk_columns": [
+            {
+                "old": "warehouse_id",
+                "new": "new_warehouse_id",
+                "ref_table": "warehouses",
+                "ref_column": "warehouse_id"
+            }
+        ],
+        "level": 1
+    },
+    "task_series": {
+        "custom_id": "task_series_id",
+        "prefix": "TSR",
+        "fk_columns": [
+            {
+                "old": "template_id",
+                "new": "new_template_id",
+                "ref_table": "task_templates",
+                "ref_column": "task_template_id"
+            }
+        ],
+        "level": 1
+    },
+    "plantings": {
+        "custom_id": "planting_id",
+        "prefix": "PLN",
+        "fk_columns": [
+            {
+                "old": "planting_location_id",
+                "new": "new_planting_location_id",
+                "ref_table": "planting_locations",
+                "ref_column": "planting_location_id"
+            },
+            {
+                "old": "plant_id",
+                "new": "new_plant_id",
+                "ref_table": "plants",
+                "ref_column": "plant_id"
+            }
+        ],
+        "level": 2
+    },
+    "inventory_types": {
+        "custom_id": "inventory_type_id",
+        "prefix": "INV",
+        "fk_columns": [
+            {
+                "old": "plant_id",
+                "new": "new_plant_id",
+                "ref_table": "plants",
+                "ref_column": "plant_id"
+            },
+            {
+                "old": "responsible_person_id",
+                "new": "new_responsible_person_id",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            }
+        ],
+        "level": 2
+    },
+    "certifications": {
+        "custom_id": "certification_id",
+        "prefix": "CRT",
+        "fk_columns": [
+            {
+                "old": "harvest_id",
+                "new": "new_harvest_id",
+                "ref_table": "harvests",
+                "ref_column": "harvest_id"
+            },
+            {
+                "old": "planting_location_id",
+                "new": "new_planting_location_id",
+                "ref_table": "planting_locations",
+                "ref_column": "planting_location_id"
+            },
+            {
+                "old": "plant_id",
+                "new": "new_plant_id",
+                "ref_table": "plants",
+                "ref_column": "plant_id"
+            }
+        ],
+        "level": 2
+    },
+    "harvests": {
+        "custom_id": "harvest_id",
+        "prefix": "HRV",
+        "fk_columns": [
+            {
+                "old": "edited_by",
+                "new": "new_edited_by",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            },
+            {
+                "old": "planting_id",
+                "new": "new_planting_id",
+                "ref_table": "plantings",
+                "ref_column": "planting_id"
+            },
+            {
+                "old": "planting_location_id",
+                "new": "new_planting_location_id",
+                "ref_table": "planting_locations",
+                "ref_column": "planting_location_id"
+            },
+            {
+                "old": "plant_id",
+                "new": "new_plant_id",
+                "ref_table": "plants",
+                "ref_column": "plant_id"
+            },
+            {
+                "old": "recorded_by",
+                "new": "new_recorded_by",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            }
+        ],
+        "level": 3
+    },
+    "inventory_lots": {
+        "custom_id": "inventory_lot_id",
+        "prefix": "LOT",
+        "fk_columns": [
+            {
+                "old": "bin_id",
+                "new": "new_bin_id",
+                "ref_table": "bins",
+                "ref_column": "bin_id"
+            },
+            {
+                "old": "certification_id",
+                "new": "new_certification_id",
+                "ref_table": "certifications",
+                "ref_column": "certification_id"
+            },
+            {
+                "old": "inventory_type_id",
+                "new": "new_inventory_type_id",
+                "ref_table": "inventory_types",
+                "ref_column": "inventory_type_id"
+            },
+            {
+                "old": "warehouse_id",
+                "new": "new_warehouse_id",
+                "ref_table": "warehouses",
+                "ref_column": "warehouse_id"
+            }
+        ],
+        "level": 3
+    },
+    "certification_reports": {
+        "custom_id": "certification_report_id",
+        "prefix": "CRP",
+        "fk_columns": [
+            {
+                "old": "certification_id",
+                "new": "new_certification_id",
+                "ref_table": "certifications",
+                "ref_column": "certification_id"
+            }
+        ],
+        "level": 3
+    },
+    "inventory_type_seeds": {
+        "custom_id": "inventory_type_seed_id",
+        "prefix": "ITS",
+        "fk_columns": [
+            {
+                "old": "edited_by",
+                "new": "new_edited_by",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            },
+            {
+                "old": "certification_report_id",
+                "new": "new_certification_report_id",
+                "ref_table": "certification_reports",
+                "ref_column": "certification_report_id"
+            },
+            {
+                "old": "inventory_type_id",
+                "new": "new_inventory_type_id",
+                "ref_table": "inventory_types",
+                "ref_column": "inventory_type_id"
+            },
+            {
+                "old": "planting_location_id",
+                "new": "new_planting_location_id",
+                "ref_table": "planting_locations",
+                "ref_column": "planting_location_id"
+            },
+            {
+                "old": "plant_id",
+                "new": "new_plant_id",
+                "ref_table": "plants",
+                "ref_column": "plant_id"
+            },
+            {
+                "old": "filled_by_user_id",
+                "new": "new_filled_by_user_id",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            }
+        ],
+        "level": 3
+    },
+    "tasks": {
+        "custom_id": "task_id",
+        "prefix": "TSK",
+        "fk_columns": [
+            {
+                "old": "assigned_to",
+                "new": "new_assigned_to",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            },
+            {
+                "old": "created_by",
+                "new": "new_created_by",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            },
+            {
+                "old": "last_edited_by",
+                "new": "new_last_edited_by",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            },
+            {
+                "old": "planting_id",
+                "new": "new_planting_id",
+                "ref_table": "plantings",
+                "ref_column": "planting_id"
+            },
+            {
+                "old": "planting_location_id",
+                "new": "new_planting_location_id",
+                "ref_table": "planting_locations",
+                "ref_column": "planting_location_id"
+            },
+            {
+                "old": "series_id",
+                "new": "new_series_id",
+                "ref_table": "task_series",
+                "ref_column": "task_series_id"
+            },
+            {
+                "old": "template_id",
+                "new": "new_template_id",
+                "ref_table": "task_templates",
+                "ref_column": "task_template_id"
+            }
+        ],
+        "level": 3
+    },
+    "sales": {
+        "custom_id": "sale_id",
+        "prefix": "SAL",
+        "fk_columns": [
+            {
+                "old": "planting_location_id",
+                "new": "new_planting_location_id",
+                "ref_table": "planting_locations",
+                "ref_column": "planting_location_id"
+            },
+            {
+                "old": "user_id",
+                "new": "new_user_id",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            }
+        ],
+        "level": 3
+    },
+    "inventory_transactions": {
+        "custom_id": "inventory_transaction_id",
+        "prefix": "TRX",
+        "fk_columns": [
+            {
+                "old": "bin_id",
+                "new": "new_bin_id",
+                "ref_table": "bins",
+                "ref_column": "bin_id"
+            },
+            {
+                "old": "inventory_lot_id",
+                "new": "new_inventory_lot_id",
+                "ref_table": "inventory_lots",
+                "ref_column": "inventory_lot_id"
+            },
+            {
+                "old": "inventory_type_id",
+                "new": "new_inventory_type_id",
+                "ref_table": "inventory_types",
+                "ref_column": "inventory_type_id"
+            },
+            {
+                "old": "user_id",
+                "new": "new_user_id",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            },
+            {
+                "old": "warehouse_id",
+                "new": "new_warehouse_id",
+                "ref_table": "warehouses",
+                "ref_column": "warehouse_id"
+            }
+        ],
+        "level": 4
+    },
+    "inventory_type_warehouses": {
+        "custom_id": "inventory_type_warehous_id",
+        "prefix": "ITW",
+        "fk_columns": [
+            {
+                "old": "bin_id",
+                "new": "new_bin_id",
+                "ref_table": "bins",
+                "ref_column": "bin_id"
+            },
+            {
+                "old": "inventory_type_id",
+                "new": "new_inventory_type_id",
+                "ref_table": "inventory_types",
+                "ref_column": "inventory_type_id"
+            },
+            {
+                "old": "warehouse_id",
+                "new": "new_warehouse_id",
+                "ref_table": "warehouses",
+                "ref_column": "warehouse_id"
+            }
+        ],
+        "level": 4
+    },
+    "inventory_type_certification_reports": {
+        "custom_id": "inventory_type_certification_report_id",
+        "prefix": "ICR",
+        "fk_columns": [
+            {
+                "old": "certification_report_id",
+                "new": "new_certification_report_id",
+                "ref_table": "certification_reports",
+                "ref_column": "certification_report_id"
+            },
+            {
+                "old": "inventory_type_id",
+                "new": "new_inventory_type_id",
+                "ref_table": "inventory_types",
+                "ref_column": "inventory_type_id"
+            }
+        ],
+        "level": 4
+    },
+    "sale_items": {
+        "custom_id": "sale_item_id",
+        "prefix": "SIT",
+        "fk_columns": [
+            {
+                "old": "inventory_lot_id",
+                "new": "new_inventory_lot_id",
+                "ref_table": "inventory_lots",
+                "ref_column": "inventory_lot_id"
+            },
+            {
+                "old": "inventory_type_id",
+                "new": "new_inventory_type_id",
+                "ref_table": "inventory_types",
+                "ref_column": "inventory_type_id"
+            },
+            {
+                "old": "sale_id",
+                "new": "new_sale_id",
+                "ref_table": "sales",
+                "ref_column": "sale_id"
+            }
+        ],
+        "level": 4
+    },
+    "expenses": {
+        "custom_id": "expense_id",
+        "prefix": "EXP",
+        "fk_columns": [
+            {
+                "old": "edited_by",
+                "new": "new_edited_by",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            },
+            {
+                "old": "nutrient_id",
+                "new": "new_nutrient_id",
+                "ref_table": "nutrients",
+                "ref_column": "nutrient_id"
+            },
+            {
+                "old": "planting_id",
+                "new": "new_planting_id",
+                "ref_table": "plantings",
+                "ref_column": "planting_id"
+            },
+            {
+                "old": "planting_location_id",
+                "new": "new_planting_location_id",
+                "ref_table": "planting_locations",
+                "ref_column": "planting_location_id"
+            },
+            {
+                "old": "responsible_person_id",
+                "new": "new_responsible_person_id",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            },
+            {
+                "old": "treatment_id",
+                "new": "new_treatment_id",
+                "ref_table": "treatments",
+                "ref_column": "treatment_id"
+            }
+        ],
+        "level": 4
+    },
+    "nutrients": {
+        "custom_id": "nutrient_id",
+        "prefix": "NTR",
+        "fk_columns": [
+            {
+                "old": "edited_by",
+                "new": "new_edited_by",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            },
+            {
+                "old": "planting_id",
+                "new": "new_planting_id",
+                "ref_table": "plantings",
+                "ref_column": "planting_id"
+            },
+            {
+                "old": "planting_location_id",
+                "new": "new_planting_location_id",
+                "ref_table": "planting_locations",
+                "ref_column": "planting_location_id"
+            },
+            {
+                "old": "responsible_person_id",
+                "new": "new_responsible_person_id",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            }
+        ],
+        "level": 4
+    },
+    "treatments": {
+        "custom_id": "treatment_id",
+        "prefix": "TRT",
+        "fk_columns": [
+            {
+                "old": "edited_by",
+                "new": "new_edited_by",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            },
+            {
+                "old": "planting_id",
+                "new": "new_planting_id",
+                "ref_table": "plantings",
+                "ref_column": "planting_id"
+            },
+            {
+                "old": "planting_location_id",
+                "new": "new_planting_location_id",
+                "ref_table": "planting_locations",
+                "ref_column": "planting_location_id"
+            },
+            {
+                "old": "responsible_person_id",
+                "new": "new_responsible_person_id",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            }
+        ],
+        "level": 4
+    },
+    "attachments": {
+        "custom_id": "attachment_id",
+        "prefix": "ATT",
+        "fk_columns": [
+            {
+                "old": "created_by",
+                "new": "new_created_by",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            },
+            {
+                "old": "edited_by",
+                "new": "new_edited_by",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            },
+            {
+                "old": "planting_location_id",
+                "new": "new_planting_location_id",
+                "ref_table": "planting_locations",
+                "ref_column": "planting_location_id"
+            }
+        ],
+        "level": 4
+    },
+    "seed_histories": {
+        "custom_id": "seed_history_id",
+        "prefix": "SDH",
+        "fk_columns": [
+            {
+                "old": "inventory_type_seed_id",
+                "new": "new_inventory_type_seed_id",
+                "ref_table": "inventory_type_seeds",
+                "ref_column": "inventory_type_seed_id"
+            },
+            {
+                "old": "user_id",
+                "new": "new_user_id",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            }
+        ],
+        "level": 4
+    },
+    "planting_losses": {
+        "custom_id": "planting_loss_id",
+        "prefix": "PLS",
+        "fk_columns": [
+            {
+                "old": "planting_id",
+                "new": "new_planting_id",
+                "ref_table": "plantings",
+                "ref_column": "planting_id"
+            }
+        ],
+        "level": 4
+    },
+    "plant_notes": {
+        "custom_id": "plant_note_id",
+        "prefix": "PLN",
+        "fk_columns": [
+            {
+                "old": "plant_id",
+                "new": "new_plant_id",
+                "ref_table": "plants",
+                "ref_column": "plant_id"
+            }
+        ],
+        "level": 4
+    },
+    "plant_photos": {
+        "custom_id": "plant_photo_id",
+        "prefix": "PHP",
+        "fk_columns": [
+            {
+                "old": "plant_id",
+                "new": "new_plant_id",
+                "ref_table": "plants",
+                "ref_column": "plant_id"
+            }
+        ],
+        "level": 4
+    },
+    "planting_location_notes": {
+        "custom_id": "planting_location_note_id",
+        "prefix": "LCN",
+        "fk_columns": [
+            {
+                "old": "planting_location_id",
+                "new": "new_planting_location_id",
+                "ref_table": "planting_locations",
+                "ref_column": "planting_location_id"
+            },
+            {
+                "old": "user_id",
+                "new": "new_user_id",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            }
+        ],
+        "level": 4
+    },
+    "planting_location_photos": {
+        "custom_id": "planting_location_photo_id",
+        "prefix": "LCP",
+        "fk_columns": [
+            {
+                "old": "planting_location_id",
+                "new": "new_planting_location_id",
+                "ref_table": "planting_locations",
+                "ref_column": "planting_location_id"
+            }
+        ],
+        "level": 4
+    },
+    "inventory_notes": {
+        "custom_id": "inventory_note_id",
+        "prefix": "INN",
+        "fk_columns": [
+            {
+                "old": "inventory_type_id",
+                "new": "new_inventory_type_id",
+                "ref_table": "inventory_types",
+                "ref_column": "inventory_type_id"
+            },
+            {
+                "old": "user_id",
+                "new": "new_user_id",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            }
+        ],
+        "level": 4
+    },
+    "inventory_photos": {
+        "custom_id": "inventory_photo_id",
+        "prefix": "INP",
+        "fk_columns": [
+            {
+                "old": "inventory_type_id",
+                "new": "new_inventory_type_id",
+                "ref_table": "inventory_types",
+                "ref_column": "inventory_type_id"
+            },
+            {
+                "old": "user_id",
+                "new": "new_user_id",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            }
+        ],
+        "level": 4
+    },
+    "user_planting_location_land_manager": {
+        "custom_id": "user_planting_location_land_manager_id",
+        "prefix": "ULM",
+        "fk_columns": [
+            {
+                "old": "planting_location_id",
+                "new": "new_planting_location_id",
+                "ref_table": "planting_locations",
+                "ref_column": "planting_location_id"
+            },
+            {
+                "old": "user_id",
+                "new": "new_user_id",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            }
+        ],
+        "level": 4
+    },
+    "user_planting_location_land_worker": {
+        "custom_id": "user_planting_location_land_worker_id",
+        "prefix": "ULW",
+        "fk_columns": [
+            {
+                "old": "planting_location_id",
+                "new": "new_planting_location_id",
+                "ref_table": "planting_locations",
+                "ref_column": "planting_location_id"
+            },
+            {
+                "old": "user_id",
+                "new": "new_user_id",
+                "ref_table": "users",
+                "ref_column": "user_id"
+            }
+        ],
+        "level": 4
+    }
+}

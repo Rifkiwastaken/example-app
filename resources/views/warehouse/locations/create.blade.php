@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Tambah Lokasi Gudang - SIBIT')
+@section('title', 'Tambah Lokasi Gudang - SIBESTI')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -68,6 +68,23 @@
                 @error('description')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
+            </div>
+
+            <div class="mb-3">
+                <label for="responsible_person_id" class="form-label">Penanggung Jawab Gudang</label>
+                <select class="form-select @error('responsible_person_id') is-invalid @enderror" 
+                        id="responsible_person_id" name="responsible_person_id">
+                    <option value="">-- Pilih User --</option>
+                    @foreach($users as $user)
+                        <option value="{{ $user->user_id }}" {{ old('responsible_person_id', auth()->id()) == $user->user_id ? 'selected' : '' }}>
+                            {{ $user->name }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('responsible_person_id')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+                <small class="text-muted">Pilih user yang bertanggung jawab untuk gudang ini</small>
             </div>
             
             <div class="d-flex justify-content-end gap-2">

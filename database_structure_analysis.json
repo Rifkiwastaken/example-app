@@ -1,0 +1,4871 @@
+{
+    "attachments": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "planting_location_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "title",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "description",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "attachment_date",
+                "type": "date",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "file_path",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "file_name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "file_size",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "mime_type",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_by",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "edited_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "edited_by",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "created_by",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "attachments_created_by_foreign"
+            },
+            {
+                "column": "edited_by",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "attachments_edited_by_foreign"
+            },
+            {
+                "column": "planting_location_id",
+                "references_table": "planting_locations",
+                "references_column": "id",
+                "constraint": "attachments_planting_location_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "bins": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "warehouse_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "internal_id",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "max_capacity",
+                "type": "decimal(15,2)",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "capacity_unit",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "description",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "warehouse_id",
+                "references_table": "warehouses",
+                "references_column": "id",
+                "constraint": "bins_warehouse_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "certification_reports": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "certification_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "report_type",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "report_number_bpsb",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "UNI",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "report_date",
+                "type": "date",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "growing_season",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "inspection_phase",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "inspector_name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "reporter_name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "seed_class_result",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "isolation_north",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "isolation_east",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "isolation_south",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "isolation_west",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "plant_characteristics_match",
+                "type": "tinyint(1)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "pest_disease_condition",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "weed_condition",
+                "type": "enum('Bersih','Cukup Bersih','Kotor')",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "population_per_sample",
+                "type": "int",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "other_variety_mix_count",
+                "type": "int",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "other_variety_mix_percentage",
+                "type": "decimal(5,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "estimated_yield",
+                "type": "decimal(12,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "expiry_date",
+                "type": "date",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "certified_seed_quantity",
+                "type": "decimal(12,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "certified_seed_unit",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "seed_unit",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "seed_unit_quantity",
+                "type": "decimal(12,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "harvest_per_unit",
+                "type": "decimal(12,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "harvest_per_unit_unit",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "estimated_sale_price_per_kg",
+                "type": "decimal(12,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "conclusion",
+                "type": "enum('LULUS','TIDAK LULUS')",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "scan_file_path",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planting_batch_number",
+                "type": "varchar(255)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "harvest_batch_number",
+                "type": "varchar(255)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "certification_id",
+                "references_table": "certifications",
+                "references_column": "id",
+                "constraint": "certification_reports_certification_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "certifications": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "harvest_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planting_location_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "plant_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "certification_status",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "seed_class_requested",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "harvest_id",
+                "references_table": "harvests",
+                "references_column": "id",
+                "constraint": "certifications_harvest_id_foreign"
+            },
+            {
+                "column": "planting_location_id",
+                "references_table": "planting_locations",
+                "references_column": "id",
+                "constraint": "certifications_planting_location_id_foreign"
+            },
+            {
+                "column": "plant_id",
+                "references_table": "plants",
+                "references_column": "id",
+                "constraint": "certifications_plant_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "expenses": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "planting_location_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "expense_name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "work_name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "amount",
+                "type": "decimal(10,2)",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "expense_type",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "expense_date",
+                "type": "date",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "responsible_person_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "work_date",
+                "type": "date",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "work_description",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "worker_name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planting_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "description",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "treatment_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "nutrient_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "edited_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "edited_by",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "edited_by",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "expenses_edited_by_foreign"
+            },
+            {
+                "column": "nutrient_id",
+                "references_table": "nutrients",
+                "references_column": "id",
+                "constraint": "expenses_nutrient_id_foreign"
+            },
+            {
+                "column": "planting_id",
+                "references_table": "plantings",
+                "references_column": "id",
+                "constraint": "expenses_planting_id_foreign"
+            },
+            {
+                "column": "planting_location_id",
+                "references_table": "planting_locations",
+                "references_column": "id",
+                "constraint": "expenses_planting_location_id_foreign"
+            },
+            {
+                "column": "responsible_person_id",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "expenses_responsible_person_id_foreign"
+            },
+            {
+                "column": "treatment_id",
+                "references_table": "treatments",
+                "references_column": "id",
+                "constraint": "expenses_treatment_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "harvests": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "harvest_id",
+                "type": "varchar(36)",
+                "null": "YES",
+                "key": "UNI",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "plant_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "new_plant_id",
+                "type": "varchar(36)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planting_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "new_planting_id",
+                "type": "varchar(36)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planting_location_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "new_planting_location_id",
+                "type": "varchar(36)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "harvested_at",
+                "type": "date",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "batch_no",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "note",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "source",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "quality",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "quantity",
+                "type": "decimal(12,2)",
+                "null": "NO",
+                "key": "",
+                "default": "0.00",
+                "extra": ""
+            },
+            {
+                "name": "unit",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "harvest_unit",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "unit_quantity",
+                "type": "decimal(12,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "quantity_per_unit",
+                "type": "decimal(12,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "recorded_by",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "new_recorded_by",
+                "type": "varchar(36)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "edited_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "edited_by",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "new_edited_by",
+                "type": "varchar(36)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "loss_quantity",
+                "type": "decimal(12,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "edited_by",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "harvests_edited_by_foreign"
+            },
+            {
+                "column": "planting_id",
+                "references_table": "plantings",
+                "references_column": "id",
+                "constraint": "harvests_planting_id_foreign"
+            },
+            {
+                "column": "planting_location_id",
+                "references_table": "planting_locations",
+                "references_column": "id",
+                "constraint": "harvests_planting_location_id_foreign"
+            },
+            {
+                "column": "plant_id",
+                "references_table": "plants",
+                "references_column": "id",
+                "constraint": "harvests_plant_id_foreign"
+            },
+            {
+                "column": "recorded_by",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "harvests_recorded_by_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "inventory_lots": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "inventory_type_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "production_id",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "expiry_date",
+                "type": "date",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "status",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "initial_stock",
+                "type": "decimal(15,2)",
+                "null": "NO",
+                "key": "",
+                "default": "0.00",
+                "extra": ""
+            },
+            {
+                "name": "current_stock",
+                "type": "decimal(15,2)",
+                "null": "NO",
+                "key": "",
+                "default": "0.00",
+                "extra": ""
+            },
+            {
+                "name": "stock_unit",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "warehouse_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "bin_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "certification_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "bin_id",
+                "references_table": "bins",
+                "references_column": "id",
+                "constraint": "inventory_lots_bin_id_foreign"
+            },
+            {
+                "column": "certification_id",
+                "references_table": "certifications",
+                "references_column": "id",
+                "constraint": "inventory_lots_certification_id_foreign"
+            },
+            {
+                "column": "inventory_type_id",
+                "references_table": "inventory_types",
+                "references_column": "id",
+                "constraint": "inventory_lots_inventory_type_id_foreign"
+            },
+            {
+                "column": "warehouse_id",
+                "references_table": "warehouses",
+                "references_column": "id",
+                "constraint": "inventory_lots_warehouse_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "inventory_notes": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "inventory_type_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "content",
+                "type": "text",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "user_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "inventory_type_id",
+                "references_table": "inventory_types",
+                "references_column": "id",
+                "constraint": "inventory_notes_inventory_type_id_foreign"
+            },
+            {
+                "column": "user_id",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "inventory_notes_user_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "inventory_photos": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "inventory_type_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "photo_path",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "caption",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "user_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "inventory_type_id",
+                "references_table": "inventory_types",
+                "references_column": "id",
+                "constraint": "inventory_photos_inventory_type_id_foreign"
+            },
+            {
+                "column": "user_id",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "inventory_photos_user_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "inventory_transactions": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "inventory_type_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "inventory_lot_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "transaction_type",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "quantity",
+                "type": "decimal(15,2)",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "unit",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "warehouse_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "bin_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "reason",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "notes",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "user_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "bin_id",
+                "references_table": "bins",
+                "references_column": "id",
+                "constraint": "inventory_transactions_bin_id_foreign"
+            },
+            {
+                "column": "inventory_lot_id",
+                "references_table": "inventory_lots",
+                "references_column": "id",
+                "constraint": "inventory_transactions_inventory_lot_id_foreign"
+            },
+            {
+                "column": "inventory_type_id",
+                "references_table": "inventory_types",
+                "references_column": "id",
+                "constraint": "inventory_transactions_inventory_type_id_foreign"
+            },
+            {
+                "column": "user_id",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "inventory_transactions_user_id_foreign"
+            },
+            {
+                "column": "warehouse_id",
+                "references_table": "warehouses",
+                "references_column": "id",
+                "constraint": "inventory_transactions_warehouse_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "inventory_type_certification_reports": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "inventory_type_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "certification_report_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "quantity",
+                "type": "decimal(12,2)",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "certification_report_id",
+                "references_table": "certification_reports",
+                "references_column": "id",
+                "constraint": "inv_type_cert_reports_cert_fk"
+            },
+            {
+                "column": "inventory_type_id",
+                "references_table": "inventory_types",
+                "references_column": "id",
+                "constraint": "inv_type_cert_reports_inv_type_fk"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "inventory_type_seeds": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "inventory_type_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "plant_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planting_location_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "certification_report_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "quantity",
+                "type": "decimal(12,2)",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "seed_unit",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "seed_unit_quantity",
+                "type": "decimal(12,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "seed_per_unit",
+                "type": "decimal(12,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "seed_per_unit_unit",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "total_seed_quantity",
+                "type": "decimal(12,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "total_seed_unit",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "estimated_sale_price_per_kg",
+                "type": "decimal(12,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "expiry_date",
+                "type": "date",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "filled_by_user_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "storage_number",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "report_type",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "edited_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "edited_by",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "edited_by",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "inventory_type_seeds_edited_by_foreign"
+            },
+            {
+                "column": "certification_report_id",
+                "references_table": "certification_reports",
+                "references_column": "id",
+                "constraint": "inv_type_seeds_cert_report_fk"
+            },
+            {
+                "column": "inventory_type_id",
+                "references_table": "inventory_types",
+                "references_column": "id",
+                "constraint": "inv_type_seeds_inv_type_fk"
+            },
+            {
+                "column": "planting_location_id",
+                "references_table": "planting_locations",
+                "references_column": "id",
+                "constraint": "inv_type_seeds_location_fk"
+            },
+            {
+                "column": "plant_id",
+                "references_table": "plants",
+                "references_column": "id",
+                "constraint": "inv_type_seeds_plant_fk"
+            },
+            {
+                "column": "filled_by_user_id",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "inv_type_seeds_user_fk"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "inventory_type_warehouses": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "inventory_type_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "warehouse_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "bin_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "warehouse_only",
+                "type": "tinyint(1)",
+                "null": "NO",
+                "key": "",
+                "default": "0",
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "bin_id",
+                "references_table": "bins",
+                "references_column": "id",
+                "constraint": "inventory_type_warehouses_bin_id_foreign"
+            },
+            {
+                "column": "inventory_type_id",
+                "references_table": "inventory_types",
+                "references_column": "id",
+                "constraint": "inventory_type_warehouses_inventory_type_id_foreign"
+            },
+            {
+                "column": "warehouse_id",
+                "references_table": "warehouses",
+                "references_column": "id",
+                "constraint": "inventory_type_warehouses_warehouse_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "inventory_types": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "plant_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "category",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "sku",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "UNI",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "electronic_id",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "unit",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "estimated_value_per_unit",
+                "type": "decimal(15,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "estimated_kg_per_unit",
+                "type": "decimal(10,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "track_individual_lots",
+                "type": "tinyint(1)",
+                "null": "NO",
+                "key": "",
+                "default": "0",
+                "extra": ""
+            },
+            {
+                "name": "low_stock_threshold",
+                "type": "decimal(10,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "low_stock_unit",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "low_stock_email",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "description",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "responsible_person_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "plant_id",
+                "references_table": "plants",
+                "references_column": "id",
+                "constraint": "inventory_types_plant_id_foreign"
+            },
+            {
+                "column": "responsible_person_id",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "inventory_types_responsible_person_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "landing_page_settings": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "key",
+                "type": "varchar(255)",
+                "null": "NO",
+                "key": "UNI",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "value",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "nutrients": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "nutrient_name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planting_location_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "product_applied",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "amount_applied",
+                "type": "decimal(10,2)",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "unit",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "application_method",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "total_cost",
+                "type": "decimal(15,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "technician",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "institution_source",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "responsible_person_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "attachment",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "application_date",
+                "type": "date",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "description",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "edited_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "edited_by",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planting_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "edited_by",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "nutrients_edited_by_foreign"
+            },
+            {
+                "column": "planting_id",
+                "references_table": "plantings",
+                "references_column": "id",
+                "constraint": "nutrients_planting_id_foreign"
+            },
+            {
+                "column": "planting_location_id",
+                "references_table": "planting_locations",
+                "references_column": "id",
+                "constraint": "nutrients_planting_location_id_foreign"
+            },
+            {
+                "column": "responsible_person_id",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "nutrients_responsible_person_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "plant_notes": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "plant_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "description",
+                "type": "text",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "note_date",
+                "type": "date",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "keywords",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "attachment_path",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "plant_id",
+                "references_table": "plants",
+                "references_column": "id",
+                "constraint": "plant_notes_plant_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "plant_photos": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "plant_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "file_path",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "file_name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "file_size",
+                "type": "bigint",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "mime_type",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "description",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "taken_at",
+                "type": "datetime",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "plant_id",
+                "references_table": "plants",
+                "references_column": "id",
+                "constraint": "plant_photos_plant_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "plant_types": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "plant_type_id",
+                "type": "varchar(36)",
+                "null": "YES",
+                "key": "UNI",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "category",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "variety",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "planting_location_notes": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "planting_location_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "title",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "description",
+                "type": "text",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "note_date",
+                "type": "date",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "keywords",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "attachment_path",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "user_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "assigned_to",
+                "type": "json",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "read_by",
+                "type": "json",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "planting_location_id",
+                "references_table": "planting_locations",
+                "references_column": "id",
+                "constraint": "planting_location_notes_planting_location_id_foreign"
+            },
+            {
+                "column": "user_id",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "planting_location_notes_user_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "planting_location_photos": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "planting_location_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "file_path",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "file_name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "file_size",
+                "type": "int",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "mime_type",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "description",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "taken_at",
+                "type": "date",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "planting_location_id",
+                "references_table": "planting_locations",
+                "references_column": "id",
+                "constraint": "planting_location_photos_planting_location_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "planting_locations": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "planting_location_id",
+                "type": "varchar(36)",
+                "null": "YES",
+                "key": "UNI",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "location_summary",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "administrative_address",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "google_maps_link",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "primary_photo_path",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "location_type",
+                "type": "enum('lapangan','sawah','greenhouse','grow_room','padang_rumput','petak_ternak','lainnya')",
+                "null": "YES",
+                "key": "",
+                "default": "lapangan",
+                "extra": ""
+            },
+            {
+                "name": "location_type_custom",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planting_format",
+                "type": "enum('ditanam_dalam_petak','cover_crop','row_crop','lainnya')",
+                "null": "YES",
+                "key": "",
+                "default": "ditanam_dalam_petak",
+                "extra": ""
+            },
+            {
+                "name": "planting_format_custom",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "num_beds",
+                "type": "int unsigned",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "bed_length_m",
+                "type": "decimal(8,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "bed_width_m",
+                "type": "decimal(8,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "map_size",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "light_condition",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "description",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "land_status",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "ownership_status",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "water_source",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "soil_type",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "elevation_masl",
+                "type": "int",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "planting_losses": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "planting_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "loss_date",
+                "type": "date",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "loss_amount",
+                "type": "decimal(12,2)",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "loss_reason",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "description",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "planting_id",
+                "references_table": "plantings",
+                "references_column": "id",
+                "constraint": "planting_losses_planting_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "plantings": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "planting_id",
+                "type": "varchar(36)",
+                "null": "YES",
+                "key": "UNI",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planting_batch_number",
+                "type": "varchar(255)",
+                "null": "YES",
+                "key": "UNI",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "plant_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "new_plant_id",
+                "type": "varchar(36)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planting_location_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "new_planting_location_id",
+                "type": "varchar(36)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "bed_label",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "days_to_emerge",
+                "type": "int unsigned",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "spacing_between_plants",
+                "type": "varchar(255)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "spacing_between_rows",
+                "type": "varchar(255)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "sowing_depth",
+                "type": "varchar(255)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "avg_height",
+                "type": "varchar(255)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "start_method",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "germination_stage",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "seeds_per_hole",
+                "type": "int unsigned",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "light_profile",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "soil_condition",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planting_detail",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "pruning_detail",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "perennial",
+                "type": "tinyint(1)",
+                "null": "NO",
+                "key": "",
+                "default": "0",
+                "extra": ""
+            },
+            {
+                "name": "days_to_flower",
+                "type": "int unsigned",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "days_to_harvest",
+                "type": "int unsigned",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "harvest_window_days",
+                "type": "int unsigned",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "expected_loss_rate",
+                "type": "varchar(255)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "harvest_unit",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "expected_yield_per_hectare",
+                "type": "decimal(12,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "quantity_planted",
+                "type": "int unsigned",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planted_at",
+                "type": "date",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "estimated_harvest_date",
+                "type": "date",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "area_ha",
+                "type": "decimal(10,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planting_format",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planting_format_custom",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "is_completed",
+                "type": "tinyint(1)",
+                "null": "NO",
+                "key": "",
+                "default": "0",
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "planting_location_id",
+                "references_table": "planting_locations",
+                "references_column": "id",
+                "constraint": "plantings_planting_location_id_foreign"
+            },
+            {
+                "column": "plant_id",
+                "references_table": "plants",
+                "references_column": "id",
+                "constraint": "plantings_plant_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "plants": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "plant_id",
+                "type": "varchar(36)",
+                "null": "YES",
+                "key": "UNI",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "plant_type_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "new_plant_type_id",
+                "type": "varchar(36)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "variety",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "status",
+                "type": "enum('perencanaan','ditanam','dipanen','selesai')",
+                "null": "NO",
+                "key": "",
+                "default": "perencanaan",
+                "extra": ""
+            },
+            {
+                "name": "progress",
+                "type": "tinyint unsigned",
+                "null": "NO",
+                "key": "",
+                "default": "0",
+                "extra": ""
+            },
+            {
+                "name": "planting_location_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "new_planting_location_id",
+                "type": "varchar(36)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "planting_location_id",
+                "references_table": "planting_locations",
+                "references_column": "id",
+                "constraint": "plants_planting_location_id_foreign"
+            },
+            {
+                "column": "plant_type_id",
+                "references_table": "plant_types",
+                "references_column": "id",
+                "constraint": "plants_plant_type_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "sale_items": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "sale_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "inventory_type_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "inventory_lot_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "quantity",
+                "type": "decimal(15,2)",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "unit",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "unit_price",
+                "type": "decimal(15,2)",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "subtotal",
+                "type": "decimal(15,2)",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "inventory_lot_id",
+                "references_table": "inventory_lots",
+                "references_column": "id",
+                "constraint": "sale_items_inventory_lot_id_foreign"
+            },
+            {
+                "column": "inventory_type_id",
+                "references_table": "inventory_types",
+                "references_column": "id",
+                "constraint": "sale_items_inventory_type_id_foreign"
+            },
+            {
+                "column": "sale_id",
+                "references_table": "sales",
+                "references_column": "id",
+                "constraint": "sale_items_sale_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "sales": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "receipt_number",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "UNI",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "sale_date",
+                "type": "date",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "buyer_name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "buyer_contact",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "buyer_nik",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "buyer_category",
+                "type": "enum('petani_perorangan','kelompok_tani','instansi_pemerintah','swasta','lainnya')",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "buyer_category_custom",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "destination_province",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "destination_city",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "destination_district",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "destination_village",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planned_location_name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "estimated_planting_area",
+                "type": "decimal(10,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planting_location_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "total_amount",
+                "type": "decimal(15,2)",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "payment_method",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "payment_status",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "notes",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "user_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "planting_location_id",
+                "references_table": "planting_locations",
+                "references_column": "id",
+                "constraint": "sales_planting_location_id_foreign"
+            },
+            {
+                "column": "user_id",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "sales_user_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "seed_histories": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "inventory_type_seed_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "action",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "description",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "old_data",
+                "type": "json",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "new_data",
+                "type": "json",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "user_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "inventory_type_seed_id",
+                "references_table": "inventory_type_seeds",
+                "references_column": "id",
+                "constraint": "seed_histories_inventory_type_seed_id_foreign"
+            },
+            {
+                "column": "user_id",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "seed_histories_user_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "task_series": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "description",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "template_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "series_tasks",
+                "type": "json",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "is_active",
+                "type": "tinyint(1)",
+                "null": "NO",
+                "key": "",
+                "default": "1",
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "template_id",
+                "references_table": "task_templates",
+                "references_column": "id",
+                "constraint": "task_series_template_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "task_templates": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "description",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "tasks_list",
+                "type": "json",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "association",
+                "type": "enum('penanaman','sertifikasi','gudang','penjualan')",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "is_active",
+                "type": "tinyint(1)",
+                "null": "NO",
+                "key": "",
+                "default": "1",
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "tasks": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "title",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "description",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "task_report",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "checklist",
+                "type": "json",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "attachments",
+                "type": "json",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "association",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "new_status",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "priority",
+                "type": "enum('low','medium','high','highest')",
+                "null": "NO",
+                "key": "",
+                "default": "medium",
+                "extra": ""
+            },
+            {
+                "name": "status",
+                "type": "enum('pending','in_progress','completed')",
+                "null": "NO",
+                "key": "",
+                "default": "pending",
+                "extra": ""
+            },
+            {
+                "name": "due_date",
+                "type": "date",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "due_time",
+                "type": "time",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "repeats",
+                "type": "varchar(255)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "hours_spent",
+                "type": "decimal(8,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "template_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "series_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "location",
+                "type": "varchar(255)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "location_tagged",
+                "type": "tinyint(1)",
+                "null": "NO",
+                "key": "",
+                "default": "0",
+                "extra": ""
+            },
+            {
+                "name": "planting_location_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planting_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "task_color",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "last_edited_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "last_edited_by",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "assigned_to",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_by",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "collaborators",
+                "type": "json",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "new_priority",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "start_date",
+                "type": "date",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "start_time",
+                "type": "time",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "assigned_to",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "tasks_assigned_to_foreign"
+            },
+            {
+                "column": "created_by",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "tasks_created_by_foreign"
+            },
+            {
+                "column": "last_edited_by",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "tasks_last_edited_by_foreign"
+            },
+            {
+                "column": "planting_id",
+                "references_table": "plantings",
+                "references_column": "id",
+                "constraint": "tasks_planting_id_foreign"
+            },
+            {
+                "column": "planting_location_id",
+                "references_table": "planting_locations",
+                "references_column": "id",
+                "constraint": "tasks_planting_location_id_foreign"
+            },
+            {
+                "column": "series_id",
+                "references_table": "task_series",
+                "references_column": "id",
+                "constraint": "tasks_series_id_foreign"
+            },
+            {
+                "column": "template_id",
+                "references_table": "task_templates",
+                "references_column": "id",
+                "constraint": "tasks_template_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "treatments": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "treatment_name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planting_location_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "responsible_person_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "planting_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "treatment_type",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "product_detail",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "opt_institution",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "application_method",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "withholding_period_days",
+                "type": "int",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "technician",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "institution_source",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "attachment",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "batch_number",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "description",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "treatment_date",
+                "type": "date",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "retreat_date",
+                "type": "date",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "treatment_location",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "amount_applied",
+                "type": "decimal(10,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "unit_measurement",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "total_cost",
+                "type": "decimal(10,2)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "keywords",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "edited_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "edited_by",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "edited_by",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "treatments_edited_by_foreign"
+            },
+            {
+                "column": "planting_id",
+                "references_table": "plantings",
+                "references_column": "id",
+                "constraint": "treatments_planting_id_foreign"
+            },
+            {
+                "column": "planting_location_id",
+                "references_table": "planting_locations",
+                "references_column": "id",
+                "constraint": "treatments_planting_location_id_foreign"
+            },
+            {
+                "column": "responsible_person_id",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "treatments_responsible_person_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "user_planting_location_land_manager": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "planting_location_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "user_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "planting_location_id",
+                "references_table": "planting_locations",
+                "references_column": "id",
+                "constraint": "user_planting_location_land_manager_planting_location_id_foreign"
+            },
+            {
+                "column": "user_id",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "user_planting_location_land_manager_user_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "user_planting_location_land_worker": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "planting_location_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "user_id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "planting_location_id",
+                "references_table": "planting_locations",
+                "references_column": "id",
+                "constraint": "user_planting_location_land_worker_planting_location_id_foreign"
+            },
+            {
+                "column": "user_id",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "user_planting_location_land_worker_user_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "users": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "user_id",
+                "type": "varchar(36)",
+                "null": "YES",
+                "key": "UNI",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "full_name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "status",
+                "type": "enum('active','inactive')",
+                "null": "NO",
+                "key": "",
+                "default": "active",
+                "extra": ""
+            },
+            {
+                "name": "contact_type",
+                "type": "enum('pegawai_uptd_bbi_tpph','pegawai_gudang','petugas_sertifikasi','petani','penyuluh','penangkar','lainnya')",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "organization",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "position",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "nip",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "primary_phone",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "primary_phone_is_whatsapp",
+                "type": "tinyint(1)",
+                "null": "NO",
+                "key": "",
+                "default": "1",
+                "extra": ""
+            },
+            {
+                "name": "secondary_phone",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "address",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "province",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "city",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "district",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "village",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "notes",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "email",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "UNI",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "photo_path",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "email_verified_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "password",
+                "type": "varchar(255)",
+                "null": "NO",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "remember_token",
+                "type": "varchar(100)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "role",
+                "type": "enum('admin','kepala_satuan_tugas','petugas_sertifikasi','petugas_gudang','petugas_bbi','penangkar')",
+                "null": "YES",
+                "key": "",
+                "default": "petugas_bbi",
+                "extra": ""
+            },
+            {
+                "name": "location_placement",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [],
+        "has_id": true,
+        "has_timestamps": true
+    },
+    "warehouses": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint unsigned",
+                "null": "NO",
+                "key": "PRI",
+                "default": null,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "name",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "internal_id",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "UNI",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "tracking_type",
+                "type": "varchar(50)",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "description",
+                "type": "text",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "responsible_person_id",
+                "type": "bigint unsigned",
+                "null": "YES",
+                "key": "MUL",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp",
+                "null": "YES",
+                "key": "",
+                "default": null,
+                "extra": ""
+            }
+        ],
+        "foreign_keys": [
+            {
+                "column": "responsible_person_id",
+                "references_table": "users",
+                "references_column": "id",
+                "constraint": "warehouses_responsible_person_id_foreign"
+            }
+        ],
+        "has_id": true,
+        "has_timestamps": true
+    }
+}

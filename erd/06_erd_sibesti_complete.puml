@@ -1,0 +1,758 @@
+@startuml ERD_SIBESTI_COMPLETE
+
+!define TABLE(x) class x << (T,#FFAAAA) >>
+!define PRIMARY_KEY(x) <&key> x
+!define FOREIGN_KEY(x) <&link-intact> x
+
+title SIBESTI - Entity Relationship Diagram\nSistem Informasi Benih Sertifikasi\n(Semua ID menggunakan VARCHAR(36))\nUpdate: Februari 2026
+
+skinparam class {
+    BackgroundColor #FFFEF0
+    BorderColor #333333
+    ArrowColor #333333
+}
+
+skinparam packageBackgroundColor #F5F5F5
+
+' =====================================================
+' 1. SISTEM & AUTENTIKASI
+' =====================================================
+package "Sistem & Autentikasi" {
+    TABLE(users) {
+        PRIMARY_KEY(user_id) : VARCHAR(36)
+        --
+        name : VARCHAR(255)
+        email : VARCHAR(255) <<UNIQUE>>
+        password : VARCHAR(255)
+        role : ENUM
+        FOREIGN_KEY(location_id) : VARCHAR(36)
+        location_placement : VARCHAR(255)
+        photo_path : VARCHAR(255)
+        full_name : VARCHAR(255)
+        status : ENUM
+        contact_type : ENUM
+        organization : VARCHAR(255)
+        position : VARCHAR(255)
+        nip : VARCHAR(50)
+        primary_phone : VARCHAR(20)
+        secondary_phone : VARCHAR(20)
+        address : TEXT
+        province : VARCHAR(100)
+        city : VARCHAR(100)
+        district : VARCHAR(100)
+        village : VARCHAR(100)
+        notes : TEXT
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(locations) {
+        PRIMARY_KEY(location_id) : VARCHAR(36)
+        --
+        name : VARCHAR(255)
+        city : VARCHAR(255)
+        district : VARCHAR(255)
+        type : ENUM
+        description : TEXT
+        google_maps_link : VARCHAR(500)
+        photo : VARCHAR(255)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(password_reset_tokens) {
+        PRIMARY_KEY(email) : VARCHAR(255)
+        --
+        token : VARCHAR(255)
+        created_at : TIMESTAMP
+    }
+
+    TABLE(personal_access_tokens) {
+        PRIMARY_KEY(id) : BIGINT
+        --
+        tokenable_type : VARCHAR(255)
+        tokenable_id : BIGINT
+        name : VARCHAR(255)
+        token : VARCHAR(64) <<UNIQUE>>
+        abilities : TEXT
+        last_used_at : TIMESTAMP
+        expires_at : TIMESTAMP
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+' =====================================================
+' 2. MANAJEMEN TUGAS
+' =====================================================
+package "Manajemen Tugas" {
+    TABLE(task_templates) {
+        PRIMARY_KEY(task_template_id) : VARCHAR(36)
+        --
+        name : VARCHAR(255)
+        description : TEXT
+        tasks_list : JSON
+        association : ENUM
+        is_active : TINYINT(1)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(task_series) {
+        PRIMARY_KEY(task_series_id) : VARCHAR(36)
+        --
+        name : VARCHAR(255)
+        description : TEXT
+        FOREIGN_KEY(template_id) : VARCHAR(36)
+        series_tasks : JSON
+        is_active : TINYINT(1)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(tasks) {
+        PRIMARY_KEY(task_id) : VARCHAR(36)
+        --
+        title : VARCHAR(255)
+        description : TEXT
+        priority : ENUM
+        status : ENUM
+        due_date : DATE
+        location : VARCHAR(255)
+        task_report : TEXT
+        checklist : JSON
+        attachments : JSON
+        new_status : ENUM
+        FOREIGN_KEY(assigned_to) : VARCHAR(36)
+        new_priority : ENUM
+        start_date : DATE
+        due_time : TIME
+        FOREIGN_KEY(template_id) : VARCHAR(36)
+        FOREIGN_KEY(series_id) : VARCHAR(36)
+        FOREIGN_KEY(planting_location_id) : VARCHAR(36)
+        FOREIGN_KEY(planting_id) : VARCHAR(36)
+        task_color : VARCHAR(7)
+        collaborators : JSON
+        hours_spent : DECIMAL(8,2)
+        FOREIGN_KEY(created_by) : VARCHAR(36)
+        FOREIGN_KEY(last_edited_by) : VARCHAR(36)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+' =====================================================
+' 3. MODUL PENANAMAN
+' =====================================================
+package "Modul Penanaman" {
+    TABLE(plant_types) {
+        PRIMARY_KEY(plant_type_id) : VARCHAR(36)
+        --
+        name : VARCHAR(255)
+        category : VARCHAR(255)
+        variety : TEXT
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(plants) {
+        PRIMARY_KEY(plant_id) : VARCHAR(36)
+        --
+        name : VARCHAR(255)
+        FOREIGN_KEY(plant_type_id) : VARCHAR(36)
+        variety : VARCHAR(255)
+        status : ENUM
+        progress : INT
+        FOREIGN_KEY(planting_location_id) : VARCHAR(36)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(planting_locations) {
+        PRIMARY_KEY(planting_location_id) : VARCHAR(36)
+        --
+        name : VARCHAR(255)
+        FOREIGN_KEY(location_id) : VARCHAR(36)
+        location_type : ENUM
+        planting_format : ENUM
+        planting_format_custom : VARCHAR(255)
+        num_beds : INT
+        bed_length_m : DECIMAL(10,2)
+        bed_width_m : DECIMAL(10,2)
+        map_size : DECIMAL(10,2)
+        light_condition : VARCHAR(255)
+        description : TEXT
+        location_summary : TEXT
+        administrative_address : TEXT
+        google_maps_link : VARCHAR(500)
+        land_status : VARCHAR(255)
+        ownership_status : VARCHAR(255)
+        water_source : VARCHAR(255)
+        soil_type : VARCHAR(255)
+        elevation_masl : INT
+        primary_photo_path : VARCHAR(255)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(plantings) {
+        PRIMARY_KEY(planting_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(plant_id) : VARCHAR(36)
+        FOREIGN_KEY(planting_location_id) : VARCHAR(36)
+        bed_label : VARCHAR(255)
+        days_to_emerge : INT
+        spacing_between_plants : DECIMAL(10,2)
+        spacing_between_rows : DECIMAL(10,2)
+        sowing_depth : DECIMAL(10,2)
+        avg_height : DECIMAL(10,2)
+        start_method : ENUM
+        germination_stage : ENUM
+        seeds_per_hole : INT
+        light_profile : ENUM
+        soil_condition : ENUM
+        planting_detail : TEXT
+        pruning_detail : TEXT
+        perennial : TINYINT(1)
+        days_to_flower : INT
+        days_to_harvest : INT
+        harvest_window_days : INT
+        expected_loss_rate : DECIMAL(5,2)
+        harvest_unit : ENUM
+        expected_yield_per_hectare : DECIMAL(15,2)
+        quantity_planted : DECIMAL(15,2)
+        planted_at : DATE
+        is_completed : TINYINT(1)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(harvests) {
+        PRIMARY_KEY(harvest_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(plant_id) : VARCHAR(36)
+        FOREIGN_KEY(planting_id) : VARCHAR(36)
+        FOREIGN_KEY(planting_location_id) : VARCHAR(36)
+        harvested_at : DATE
+        batch_no : VARCHAR(255)
+        note : TEXT
+        source : VARCHAR(255)
+        quality : VARCHAR(255)
+        quantity : DECIMAL(15,2)
+        unit : VARCHAR(50)
+        loss_quantity : DECIMAL(15,2)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(planting_losses) {
+        PRIMARY_KEY(planting_loss_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(planting_id) : VARCHAR(36)
+        loss_date : DATE
+        loss_amount : DECIMAL(15,2)
+        loss_reason : VARCHAR(255)
+        description : TEXT
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(plant_notes) {
+        PRIMARY_KEY(plant_note_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(plant_id) : VARCHAR(36)
+        description : TEXT
+        note_date : DATE
+        keywords : VARCHAR(255)
+        attachment_path : VARCHAR(255)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(plant_photos) {
+        PRIMARY_KEY(plant_photo_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(plant_id) : VARCHAR(36)
+        file_path : VARCHAR(255)
+        file_name : VARCHAR(255)
+        file_size : INT
+        mime_type : VARCHAR(100)
+        description : TEXT
+        taken_at : TIMESTAMP
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(planting_location_notes) {
+        PRIMARY_KEY(planting_location_note_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(planting_location_id) : VARCHAR(36)
+        title : VARCHAR(255)
+        description : TEXT
+        note_date : DATE
+        keywords : VARCHAR(255)
+        attachment_path : VARCHAR(255)
+        FOREIGN_KEY(user_id) : VARCHAR(36)
+        assigned_to : JSON
+        read_by : JSON
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(planting_location_photos) {
+        PRIMARY_KEY(planting_location_photo_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(planting_location_id) : VARCHAR(36)
+        file_path : VARCHAR(255)
+        file_name : VARCHAR(255)
+        file_size : INT
+        mime_type : VARCHAR(100)
+        description : TEXT
+        taken_at : TIMESTAMP
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+' =====================================================
+' 4. TREATMENT & NUTRIENT
+' =====================================================
+package "Treatment & Nutrient" {
+    TABLE(treatments) {
+        PRIMARY_KEY(treatment_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(planting_location_id) : VARCHAR(36)
+        FOREIGN_KEY(planting_id) : VARCHAR(36)
+        treatment_type : VARCHAR(255)
+        treatment_name : VARCHAR(255)
+        product_detail : TEXT
+        opt_institution : VARCHAR(255)
+        application_method : VARCHAR(255)
+        withholding_period_days : INT
+        technician : VARCHAR(255)
+        description : TEXT
+        treatment_date : DATE
+        treatment_location : VARCHAR(255)
+        amount_applied : DECIMAL(15,2)
+        unit_measurement : VARCHAR(50)
+        total_cost : DECIMAL(15,2)
+        keywords : VARCHAR(255)
+        FOREIGN_KEY(responsible_person_id) : VARCHAR(36)
+        institution_source : VARCHAR(255)
+        attachment : VARCHAR(255)
+        batch_number : VARCHAR(255)
+        retreat_date : DATE
+        FOREIGN_KEY(edited_by) : VARCHAR(36)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(nutrients) {
+        PRIMARY_KEY(nutrient_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(planting_location_id) : VARCHAR(36)
+        FOREIGN_KEY(planting_id) : VARCHAR(36)
+        product_applied : VARCHAR(255)
+        amount_applied : DECIMAL(15,2)
+        unit : VARCHAR(50)
+        application_method : VARCHAR(255)
+        application_date : DATE
+        total_cost : DECIMAL(15,2)
+        technician : VARCHAR(255)
+        description : TEXT
+        institution_source : VARCHAR(255)
+        FOREIGN_KEY(responsible_person_id) : VARCHAR(36)
+        FOREIGN_KEY(attachment_id) : VARCHAR(36)
+        FOREIGN_KEY(edited_by) : VARCHAR(36)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(expenses) {
+        PRIMARY_KEY(expense_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(planting_location_id) : VARCHAR(36)
+        expense_name : VARCHAR(255)
+        amount : DECIMAL(15,2)
+        expense_type : ENUM
+        expense_date : DATE
+        FOREIGN_KEY(treatment_id) : VARCHAR(36)
+        FOREIGN_KEY(nutrient_id) : VARCHAR(36)
+        FOREIGN_KEY(responsible_person_id) : VARCHAR(36)
+        notes : TEXT
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(attachments) {
+        PRIMARY_KEY(attachment_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(planting_location_id) : VARCHAR(36)
+        title : VARCHAR(255)
+        description : TEXT
+        attachment_date : DATE
+        file_path : VARCHAR(255)
+        file_name : VARCHAR(255)
+        file_size : INT
+        mime_type : VARCHAR(100)
+        FOREIGN_KEY(created_by) : VARCHAR(36)
+        FOREIGN_KEY(edited_by) : VARCHAR(36)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+' =====================================================
+' 5. SERTIFIKASI
+' =====================================================
+package "Sertifikasi" {
+    TABLE(certifications) {
+        PRIMARY_KEY(certification_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(harvest_id) : VARCHAR(36)
+        FOREIGN_KEY(planting_location_id) : VARCHAR(36)
+        FOREIGN_KEY(plant_id) : VARCHAR(36)
+        certification_status : VARCHAR(255)
+        seed_class_requested : VARCHAR(255)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(certification_reports) {
+        PRIMARY_KEY(certification_report_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(certification_id) : VARCHAR(36)
+        report_number_bpsb : VARCHAR(255)
+        report_date : DATE
+        growing_season : VARCHAR(255)
+        inspection_phase : VARCHAR(255)
+        inspector_name : VARCHAR(255)
+        seed_class_result : VARCHAR(255)
+        isolation_north : DECIMAL(10,2)
+        isolation_east : DECIMAL(10,2)
+        isolation_south : DECIMAL(10,2)
+        isolation_west : DECIMAL(10,2)
+        plant_characteristics_match : TINYINT(1)
+        pest_disease_condition : TEXT
+        weed_condition : ENUM
+        population_per_sample : INT
+        other_variety_mix_count : INT
+        other_variety_mix_percentage : DECIMAL(5,2)
+        estimated_yield : DECIMAL(15,2)
+        conclusion : ENUM
+        scan_file_path : VARCHAR(255)
+        expiry_date : DATE
+        certified_seed_quantity : DECIMAL(15,2)
+        estimated_sale_price_per_kg : DECIMAL(15,2)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+' =====================================================
+' 6. GUDANG & INVENTORI
+' =====================================================
+package "Gudang & Inventori" {
+    TABLE(warehouses) {
+        PRIMARY_KEY(warehouse_id) : VARCHAR(36)
+        --
+        name : VARCHAR(255)
+        internal_id : VARCHAR(50) <<UNIQUE>>
+        tracking_type : ENUM
+        description : TEXT
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(bins) {
+        PRIMARY_KEY(bin_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(warehouse_id) : VARCHAR(36)
+        name : VARCHAR(255)
+        internal_id : VARCHAR(50)
+        max_capacity : DECIMAL(15,2)
+        capacity_unit : VARCHAR(50)
+        description : TEXT
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(inventory_types) {
+        PRIMARY_KEY(inventory_type_id) : VARCHAR(36)
+        --
+        category : VARCHAR(255)
+        name : VARCHAR(255)
+        sku : VARCHAR(100) <<UNIQUE>>
+        electronic_id : VARCHAR(255)
+        unit : VARCHAR(50)
+        estimated_value_per_unit : DECIMAL(15,2)
+        estimated_kg_per_unit : DECIMAL(15,2)
+        track_individual_lots : TINYINT(1)
+        low_stock_threshold : DECIMAL(15,2)
+        low_stock_unit : VARCHAR(50)
+        low_stock_email : VARCHAR(255)
+        description : TEXT
+        FOREIGN_KEY(responsible_person_id) : VARCHAR(36)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(inventory_lots) {
+        PRIMARY_KEY(inventory_lot_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(inventory_type_id) : VARCHAR(36)
+        production_id : VARCHAR(255)
+        expiry_date : DATE
+        status : ENUM
+        initial_stock : DECIMAL(15,2)
+        current_stock : DECIMAL(15,2)
+        stock_unit : VARCHAR(50)
+        FOREIGN_KEY(warehouse_id) : VARCHAR(36)
+        FOREIGN_KEY(bin_id) : VARCHAR(36)
+        FOREIGN_KEY(certification_id) : VARCHAR(36)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(inventory_transactions) {
+        PRIMARY_KEY(inventory_transaction_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(inventory_type_id) : VARCHAR(36)
+        FOREIGN_KEY(inventory_lot_id) : VARCHAR(36)
+        transaction_type : ENUM
+        quantity : DECIMAL(15,2)
+        unit : VARCHAR(50)
+        FOREIGN_KEY(warehouse_id) : VARCHAR(36)
+        FOREIGN_KEY(bin_id) : VARCHAR(36)
+        reason : VARCHAR(255)
+        notes : TEXT
+        FOREIGN_KEY(user_id) : VARCHAR(36)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(inventory_type_warehouses) {
+        PRIMARY_KEY(inventory_type_warehouse_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(inventory_type_id) : VARCHAR(36)
+        FOREIGN_KEY(warehouse_id) : VARCHAR(36)
+        FOREIGN_KEY(bin_id) : VARCHAR(36)
+        warehouse_only : TINYINT(1)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(inventory_notes) {
+        PRIMARY_KEY(inventory_note_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(inventory_type_id) : VARCHAR(36)
+        content : TEXT
+        FOREIGN_KEY(user_id) : VARCHAR(36)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(inventory_photos) {
+        PRIMARY_KEY(inventory_photo_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(inventory_type_id) : VARCHAR(36)
+        photo_path : VARCHAR(255)
+        caption : TEXT
+        FOREIGN_KEY(user_id) : VARCHAR(36)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(inventory_type_seeds) {
+        PRIMARY_KEY(inventory_type_seed_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(inventory_type_id) : VARCHAR(36)
+        FOREIGN_KEY(plant_id) : VARCHAR(36)
+        FOREIGN_KEY(planting_location_id) : VARCHAR(36)
+        quantity : DECIMAL(15,2)
+        estimated_sale_price_per_kg : DECIMAL(15,2)
+        expiry_date : DATE
+        FOREIGN_KEY(filled_by_user_id) : VARCHAR(36)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(inventory_type_certification_reports) {
+        PRIMARY_KEY(inventory_type_certification_report_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(inventory_type_id) : VARCHAR(36)
+        FOREIGN_KEY(certification_report_id) : VARCHAR(36)
+        quantity : DECIMAL(15,2)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+' =====================================================
+' 7. PENJUALAN
+' =====================================================
+package "Penjualan" {
+    TABLE(sales) {
+        PRIMARY_KEY(sale_id) : VARCHAR(36)
+        --
+        receipt_number : VARCHAR(50) <<UNIQUE>>
+        sale_date : DATE
+        buyer_name : VARCHAR(255)
+        buyer_contact : VARCHAR(255)
+        total_amount : DECIMAL(15,2)
+        payment_method : ENUM
+        payment_status : ENUM
+        notes : TEXT
+        FOREIGN_KEY(user_id) : VARCHAR(36)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(sale_items) {
+        PRIMARY_KEY(sale_item_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(sale_id) : VARCHAR(36)
+        FOREIGN_KEY(inventory_type_id) : VARCHAR(36)
+        FOREIGN_KEY(inventory_lot_id) : VARCHAR(36)
+        quantity : DECIMAL(15,2)
+        unit : VARCHAR(50)
+        unit_price : DECIMAL(15,2)
+        subtotal : DECIMAL(15,2)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+' =====================================================
+' 8. RELASI USER-LOKASI
+' =====================================================
+package "Relasi User-Lokasi" {
+    TABLE(user_planting_location_land_manager) {
+        PRIMARY_KEY(user_planting_location_land_manager_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(planting_location_id) : VARCHAR(36)
+        FOREIGN_KEY(user_id) : VARCHAR(36)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    TABLE(user_planting_location_land_worker) {
+        PRIMARY_KEY(user_planting_location_land_worker_id) : VARCHAR(36)
+        --
+        FOREIGN_KEY(planting_location_id) : VARCHAR(36)
+        FOREIGN_KEY(user_id) : VARCHAR(36)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+' =====================================================
+' 9. LANDING PAGE
+' =====================================================
+package "Landing Page" {
+    TABLE(landing_page_settings) {
+        PRIMARY_KEY(landing_page_setting_id) : VARCHAR(36)
+        --
+        key_name : VARCHAR(100) <<UNIQUE>>
+        value : TEXT
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+}
+
+' =====================================================
+' RELASI ANTAR TABEL
+' =====================================================
+
+' Sistem & Autentikasi
+users }o--|| locations : "location_id"
+
+' Manajemen Tugas
+task_series }o--|| task_templates : "template_id"
+tasks }o--|| users : "assigned_to"
+tasks }o--o| task_templates : "template_id"
+tasks }o--o| task_series : "series_id"
+tasks }o--o| planting_locations : "planting_location_id"
+tasks }o--o| plantings : "planting_id"
+tasks }o--o| users : "created_by"
+tasks }o--o| users : "last_edited_by"
+
+' Modul Penanaman
+plants }o--|| plant_types : "plant_type_id"
+plants }o--o| planting_locations : "planting_location_id"
+planting_locations }o--o| locations : "location_id"
+plantings }o--|| plants : "plant_id"
+plantings }o--o| planting_locations : "planting_location_id"
+harvests }o--|| plants : "plant_id"
+harvests }o--o| plantings : "planting_id"
+harvests }o--o| planting_locations : "planting_location_id"
+planting_losses }o--|| plantings : "planting_id"
+plant_notes }o--|| plants : "plant_id"
+plant_photos }o--|| plants : "plant_id"
+planting_location_notes }o--|| planting_locations : "planting_location_id"
+planting_location_notes }o--o| users : "user_id"
+planting_location_photos }o--|| planting_locations : "planting_location_id"
+
+' Treatment & Nutrient
+treatments }o--|| planting_locations : "planting_location_id"
+treatments }o--o| plantings : "planting_id"
+treatments }o--o| users : "responsible_person_id"
+treatments }o--o| users : "edited_by"
+nutrients }o--|| planting_locations : "planting_location_id"
+nutrients }o--o| plantings : "planting_id"
+nutrients }o--o| users : "responsible_person_id"
+nutrients }o--o| attachments : "attachment_id"
+nutrients }o--o| users : "edited_by"
+expenses }o--|| planting_locations : "planting_location_id"
+expenses }o--o| treatments : "treatment_id"
+expenses }o--o| nutrients : "nutrient_id"
+expenses }o--o| users : "responsible_person_id"
+attachments }o--|| planting_locations : "planting_location_id"
+attachments }o--|| users : "created_by"
+attachments }o--o| users : "edited_by"
+
+' Sertifikasi
+certifications }o--|| harvests : "harvest_id"
+certifications }o--o| planting_locations : "planting_location_id"
+certifications }o--o| plants : "plant_id"
+certification_reports }o--|| certifications : "certification_id"
+
+' Gudang & Inventori
+bins }o--|| warehouses : "warehouse_id"
+inventory_types }o--o| users : "responsible_person_id"
+inventory_lots }o--|| inventory_types : "inventory_type_id"
+inventory_lots }o--o| warehouses : "warehouse_id"
+inventory_lots }o--o| bins : "bin_id"
+inventory_lots }o--o| certifications : "certification_id"
+inventory_transactions }o--|| inventory_types : "inventory_type_id"
+inventory_transactions }o--o| inventory_lots : "inventory_lot_id"
+inventory_transactions }o--o| warehouses : "warehouse_id"
+inventory_transactions }o--o| bins : "bin_id"
+inventory_transactions }o--|| users : "user_id"
+inventory_type_warehouses }o--|| inventory_types : "inventory_type_id"
+inventory_type_warehouses }o--|| warehouses : "warehouse_id"
+inventory_type_warehouses }o--o| bins : "bin_id"
+inventory_notes }o--|| inventory_types : "inventory_type_id"
+inventory_notes }o--|| users : "user_id"
+inventory_photos }o--|| inventory_types : "inventory_type_id"
+inventory_photos }o--|| users : "user_id"
+inventory_type_seeds }o--|| inventory_types : "inventory_type_id"
+inventory_type_seeds }o--|| plants : "plant_id"
+inventory_type_seeds }o--|| planting_locations : "planting_location_id"
+inventory_type_seeds }o--o| users : "filled_by_user_id"
+inventory_type_certification_reports }o--|| inventory_types : "inventory_type_id"
+inventory_type_certification_reports }o--|| certification_reports : "certification_report_id"
+
+' Penjualan
+sales }o--|| users : "user_id"
+sale_items }o--|| sales : "sale_id"
+sale_items }o--|| inventory_types : "inventory_type_id"
+sale_items }o--o| inventory_lots : "inventory_lot_id"
+
+' Relasi User-Lokasi
+user_planting_location_land_manager }o--|| planting_locations : "planting_location_id"
+user_planting_location_land_manager }o--|| users : "user_id"
+user_planting_location_land_worker }o--|| planting_locations : "planting_location_id"
+user_planting_location_land_worker }o--|| users : "user_id"
+
+@enduml

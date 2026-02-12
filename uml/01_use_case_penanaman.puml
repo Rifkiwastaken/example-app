@@ -1,0 +1,115 @@
+@startuml Use Case Diagram - Modul Penanaman (SIBESTI)
+!theme plain
+skinparam usecase {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 12
+}
+skinparam actor {
+    BackgroundColor #FFF9C4
+    BorderColor #F57F17
+}
+
+left to right direction
+
+actor "Kepala Satuan Tugas\nManajemen Penanaman" as KepalaSatgas
+actor "Penangkar" as Penangkar
+actor "Sistem" as Sistem
+
+rectangle "Modul Penanaman" {
+    
+    usecase "Akses Halaman Penanaman" as UC_Access
+    usecase "Lihat Daftar Penanaman" as UC_List
+    usecase "Input Data Penanaman" as UC_Input
+    usecase "Input Data Perkembangan" as UC_InputPerkembangan
+    usecase "Tracking Perkembangan Tanaman" as UC_Tracking
+    usecase "Update Status Perkembangan" as UC_UpdateStatus
+    usecase "Input Data Panen" as UC_Panen
+    usecase "Edit Data Penanaman" as UC_Edit
+    usecase "Hapus Data Penanaman" as UC_Delete
+    usecase "Lihat Detail Penanaman" as UC_Detail
+    
+    ' Use case sistem
+    usecase "Validasi Role Pengguna" as UC_ValidasiRole
+    usecase "Query Data Tanaman" as UC_QueryTanaman
+    usecase "Query Data Lokasi" as UC_QueryLokasi
+    usecase "Validasi Data Penanaman" as UC_ValidasiData
+    usecase "Check Tanaman Terdaftar" as UC_CheckTanaman
+    usecase "Check Lokasi Terdaftar" as UC_CheckLokasi
+    usecase "Simpan Data Penanaman" as UC_SimpanPenanaman
+    usecase "Update Status Perkembangan" as UC_UpdatePerkembangan
+    usecase "Check Siap Panen" as UC_CheckSiapPanen
+    usecase "Simpan Data Panen" as UC_SimpanPanen
+}
+
+' Relasi Kepala Satuan Tugas
+KepalaSatgas --> UC_Access
+KepalaSatgas --> UC_List
+KepalaSatgas --> UC_Input
+KepalaSatgas --> UC_InputPerkembangan
+KepalaSatgas --> UC_Tracking
+KepalaSatgas --> UC_UpdateStatus
+KepalaSatgas --> UC_Panen
+KepalaSatgas --> UC_Edit
+KepalaSatgas --> UC_Delete
+KepalaSatgas --> UC_Detail
+
+' Relasi Penangkar
+Penangkar --> UC_Access
+Penangkar --> UC_List
+Penangkar --> UC_Input
+Penangkar --> UC_InputPerkembangan
+Penangkar --> UC_Tracking
+Penangkar --> UC_UpdateStatus
+Penangkar --> UC_Panen
+Penangkar --> UC_Detail
+
+' Relasi Sistem
+Sistem --> UC_ValidasiRole
+Sistem --> UC_QueryTanaman
+Sistem --> UC_QueryLokasi
+Sistem --> UC_ValidasiData
+Sistem --> UC_CheckTanaman
+Sistem --> UC_CheckLokasi
+Sistem --> UC_SimpanPenanaman
+Sistem --> UC_UpdatePerkembangan
+Sistem --> UC_CheckSiapPanen
+Sistem --> UC_SimpanPanen
+
+' Relasi Include
+UC_Access ..> UC_ValidasiRole : <<include>>
+UC_Input ..> UC_QueryTanaman : <<include>>
+UC_Input ..> UC_QueryLokasi : <<include>>
+UC_Input ..> UC_InputPerkembangan : <<include>>
+UC_Input ..> UC_ValidasiData : <<include>>
+UC_ValidasiData ..> UC_CheckTanaman : <<include>>
+UC_ValidasiData ..> UC_CheckLokasi : <<include>>
+UC_Input ..> UC_SimpanPenanaman : <<include>>
+UC_Tracking ..> UC_UpdateStatus : <<include>>
+UC_UpdateStatus ..> UC_UpdatePerkembangan : <<include>>
+UC_UpdateStatus ..> UC_CheckSiapPanen : <<include>>
+UC_Panen ..> UC_SimpanPanen : <<include>>
+
+' Relasi Extend
+UC_List ..> UC_Detail : <<extend>>
+UC_List ..> UC_Edit : <<extend>>
+UC_List ..> UC_Delete : <<extend>>
+UC_Tracking ..> UC_Panen : <<extend>>
+
+@enduml
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

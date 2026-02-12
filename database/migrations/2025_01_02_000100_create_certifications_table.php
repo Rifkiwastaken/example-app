@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('certifications', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('harvest_id')->constrained('harvests')->cascadeOnDelete();
+            $table->string('certification_id', 36)->primary();
+            $table->string('harvest_id', 36)->cascadeOnDelete();
             $table->string('certification_status')->default('dalam_proses'); // dalam_proses, lulus, tidak_lulus, selesai
             $table->string('seed_class_requested')->nullable(); // BS, BP, BR
             $table->timestamps();
@@ -22,6 +22,9 @@ return new class extends Migration
         Schema::dropIfExists('certifications');
     }
 };
+
+
+
 
 
 

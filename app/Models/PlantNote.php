@@ -4,11 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasCustomId;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PlantNote extends Model
 {
     use HasFactory;
+    use HasCustomId;
+
+    protected $primaryKey = 'plant_note_id';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'plant_id',
@@ -24,9 +30,12 @@ class PlantNote extends Model
 
     public function plant(): BelongsTo
     {
-        return $this->belongsTo(Plant::class);
+        return $this->belongsTo(Plant::class, 'plant_id', 'plant_id');
     }
 }
+
+
+
 
 
 

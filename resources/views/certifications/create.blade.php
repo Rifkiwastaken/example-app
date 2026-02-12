@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Form Input Laporan Pemeriksaan Pertanaman - SIBIT')
+@section('title', 'Form Input Laporan Sertifikasi Benih - SIBESTI')
 
 @section('content')
 <!-- Breadcrumbs -->
@@ -26,7 +26,7 @@
 <!-- Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="mb-1">Form Input Laporan Pemeriksaan Pertanaman</h4>
+        <h4 class="mb-1">Form Input Laporan Sertifikasi Benih</h4>
         <small class="text-muted">Input data sertifikasi dan laporan pemeriksaan untuk lot produksi</small>
     </div>
     <a href="{{ route('certifications.index') }}" class="btn btn-outline-secondary">
@@ -37,6 +37,14 @@
 <form action="{{ route('certifications.store') }}" method="POST" enctype="multipart/form-data">
     @csrf
     
+    @if(isset($selectedHarvestId) && $selectedHarvestId)
+        <input type="hidden" name="harvest_id" value="{{ $selectedHarvestId }}">
+    @endif
+    
+    @if(isset($redirectPlantId) && $redirectPlantId)
+        <input type="hidden" name="plant_id" value="{{ $redirectPlantId }}">
+    @endif
+    
     <!-- Bagian A: Informasi Dasar Laporan -->
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -45,11 +53,12 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <label class="form-label">Nomor Laporan BPSB</label>
+                    <label class="form-label">Nomor Laporan BPSB <span class="text-danger">*</span></label>
                     <input type="text" class="form-control @error('report_number_bpsb') is-invalid @enderror" 
-                           name="report_number_bpsb" value="{{ old('report_number_bpsb') }}" 
-                           placeholder="Contoh: Pdg 01.P/L3-21-40/...">
-                    <small class="text-muted">Contoh: Pdg 01.P/L3-21-40/...</small>
+                           name="report_number_bpsb" id="report_number_bpsb" 
+                           value="{{ old('report_number_bpsb', 'BPSB-' . date('Y') . '-' . str_pad(\App\Models\CertificationReport::whereYear('report_date', date('Y'))->count() + 1, 6, '0', STR_PAD_LEFT)) }}" 
+                           placeholder="Contoh: Pdg 01.P/L3-21-40/..." required>
+                    <small class="text-muted">Nomor batch akan otomatis terisi, namun dapat diubah jika diperlukan</small>
                     @error('report_number_bpsb')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -87,7 +96,7 @@
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
-                <div class="col-md-12 mb-3">
+                <div class="col-md-6 mb-3">
                     <label class="form-label">Petugas Pengawas Mutu (BPSB)</label>
                     <input type="text" class="form-control @error('inspector_name') is-invalid @enderror" 
                            name="inspector_name" value="{{ old('inspector_name') }}" 
@@ -96,6 +105,13 @@
                     @error('inspector_name')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Pengisi Laporan Sertifikasi</label>
+                    <input type="text" class="form-control" 
+                           value="{{ auth()->user()->name }}" 
+                           readonly>
+                    <small class="text-muted">User admin yang mengisi laporan</small>
                 </div>
             </div>
         </div>
@@ -107,18 +123,28 @@
             <h5 class="mb-0"><i class="fas fa-link me-2"></i>Bagian B: Tautkan ke Lokasi Produksi</h5>
         </div>
         <div class="card-body">
+            @if(isset($harvest) && $harvest)
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Data dari Panen:</strong> Lokasi dan tanaman sudah terisi otomatis dari data panen.
+                </div>
+            @endif
+            
             <div class="mb-3">
                 <label class="form-label">Lokasi Produksi <span class="text-danger">*</span></label>
-                <select class="form-select @error('planting_location_id') is-invalid @enderror" name="planting_location_id" id="planting_location_id" required>
+                <select class="form-select @error('planting_location_id') is-invalid @enderror" name="planting_location_id" id="planting_location_id" required {{ isset($harvest) && $harvest ? 'disabled' : '' }}>
                     <option value="">-- Pilih Lokasi Penanaman --</option>
                     @foreach($plantingLocations as $location)
-                        <option value="{{ $location->id }}" 
-                                {{ old('planting_location_id', $selectedPlantingLocationId) == $location->id ? 'selected' : '' }}
+                        <option value="{{ $location->planting_location_id }}" 
+                                {{ old('planting_location_id', $selectedPlantingLocationId) == $location->planting_location_id ? 'selected' : '' }}
                                 data-location-name="{{ $location->name }}">
-                            {{ $location->name }} @if($location->baseLocation) - {{ $location->baseLocation->name }} @endif
+                            {{ $location->name }}
                         </option>
                     @endforeach
                 </select>
+                @if(isset($harvest) && $harvest)
+                    <input type="hidden" name="planting_location_id" value="{{ $selectedPlantingLocationId }}">
+                @endif
                 <small class="text-muted">Pilih lokasi penanaman yang akan diperiksa. Data diambil dari Lokasi Penanaman.</small>
                 @error('planting_location_id')
                     <div class="invalid-feedback">{{ $message }}</div>
@@ -127,21 +153,24 @@
 
             <div class="mb-3">
                 <label class="form-label">Pilih Benih untuk Disertifikasi <span class="text-danger">*</span></label>
-                <select class="form-select @error('plant_id') is-invalid @enderror" name="plant_id" id="plant_id" required>
+                <select class="form-select @error('plant_id') is-invalid @enderror" name="plant_id" id="plant_id" required {{ isset($harvest) && $harvest ? 'disabled' : '' }}>
                     <option value="">-- Pilih Benih --</option>
                     @foreach($plants as $plant)
                         @php
                             $variety = $plant->variety ?: 'Tanpa Varietas';
                             $commodity = $plant->type?->name ?: $plant->name;
                         @endphp
-                        <option value="{{ $plant->id }}" 
-                                {{ old('plant_id', $selectedPlantId) == $plant->id ? 'selected' : '' }}
+                        <option value="{{ $plant->plant_id }}" 
+                                {{ old('plant_id', $selectedPlantId) == $plant->plant_id ? 'selected' : '' }}
                                 data-commodity="{{ $commodity }}"
                                 data-variety="{{ $variety }}">
                             {{ $commodity }} - {{ $variety }}
                         </option>
                     @endforeach
                 </select>
+                @if(isset($harvest) && $harvest)
+                    <input type="hidden" name="plant_id" value="{{ $selectedPlantId }}">
+                @endif
                 <small class="text-muted">Pilih benih yang akan disertifikasi. Data diambil dari Tanaman Saya.</small>
                 @error('plant_id')
                     <div class="invalid-feedback">{{ $message }}</div>
@@ -158,6 +187,32 @@
                 </select>
                 <small class="text-muted">Default: BP (Benih Pokok)</small>
                 @error('seed_class_requested')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <!-- Nomor Batch Tanam -->
+            <div class="mb-3">
+                <label class="form-label">Nomor Batch Tanam</label>
+                <input type="text" class="form-control @error('planting_batch_number') is-invalid @enderror" 
+                       name="planting_batch_number" id="planting_batch_number"
+                       value="{{ old('planting_batch_number', isset($harvest) && $harvest && $harvest->planting ? $harvest->planting->planting_batch_number : '') }}" 
+                       readonly>
+                <small class="text-muted">Otomatis terisi dari data panen yang dipilih</small>
+                @error('planting_batch_number')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <!-- Nomor Batch Panen -->
+            <div class="mb-3">
+                <label class="form-label">Nomor Batch Panen</label>
+                <input type="text" class="form-control @error('harvest_batch_number') is-invalid @enderror" 
+                       name="harvest_batch_number" id="harvest_batch_number"
+                       value="{{ old('harvest_batch_number', isset($harvest) && $harvest ? $harvest->batch_no : '') }}" 
+                       readonly>
+                <small class="text-muted">Otomatis terisi dari data panen yang dipilih</small>
+                @error('harvest_batch_number')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
@@ -331,9 +386,9 @@
                 </div>
                 
                 <div class="col-md-6 mb-3">
-                    <label class="form-label">Tanggal Masa Edar / Kadaluarsa</label>
+                    <label class="form-label">Tanggal Masa Edar / Kadaluarsa <span class="text-danger">*</span></label>
                     <input type="date" class="form-control @error('expiry_date') is-invalid @enderror" 
-                           name="expiry_date" value="{{ old('expiry_date') }}">
+                           name="expiry_date" value="{{ old('expiry_date') }}" required>
                     <small class="text-muted">Diisi berdasarkan sertifikat yang dikeluarkan oleh BPSB</small>
                     @error('expiry_date')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -343,10 +398,64 @@
         </div>
     </div>
 
-    <!-- Bagian D: Kesimpulan & Lampiran -->
+    <!-- Bagian D: Jumlah Benih yang Lulus Sertifikasi -->
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0"><i class="fas fa-seedling me-2"></i>Bagian D: Jumlah Benih yang Lulus Sertifikasi</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Satuan Inventaris</label>
+                    <select class="form-select @error('seed_unit') is-invalid @enderror" name="seed_unit" id="seed_unit">
+                        <option value="">Pilih Satuan</option>
+                        <option value="kg" {{ old('seed_unit') == 'kg' ? 'selected' : '' }}>Kilogram (kg)</option>
+                        <option value="ton" {{ old('seed_unit') == 'ton' ? 'selected' : '' }}>Ton</option>
+                        <option value="gram" {{ old('seed_unit') == 'gram' ? 'selected' : '' }}>Gram</option>
+                        <option value="butir" {{ old('seed_unit') == 'butir' ? 'selected' : '' }}>Butir/Biji</option>
+                        <option value="pcs" {{ old('seed_unit') == 'pcs' ? 'selected' : '' }}>Pcs</option>
+                        <option value="batang" {{ old('seed_unit') == 'batang' ? 'selected' : '' }}>Batang</option>
+                    </select>
+                    <small class="text-muted">Pilih satuan inventaris</small>
+                    @error('seed_unit')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Total Inventaris</label>
+                    <input type="number" class="form-control @error('certified_seed_quantity') is-invalid @enderror" 
+                           name="certified_seed_quantity" id="certified_seed_quantity" value="{{ old('certified_seed_quantity') }}" 
+                           step="0.01" min="0" placeholder="0.00">
+                    <input type="hidden" name="certified_seed_unit" id="certified_seed_unit" value="{{ old('certified_seed_unit', 'kg') }}">
+                    <small class="text-muted">Masukkan total inventaris</small>
+                    @error('certified_seed_quantity')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                    @error('certified_seed_unit')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Estimasi Penjualan</label>
+                    <div class="input-group">
+                        <span class="input-group-text">Rp</span>
+                        <input type="number" class="form-control @error('estimated_sale_price_per_kg') is-invalid @enderror" 
+                               name="estimated_sale_price_per_kg" value="{{ old('estimated_sale_price_per_kg') }}" 
+                               step="0.01" min="0" placeholder="0.00">
+                    </div>
+                    <small class="text-muted">Masukkan estimasi harga penjualan</small>
+                    @error('estimated_sale_price_per_kg')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bagian E: Kesimpulan & Lampiran -->
     <div class="card mb-4">
         <div class="card-header bg-warning text-dark">
-            <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Bagian D: Kesimpulan & Lampiran</h5>
+            <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Bagian E: Kesimpulan & Lampiran</h5>
         </div>
         <div class="card-body">
             <div class="row">
@@ -397,6 +506,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const locationSelect = document.getElementById('planting_location_id');
     const plantSelect = document.getElementById('plant_id');
     const selectionInfo = document.getElementById('selectionInfo');
+    const reportNumberBpsbInput = document.getElementById('report_number_bpsb');
+    
+    // Auto-generate report number BPSB if field is empty
+    if (reportNumberBpsbInput && (!reportNumberBpsbInput.value || reportNumberBpsbInput.value.trim() === '')) {
+        const today = new Date();
+        const year = today.getFullYear();
+        @php
+            $reportCount = \App\Models\CertificationReport::whereYear('report_date', date('Y'))->count() + 1;
+        @endphp
+        const reportCount = {{ $reportCount }};
+        const reportNo = 'BPSB-' + year + '-' + String(reportCount).padStart(6, '0');
+        reportNumberBpsbInput.value = reportNo;
+    }
     
     function updateSelectionInfo() {
         const locationOption = locationSelect.options[locationSelect.selectedIndex];
@@ -420,6 +542,23 @@ document.addEventListener('DOMContentLoaded', function() {
         
         locationSelect.addEventListener('change', updateSelectionInfo);
         plantSelect.addEventListener('change', updateSelectionInfo);
+    }
+
+    // Sync unit from seed_unit to certified_seed_unit (hidden field)
+    const seedUnit = document.getElementById('seed_unit');
+    const certifiedSeedUnit = document.getElementById('certified_seed_unit');
+
+    function syncUnit() {
+        if (seedUnit && certifiedSeedUnit) {
+            const selectedUnit = seedUnit.value || 'kg';
+            certifiedSeedUnit.value = selectedUnit;
+        }
+    }
+
+    if (seedUnit) {
+        seedUnit.addEventListener('change', syncUnit);
+        // Sync on page load
+        syncUnit();
     }
 });
 </script>

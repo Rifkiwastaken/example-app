@@ -1,0 +1,44 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Edit Laporan Pemeriksaan
+
+|#LightBlue|Petugas Sertifikasi/Admin|
+start
+:Dari daftar sertifikasi;
+:Klik edit laporan;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Load data laporan dari database;
+:Menampilkan form edit dengan data existing;
+
+|#LightBlue|Petugas Sertifikasi/Admin|
+:Edit data laporan pemeriksaan;
+:Edit dokumen scan (jika perlu);
+:Submit form;
+
+|#LightGreen|Sistem|
+:Validasi input data;
+:Update data di tabel certification_reports;
+:Update dokumen scan (jika diubah);
+:Success message;
+:Redirect ke halaman detail;
+
+|#LightBlue|Petugas Sertifikasi/Admin|
+:Lihat pesan laporan berhasil diupdate;
+
+stop
+
+@enduml

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->enum('role', ['admin', 'kepala_satuan_tugas', 'petugas_sertifikasi', 'petugas_gudang', 'petugas_bbi'])->default('petugas_bbi');
-            $table->foreignId('location_id')->nullable()->constrained('locations')->onDelete('set null');
+            $table->string('location_id', 36)->nullable()->foreign('location_id')->references('location_id')->on('locations')->onDelete('set null');
         });
     }
 
@@ -28,6 +28,9 @@ return new class extends Migration
         });
     }
 };
+
+
+
 
 
 

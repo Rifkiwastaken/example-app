@@ -1,0 +1,47 @@
+@startuml Sequence Diagram - Hapus Data Penanaman
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Hapus Data Penanaman
+
+actor "Admin" as User
+participant "PlantingController" as Controller
+participant "Planting Model" as Planting
+participant "Harvest Model" as Harvest
+participant "Database" as DB
+
+User -> Controller: DELETE /plantings/{id}
+activate Controller
+Controller -> Controller: validateRole
+Controller -> Planting: findById
+activate Planting
+Planting -> DB: SELECT * FROM plantings WHERE id = ?
+DB --> Planting: planting data
+Planting --> Controller: Planting
+deactivate Planting
+
+Controller -> Harvest: countByPlantingId
+activate Harvest
+Harvest -> DB: SELECT COUNT(*) FROM harvests WHERE planting_id = ?
+DB --> Harvest: count
+Harvest --> Controller: harvest_count
+deactivate Harvest
+
+alt No Relations
+    Controller -> Planting: delete
+    activate Planting
+    Planting -> DB: DELETE FROM plantings WHERE id = ?
+    DB --> Planting: deleted
+    Planting --> Controller: deleted
+    deactivate Planting
+    
+    Controller --> User: response success
+else Has Relations
+    Controller --> User: show message has relations
+end
+deactivate Controller
+
+@enduml
+

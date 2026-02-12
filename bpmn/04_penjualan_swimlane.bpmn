@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Defs_Penjualan_Swimlane" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_Penjualan_Swimlane" name="Proses Penjualan" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_Penjualan">
+      <bpmn:lane id="Lane_PetugasBBI" name="Petugas BBI">
+        <bpmn:flowNodeRef>Start_Penjualan</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>User_InputPenjualan</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Srv_ValidasiPenjualan</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_StokCukup</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>User_InputItem</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_ItemLain</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Srv_ProsesFIFO</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Srv_SimpanPenjualan</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Penjualan</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:dataStoreReference id="DataStore_DB_Penjualan" name="Database" />
+
+    <bpmn:startEvent id="Start_Penjualan" name="Mulai" />
+    <bpmn:userTask id="User_InputPenjualan" name="Input Data Penjualan" />
+    <bpmn:serviceTask id="Srv_ValidasiPenjualan" name="Validasi Penjualan & Nota" />
+    <bpmn:exclusiveGateway id="Gw_StokCukup" name="Stok Cukup?" />
+    <bpmn:userTask id="User_InputItem" name="Input Item & Harga" />
+    <bpmn:exclusiveGateway id="Gw_ItemLain" name="Ada Item Lain?" />
+    <bpmn:serviceTask id="Srv_ProsesFIFO" name="Kurangi Stok (FIFO)" />
+    <bpmn:serviceTask id="Srv_SimpanPenjualan" name="Simpan Penjualan & Item" />
+    <bpmn:endEvent id="End_Penjualan" name="Selesai" />
+
+    <bpmn:sequenceFlow id="PSF_1" sourceRef="Start_Penjualan" targetRef="User_InputPenjualan" />
+    <bpmn:sequenceFlow id="PSF_2" sourceRef="User_InputPenjualan" targetRef="Srv_ValidasiPenjualan" />
+    <bpmn:sequenceFlow id="PSF_3" sourceRef="Srv_ValidasiPenjualan" targetRef="Gw_StokCukup" />
+    <bpmn:sequenceFlow id="PSF_4" sourceRef="Gw_StokCukup" targetRef="User_InputItem">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[cukup]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="PSF_5" sourceRef="Gw_StokCukup" targetRef="User_InputPenjualan">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[!cukup]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="PSF_6" sourceRef="User_InputItem" targetRef="Gw_ItemLain" />
+    <bpmn:sequenceFlow id="PSF_7" sourceRef="Gw_ItemLain" targetRef="Srv_ProsesFIFO">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[tidak]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="PSF_8" sourceRef="Gw_ItemLain" targetRef="User_InputItem">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[ya]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="PSF_9" sourceRef="Srv_ProsesFIFO" targetRef="Srv_SimpanPenjualan" />
+    <bpmn:sequenceFlow id="PSF_10" sourceRef="Srv_SimpanPenjualan" targetRef="End_Penjualan" />
+
+    <bpmn:dataAssociation id="DA_Srv_ValidasiPenjualan_DB" sourceRef="Srv_ValidasiPenjualan" targetRef="DataStore_DB_Penjualan" />
+    <bpmn:dataAssociation id="DA_Srv_ProsesFIFO_DB" sourceRef="Srv_ProsesFIFO" targetRef="DataStore_DB_Penjualan" />
+    <bpmn:dataAssociation id="DA_Srv_SimpanPenjualan_DB" sourceRef="Srv_SimpanPenjualan" targetRef="DataStore_DB_Penjualan" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diag_Penjualan_Swimlane">
+    <bpmndi:BPMNPlane id="Plane_Penjualan_Swimlane" bpmnElement="Process_Penjualan_Swimlane">
+      <bpmndi:BPMNShape id="DI_Lane_PetugasBBI" bpmnElement="Lane_PetugasBBI" isHorizontal="true">
+        <omgdc:Bounds x="80" y="100" width="1440" height="200" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="DI_Start_Penjualan" bpmnElement="Start_Penjualan">
+        <omgdc:Bounds x="120" y="190" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_User_InputPenjualan" bpmnElement="User_InputPenjualan">
+        <omgdc:Bounds x="190" y="170" width="160" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Srv_ValidasiPenjualan" bpmnElement="Srv_ValidasiPenjualan">
+        <omgdc:Bounds x="380" y="170" width="180" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Gw_StokCukup" bpmnElement="Gw_StokCukup" isMarkerVisible="true">
+        <omgdc:Bounds x="590" y="180" width="40" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_User_InputItem" bpmnElement="User_InputItem">
+        <omgdc:Bounds x="700" y="170" width="170" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Gw_ItemLain" bpmnElement="Gw_ItemLain" isMarkerVisible="true">
+        <omgdc:Bounds x="910" y="180" width="40" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Srv_ProsesFIFO" bpmnElement="Srv_ProsesFIFO">
+        <omgdc:Bounds x="1030" y="170" width="180" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Srv_SimpanPenjualan" bpmnElement="Srv_SimpanPenjualan">
+        <omgdc:Bounds x="1250" y="170" width="180" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_End_Penjualan" bpmnElement="End_Penjualan">
+        <omgdc:Bounds x="1460" y="190" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="DI_DataStore_DB_Penjualan" bpmnElement="DataStore_DB_Penjualan">
+        <omgdc:Bounds x="1310" y="110" width="60" height="60" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="DI_PSF_1" bpmnElement="PSF_1">
+        <omgdi:waypoint x="156" y="208" />
+        <omgdi:waypoint x="190" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_PSF_2" bpmnElement="PSF_2">
+        <omgdi:waypoint x="350" y="200" />
+        <omgdi:waypoint x="380" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_PSF_3" bpmnElement="PSF_3">
+        <omgdi:waypoint x="560" y="200" />
+        <omgdi:waypoint x="590" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_PSF_4" bpmnElement="PSF_4">
+        <omgdi:waypoint x="630" y="200" />
+        <omgdi:waypoint x="700" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_PSF_5" bpmnElement="PSF_5">
+        <omgdi:waypoint x="610" y="220" />
+        <omgdi:waypoint x="610" y="250" />
+        <omgdi:waypoint x="270" y="250" />
+        <omgdi:waypoint x="270" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_PSF_6" bpmnElement="PSF_6">
+        <omgdi:waypoint x="870" y="200" />
+        <omgdi:waypoint x="910" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_PSF_7" bpmnElement="PSF_7">
+        <omgdi:waypoint x="950" y="200" />
+        <omgdi:waypoint x="1030" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_PSF_8" bpmnElement="PSF_8">
+        <omgdi:waypoint x="930" y="220" />
+        <omgdi:waypoint x="930" y="260" />
+        <omgdi:waypoint x="785" y="260" />
+        <omgdi:waypoint x="785" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_PSF_9" bpmnElement="PSF_9">
+        <omgdi:waypoint x="1210" y="200" />
+        <omgdi:waypoint x="1250" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_PSF_10" bpmnElement="PSF_10">
+        <omgdi:waypoint x="1430" y="200" />
+        <omgdi:waypoint x="1460" y="208" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="DI_DA_Srv_ValidasiPenjualan_DB" bpmnElement="DA_Srv_ValidasiPenjualan_DB">
+        <omgdi:waypoint x="470" y="170" />
+        <omgdi:waypoint x="1340" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_DA_Srv_ProsesFIFO_DB" bpmnElement="DA_Srv_ProsesFIFO_DB">
+        <omgdi:waypoint x="1120" y="170" />
+        <omgdi:waypoint x="1340" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_DA_Srv_SimpanPenjualan_DB" bpmnElement="DA_Srv_SimpanPenjualan_DB">
+        <omgdi:waypoint x="1340" y="170" />
+        <omgdi:waypoint x="1340" y="140" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

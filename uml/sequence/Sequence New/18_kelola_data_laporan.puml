@@ -1,0 +1,101 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - UC18 Mengelola Data Laporan
+
+actor "User" as User
+boundary "ReportView" as View
+control "ReportController" as Controller
+entity "Planting" as Planting
+entity "Harvest" as Harvest
+entity "Certification" as Certification
+entity "InventoryTypeSeed" as Seed
+entity "Sale" as Sale
+
+User -> View: akses halaman kelola laporan()
+View -> Controller: index()
+activate Controller
+Controller -> Controller: validateRole()
+Controller --> View: return menu laporan
+deactivate Controller
+View --> User: tampilkan menu laporan()
+
+User -> View: pilih jenis laporan()
+
+alt Laporan Penanaman
+    View -> Controller: reportPlanting(request)
+    activate Controller
+    Controller -> Planting: with('plant', 'plantingLocation')->where(...)->get()
+    activate Planting
+    Planting -> Planting: load('plant', 'plantingLocation')
+    Planting --> Controller: return plantings[]
+    deactivate Planting
+    Controller -> Controller: generateReport(plantings[])
+    Controller --> View: return data[]
+    deactivate Controller
+    View --> User: tampilkan laporan penanaman()
+else Laporan Panen
+    View -> Controller: reportHarvest(request)
+    activate Controller
+    Controller -> Harvest: with('planting')->where(...)->get()
+    activate Harvest
+    Harvest -> Harvest: load('planting')
+    Harvest --> Controller: return harvests[]
+    deactivate Harvest
+    Controller -> Controller: generateReport(harvests[])
+    Controller --> View: return data[]
+    deactivate Controller
+    View --> User: tampilkan laporan panen()
+else Laporan Sertifikasi
+    View -> Controller: reportCertification(request)
+    activate Controller
+    Controller -> Certification: with('reports')->where(...)->get()
+    activate Certification
+    Certification -> Certification: load('reports')
+    Certification --> Controller: return certifications[]
+    deactivate Certification
+    Controller -> Controller: generateReport(certifications[])
+    Controller --> View: return data[]
+    deactivate Controller
+    View --> User: tampilkan laporan sertifikasi()
+else Laporan Stok Benih
+    View -> Controller: reportStock(request)
+    activate Controller
+    Controller -> Seed: with('plant', 'plantingLocation')->where(...)->get()
+    activate Seed
+    Seed -> Seed: load('plant', 'plantingLocation')
+    Seed --> Controller: return seeds[]
+    deactivate Seed
+    Controller -> Controller: generateReport(seeds[])
+    Controller --> View: return data[]
+    deactivate Controller
+    View --> User: tampilkan laporan stok benih()
+else Laporan Penjualan
+    View -> Controller: reportSale(request)
+    activate Controller
+    Controller -> Sale: with('items')->where(...)->get()
+    activate Sale
+    Sale -> Sale: load('items')
+    Sale --> Controller: return sales[]
+    deactivate Sale
+    Controller -> Controller: generateReport(sales[])
+    Controller --> View: return data[]
+    deactivate Controller
+    View --> User: tampilkan laporan penjualan()
+end
+
+alt Export Laporan
+    User -> View: klik tombol export()
+    View -> Controller: exportReport(type, format)
+    activate Controller
+    Controller -> Controller: generateFile(data[], format)
+    Controller -> Controller: downloadFile(file)
+    Controller --> View: return file download
+    deactivate Controller
+    View --> User: terima file laporan()
+end
+
+@enduml

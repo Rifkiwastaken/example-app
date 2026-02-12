@@ -1,0 +1,127 @@
+@startuml
+' Referensi: Use Case Overview (00_use_case_overview.puml)
+' Use case 16: Mengelola data lokasi gudang dan bin
+' Aktor: Admin/Kepala Sek, Petugas BBI, Petugas Gudang
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Mengelola data lokasi gudang dan bin
+
+|#LightBlue|User|
+start
+:Masuk ke halaman kelola gudang;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data gudang dari database;
+:Load data bin terkait;
+:Menampilkan daftar gudang;
+
+|#LightBlue|User|
+:Lihat daftar gudang;
+
+if (Pilih aksi?) then (Kelola Gudang)
+    if (Tambah Gudang) then
+        |#LightBlue|User|
+        :Klik tombol tambah gudang;
+        |#LightGreen|Sistem|
+        :Tampilkan form tambah gudang;
+        |#LightBlue|User|
+        :Isi form data gudang;
+        :Submit form;
+        |#LightGreen|Sistem|
+        :Validasi data;
+        if (Data valid?) then (Ya)
+            :Simpan data gudang ke database;
+            :Tampilkan pesan sukses;
+        else (Tidak)
+            :Tampilkan pesan error;
+        endif
+    elseif (Edit Gudang) then
+        |#LightBlue|User|
+        :Klik tombol edit gudang;
+        |#LightGreen|Sistem|
+        :Tampilkan form edit dengan data terisi;
+        |#LightBlue|User|
+        :Edit data gudang;
+        :Submit form;
+        |#LightGreen|Sistem|
+        :Validasi data;
+        if (Data valid?) then (Ya)
+            :Update data gudang di database;
+            :Tampilkan pesan sukses;
+        else (Tidak)
+            :Tampilkan pesan error;
+        endif
+    elseif (Kelola Bin) then
+        |#LightBlue|User|
+        :Klik tombol kelola bin;
+        |#LightGreen|Sistem|
+        :Tampilkan daftar bin di gudang;
+        |#LightBlue|User|
+        if (Tambah Bin) then
+            :Klik tombol tambah bin;
+            |#LightGreen|Sistem|
+            :Tampilkan form tambah bin;
+            |#LightBlue|User|
+            :Isi form data bin;
+            :Submit form;
+            |#LightGreen|Sistem|
+            :Validasi data;
+            if (Data valid?) then (Ya)
+                :Simpan data bin ke database;
+                :Tampilkan pesan sukses;
+            else (Tidak)
+                :Tampilkan pesan error;
+            endif
+        elseif (Edit Bin) then
+            :Klik tombol edit bin;
+            |#LightGreen|Sistem|
+            :Tampilkan form edit dengan data terisi;
+            |#LightBlue|User|
+            :Edit data bin;
+            :Submit form;
+            |#LightGreen|Sistem|
+            :Validasi data;
+            if (Data valid?) then (Ya)
+                :Update data bin di database;
+                :Tampilkan pesan sukses;
+            else (Tidak)
+                :Tampilkan pesan error;
+            endif
+        elseif (Hapus Bin) then
+            :Klik tombol hapus bin;
+            |#LightGreen|Sistem|
+            :Tampilkan konfirmasi hapus;
+            |#LightBlue|User|
+            if (Konfirmasi hapus?) then (Ya)
+                |#LightGreen|Sistem|
+                :Hapus data bin dari database;
+                :Tampilkan pesan sukses;
+            else (Tidak)
+                :Batal hapus;
+            endif
+        endif
+    endif
+else (Lihat Detail)
+    |#LightBlue|User|
+    :Klik tombol lihat detail;
+    |#LightGreen|Sistem|
+    :Tampilkan detail data gudang;
+    |#LightBlue|User|
+    :Lihat detail gudang;
+endif
+
+stop
+
+@enduml

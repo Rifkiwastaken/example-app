@@ -1,0 +1,88 @@
+@startuml
+' Referensi: Use Case Overview (00_use_case_overview.puml)
+' Use case 18: Mengelola data laporan
+' Aktor: Admin/Kepala Sek, Petugas BBI
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Mengelola data laporan
+
+|#LightBlue|User|
+start
+:Masuk ke halaman laporan;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Tampilkan menu laporan;
+
+|#LightBlue|User|
+:Pilih jenis laporan;
+
+if (Jenis laporan?) then (Laporan Penanaman)
+    |#LightGreen|Sistem|
+    :Query data penanaman;
+    :Generate laporan penanaman;
+    :Tampilkan laporan;
+    |#LightBlue|User|
+    :Lihat laporan penanaman;
+elseif (Laporan Panen)
+    |#LightGreen|Sistem|
+    :Query data panen;
+    :Generate laporan panen;
+    :Tampilkan laporan;
+    |#LightBlue|User|
+    :Lihat laporan panen;
+elseif (Laporan Sertifikasi)
+    |#LightGreen|Sistem|
+    :Query data sertifikasi;
+    :Generate laporan sertifikasi;
+    :Tampilkan laporan;
+    |#LightBlue|User|
+    :Lihat laporan sertifikasi;
+elseif (Laporan Stok Benih)
+    |#LightGreen|Sistem|
+    :Query data stok benih;
+    :Generate laporan stok;
+    :Tampilkan laporan;
+    |#LightBlue|User|
+    :Lihat laporan stok;
+elseif (Laporan Penjualan)
+    |#LightGreen|Sistem|
+    :Query data penjualan;
+    :Generate laporan penjualan;
+    :Tampilkan laporan;
+    |#LightBlue|User|
+    :Lihat laporan penjualan;
+else (Laporan Transaksi)
+    |#LightGreen|Sistem|
+    :Query data transaksi;
+    :Generate laporan transaksi;
+    :Tampilkan laporan;
+    |#LightBlue|User|
+    :Lihat laporan transaksi;
+endif
+
+if (Export laporan?) then (Ya)
+    |#LightBlue|User|
+    :Klik tombol export;
+    |#LightGreen|Sistem|
+    :Generate file laporan (PDF/Excel);
+    :Download file laporan;
+    |#LightBlue|User|
+    :Terima file laporan;
+else (Tidak)
+endif
+
+stop
+
+@enduml

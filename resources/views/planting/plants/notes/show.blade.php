@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Detail Catatan - SIBIT')
+@section('title', 'Detail Catatan - SIBESTI')
 
 @section('content')
 <!-- Breadcrumbs -->
@@ -146,6 +146,9 @@ function deleteNote(noteId) {
 </script>
 @endpush
 @endsection
+
+
+
 
 
 

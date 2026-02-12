@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('bins', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('warehouse_id')->constrained()->onDelete('cascade');
+            $table->string('bin_id', 36)->primary();
+            $table->string('warehouse_id', 36)->onDelete('cascade');
             $table->string('name');
             $table->string('internal_id');
             $table->decimal('max_capacity', 15, 2);

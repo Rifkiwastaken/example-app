@@ -1,0 +1,67 @@
+@startuml
+' SIBESTI - Sequence Diagram | UC12: Menambahkan User (Use Case Overview)
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - UC12 Menambahkan User
+
+actor "Admin" as Admin
+boundary "UserView" as View
+control "UserController" as Controller
+entity "User" as UserModel
+entity "Location" as Location
+
+Admin -> View: akses halaman kelola user()
+View -> Controller: index()
+activate Controller
+Controller -> Controller: validateRole('admin')
+Controller -> UserModel: with('location')->get()
+activate UserModel
+UserModel -> UserModel: load('location')
+UserModel --> Controller: return users[]
+deactivate UserModel
+Controller --> View: return users[]
+deactivate Controller
+View --> Admin: tampilkan daftar user()
+
+Admin -> View: klik tombol tambah user()
+View -> Controller: create()
+activate Controller
+Controller -> Location: all()
+activate Location
+Location --> Controller: return locations[]
+deactivate Location
+Controller --> View: return locations[]
+deactivate Controller
+View --> Admin: tampilkan form tambah user()
+
+Admin -> View: isi form data user()
+Admin -> View: pilih role dan lokasi()
+View -> Controller: store(request)
+activate Controller
+Controller -> Controller: validate(request)
+Controller -> UserModel: where('email', request.email)->first()
+activate UserModel
+UserModel --> Controller: return user atau null
+deactivate UserModel
+
+alt Email sudah ada
+    Controller --> View: return back dengan error[]
+    View --> Admin: tampilkan form dengan error()
+    deactivate Controller
+else Email belum ada
+    Controller -> Controller: Hash::make(password)
+    Controller -> UserModel: create(data)
+    activate UserModel
+    UserModel -> UserModel: save()
+    UserModel --> Controller: return user
+    deactivate UserModel
+
+    Controller --> View: redirect dengan pesan sukses
+    View --> Admin: tampilkan pesan sukses()
+    deactivate Controller
+end
+
+@enduml

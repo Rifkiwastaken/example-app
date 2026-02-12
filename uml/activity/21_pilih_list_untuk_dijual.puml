@@ -1,0 +1,62 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Pilih List untuk dijual
+
+|#LightBlue|Petugas BBI/Petugas Gudang|
+start
+:Dalam form input penjualan;
+:Klik pilih list untuk dijual;
+
+|#LightGreen|Sistem|
+:Query data stok tersedia dari database;
+:Query data inventory types;
+:Filter stok yang statusnya "available";
+:Query data gudang dan bin;
+:Menampilkan daftar stok tersedia;
+
+|#LightBlue|Petugas BBI/Petugas Gudang|
+:Lihat daftar stok tersedia;
+:Pilih tipe benih (inventory_type);
+:Pilih gudang dan bin (jika perlu);
+:Input quantity yang akan dijual;
+:Input harga per unit;
+:Konfirmasi pilihan;
+
+|#LightGreen|Sistem|
+:Validasi pilihan;
+:Check stok tersedia untuk tipe benih;
+:Check quantity tidak melebihi stok;
+
+if (Pilihan valid?) then (Ya)
+    :Simpan pilihan ke form;
+    :Update total harga;
+    :Menampilkan preview item;
+    |#LightBlue|Petugas BBI/Petugas Gudang|
+    :Lihat preview item;
+else (Tidak)
+    :Error: stok tidak cukup;
+    :Tampilkan pesan error;
+    |#LightBlue|Petugas BBI/Petugas Gudang|
+    :Lihat pesan stok tidak cukup;
+endif
+
+|#LightBlue|Petugas BBI/Petugas Gudang|
+:Tambah item lain (jika perlu);
+:Lihat total harga;
+:Lanjutkan ke proses penjualan;
+
+stop
+
+@enduml

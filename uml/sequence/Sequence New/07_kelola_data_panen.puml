@@ -1,0 +1,115 @@
+@startuml
+' SIBESTI - Sequence Diagram | UC07: Mengelola Data Panen (Use Case Overview)
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - UC07 Mengelola Data Panen
+
+actor "User" as User
+boundary "HarvestView" as View
+control "HarvestController" as Controller
+entity "Harvest" as Harvest
+entity "Planting" as Planting
+entity "PlantingLoss" as PlantingLoss
+
+User -> View: akses halaman kelola panen()
+View -> Controller: index()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Harvest: with('planting')->paginate(15)
+activate Harvest
+Harvest -> Harvest: load('planting')
+Harvest --> Controller: return harvests[]
+deactivate Harvest
+Controller --> View: return data dan pagination[]
+deactivate Controller
+View --> User: tampilkan daftar panen()
+
+alt Catat Panen
+    User -> View: klik tombol catat panen()
+    View -> Controller: create()
+    activate Controller
+    Controller -> Planting: where('status', 'active')->get()
+    activate Planting
+    Planting --> Controller: return plantings[]
+    deactivate Planting
+    Controller --> View: return plantings[]
+    deactivate Controller
+    View --> User: tampilkan form catat panen()
+    
+    User -> View: pilih penanaman yang akan dipanen()
+    User -> View: isi form data panen()
+    View -> Controller: store(request)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> Harvest: create(data)
+    activate Harvest
+    Harvest -> Harvest: save()
+    Harvest --> Controller: return harvest
+    deactivate Harvest
+    Controller -> Planting: find(id)
+    activate Planting
+    Planting -> Planting: update(['status' => 'harvested'])
+    Planting --> Controller: return success
+    deactivate Planting
+    Controller --> View: redirect dengan pesan sukses
+    View --> User: tampilkan pesan sukses()
+    deactivate Controller
+else Catat Kehilangan
+    User -> View: klik tombol catat kehilangan()
+    View -> Controller: createLoss(planting_id)
+    activate Controller
+    Controller -> Planting: findOrFail(planting_id)
+    activate Planting
+    Planting --> Controller: return planting
+    deactivate Planting
+    Controller --> View: return planting
+    deactivate Controller
+    View --> User: tampilkan form catat kehilangan()
+    
+    User -> View: isi form kehilangan()
+    View -> Controller: storeLoss(request, planting_id)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> PlantingLoss: create(data)
+    activate PlantingLoss
+    PlantingLoss -> PlantingLoss: save()
+    PlantingLoss --> Controller: return loss
+    deactivate PlantingLoss
+    Controller --> View: redirect dengan pesan sukses
+    View --> User: tampilkan pesan sukses()
+    deactivate Controller
+else Catat Gagal Panen
+    User -> View: klik tombol catat gagal panen()
+    View -> Controller: createFailure(planting_id)
+    activate Controller
+    Controller -> Planting: findOrFail(planting_id)
+    activate Planting
+    Planting --> Controller: return planting
+    deactivate Planting
+    Controller --> View: return planting
+    deactivate Controller
+    View --> User: tampilkan form catat gagal panen()
+    
+    User -> View: isi form gagal panen()
+    View -> Controller: storeFailure(request, planting_id)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> PlantingLoss: create(data dengan status gagal)
+    activate PlantingLoss
+    PlantingLoss -> PlantingLoss: save()
+    PlantingLoss --> Controller: return loss
+    deactivate PlantingLoss
+    Controller -> Planting: find(planting_id)
+    activate Planting
+    Planting -> Planting: update(['status' => 'gagal', 'is_completed' => true])
+    Planting --> Controller: return success
+    deactivate Planting
+    Controller --> View: redirect dengan pesan sukses
+    View --> User: tampilkan pesan sukses()
+    deactivate Controller
+end
+
+@enduml

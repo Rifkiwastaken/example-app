@@ -1,0 +1,170 @@
+@startuml Sequence Diagram - Modul Manajemen User
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Modul Manajemen User
+
+actor "Admin" as User
+participant "UserController" as Controller
+participant "User Model" as UserModel
+participant "Database" as DB
+
+' ============================================
+' Use Case: Kelola User
+' ============================================
+== Kelola User ==
+
+' Lihat Daftar User
+User -> Controller: GET /users
+activate Controller
+Controller -> Controller: validateRole() [Admin only]
+Controller -> UserModel: with('location')->paginate(10)
+activate UserModel
+UserModel -> DB: SELECT * FROM users\nLEFT JOIN locations ON ...\nLIMIT 10 OFFSET ?
+DB --> UserModel: users[]
+UserModel --> Controller: users[]
+deactivate UserModel
+
+Controller --> User: render daftar user
+deactivate Controller
+
+' Tambah User
+User -> Controller: GET /users/create
+activate Controller
+Controller -> Controller: validateRole() [Admin only]
+Controller -> Controller: getRoles()
+Controller --> User: render form tambah user
+deactivate Controller
+
+User -> Controller: POST /users (data user)
+activate Controller
+Controller -> Controller: validate(request)
+Controller -> UserModel: where('email', email)->first()
+activate UserModel
+UserModel -> DB: SELECT * FROM users WHERE email = ?
+DB --> UserModel: null (email belum ada)
+UserModel --> Controller: null
+deactivate UserModel
+
+alt Validation Success
+    Controller -> Controller: hashPassword(password)
+    Controller -> UserModel: create(user data)
+    activate UserModel
+    UserModel -> DB: INSERT INTO users\n(name, email, password, role, ...)
+    DB --> UserModel: user_id
+    UserModel --> Controller: User
+    deactivate UserModel
+    
+    Controller --> User: redirect with success message
+else Validation Failed
+    Controller --> User: redirect back with errors
+endif
+deactivate Controller
+
+' Edit User
+User -> Controller: GET /users/{id}/edit
+activate Controller
+Controller -> Controller: validateRole() [Admin only]
+Controller -> UserModel: find(id)
+activate UserModel
+UserModel -> DB: SELECT * FROM users WHERE id = ?
+DB --> UserModel: user data
+UserModel --> Controller: User
+deactivate UserModel
+
+Controller --> User: render form edit
+deactivate Controller
+
+User -> Controller: PUT /users/{id} (updated data)
+activate Controller
+Controller -> Controller: validate(request)
+Controller -> UserModel: find(id)
+activate UserModel
+UserModel -> DB: SELECT * FROM users WHERE id = ?
+DB --> UserModel: user data
+UserModel --> Controller: User
+deactivate UserModel
+
+alt Validation Success
+    alt Password Diubah
+        Controller -> Controller: hashPassword(new_password)
+    endif
+    
+    Controller -> UserModel: update(data)
+    activate UserModel
+    UserModel -> DB: UPDATE users SET ... WHERE id = ?
+    DB --> UserModel: updated
+    UserModel --> Controller: updated
+    deactivate UserModel
+    
+    Controller --> User: redirect with success message
+else Validation Failed
+    Controller --> User: redirect back with errors
+endif
+deactivate Controller
+
+' Hapus User
+User -> Controller: DELETE /users/{id}
+activate Controller
+Controller -> Controller: validateRole() [Admin only]
+Controller -> UserModel: find(id)
+activate UserModel
+UserModel -> DB: SELECT * FROM users WHERE id = ?
+DB --> UserModel: user data
+UserModel --> Controller: User
+deactivate UserModel
+
+Controller -> Controller: checkUserRelations(user)
+
+alt No Relations
+    Controller -> UserModel: delete()
+    activate UserModel
+    UserModel -> DB: DELETE FROM users WHERE id = ?
+    DB --> UserModel: deleted
+    UserModel --> Controller: deleted
+    deactivate UserModel
+    
+    Controller --> User: redirect with success message
+else Has Relations
+    Controller --> User: error: user memiliki relasi data
+endif
+deactivate Controller
+
+' ============================================
+' Use Case: Kelola Role
+' ============================================
+== Kelola Role ==
+
+User -> Controller: GET /users (view roles)
+activate Controller
+Controller -> Controller: validateRole() [Admin only]
+Controller -> Controller: getRoles()
+Controller -> UserModel: groupBy('role')->get()
+activate UserModel
+UserModel -> DB: SELECT role, COUNT(*) as count FROM users\nGROUP BY role
+DB --> UserModel: role_counts[]
+UserModel --> Controller: role_counts[]
+deactivate UserModel
+
+Controller --> User: render halaman dengan info role
+deactivate Controller
+
+' Note: Role management biasanya dilakukan melalui konfigurasi
+' atau middleware, bukan melalui CRUD langsung
+
+@enduml
+
+
+
+
+
+
+
+
+
+
+
+
+

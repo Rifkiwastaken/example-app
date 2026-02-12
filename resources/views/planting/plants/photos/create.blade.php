@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Upload Foto - SIBIT')
+@section('title', 'Upload Foto - SIBESTI')
 
 @section('content')
 <!-- Breadcrumbs -->
@@ -71,6 +71,9 @@
     </div>
 </div>
 @endsection
+
+
+
 
 
 

@@ -1,0 +1,77 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - UC15 Mengelola Data Stok Benih
+
+actor "User" as User
+boundary "InventoryTypeView" as View
+control "InventoryTypeController" as Controller
+entity "InventoryTypeSeed" as Seed
+entity "InventoryLot" as Lot
+entity "SeedHistory" as History
+
+User -> View: akses halaman kelola stok benih()
+View -> Controller: show(inventoryType_id)
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Seed: where('inventory_type_id', id)->with('plant', 'plantingLocation')->get()
+activate Seed
+Seed -> Seed: load('plant', 'plantingLocation')
+Seed --> Controller: return seeds[]
+deactivate Seed
+Controller --> View: return seeds[]
+deactivate Controller
+View --> User: tampilkan daftar stok benih()
+
+alt Edit
+    User -> View: klik tombol edit()
+    View -> Controller: updateSeed(seed_id, request)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> Seed: findOrFail(seed_id)
+    activate Seed
+    Seed -> Seed: update(data)
+    Seed --> Controller: return seed
+    deactivate Seed
+    Controller --> View: redirect dengan pesan sukses
+    View --> User: tampilkan pesan sukses()
+    deactivate Controller
+else Kurangi Stok
+    User -> View: klik tombol kurangi stok()
+    View -> Controller: reduceStock(seed_id, request)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> Seed: findOrFail(seed_id)
+    activate Seed
+    Seed -> Seed: update(['total_seed_quantity' => new_quantity])
+    Seed --> Controller: return seed
+    deactivate Seed
+    
+    Controller -> Lot: where('production_id', seed.storage_number)->get()
+    activate Lot
+    Lot --> Controller: return lots[]
+    deactivate Lot
+    
+    loop Untuk setiap lot
+        Controller -> Lot: lot->update(['current_stock' => new_stock])
+        activate Lot
+        Lot -> Lot: save()
+        Lot --> Controller: return success
+        deactivate Lot
+    end
+    
+    Controller -> History: create(...)
+    activate History
+    History -> History: save()
+    History --> Controller: return history
+    deactivate History
+    
+    Controller --> View: redirect dengan pesan sukses
+    View --> User: tampilkan pesan sukses()
+    deactivate Controller
+end
+
+@enduml

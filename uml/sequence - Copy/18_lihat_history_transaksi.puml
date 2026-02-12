@@ -1,0 +1,44 @@
+@startuml Sequence Diagram - Lihat History Transaksi
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Lihat History Transaksi
+
+actor "Petugas Gudang/Admin" as User
+participant "InventoryTypeController" as Controller
+participant "InventoryType Model" as InvType
+participant "SeedHistory Model" as History
+participant "InventoryTransaction Model" as Transaction
+participant "Database" as DB
+
+User -> Controller: GET /seed-stock/{id}?tab=history
+activate Controller
+Controller -> Controller: validateRole
+Controller -> InvType: findById
+activate InvType
+InvType -> DB: SELECT * FROM inventory_types WHERE id = ?
+DB --> InvType: inventory_type data
+InvType --> Controller: InvType
+deactivate InvType
+
+Controller -> History: getByInventoryTypeSeedId
+activate History
+History -> DB: SELECT * FROM seed_histories WHERE inventory_type_seed_id IN ? ORDER BY created_at DESC
+DB --> History: histories[]
+History --> Controller: histories[]
+deactivate History
+
+Controller -> Transaction: getByInventoryTypeId
+activate Transaction
+Transaction -> DB: SELECT * FROM inventory_transactions WHERE inventory_type_id = ? ORDER BY created_at DESC
+DB --> Transaction: transactions[]
+Transaction --> Controller: transactions[]
+deactivate Transaction
+
+Controller --> User: render halaman history
+deactivate Controller
+
+@enduml
+

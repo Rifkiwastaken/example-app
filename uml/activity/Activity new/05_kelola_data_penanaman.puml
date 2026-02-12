@@ -1,0 +1,96 @@
+@startuml
+' Referensi: Use Case Overview (00_use_case_overview.puml)
+' Use case 05: Mengelola data Penanaman
+' Aktor: Admin/Kepala Sek, Penangkar/Kepala Satgas
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Mengelola data Penanaman
+
+|#LightBlue|User|
+start
+:Masuk ke halaman kelola penanaman;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data penanaman dari database;
+:Load data tanaman dan lokasi terkait;
+:Menampilkan daftar penanaman;
+
+|#LightBlue|User|
+:Lihat daftar penanaman;
+
+if (Pilih aksi?) then (Tambah Baru)
+    |#LightBlue|User|
+    :Klik tombol tambah penanaman;
+    |#LightGreen|Sistem|
+    :Tampilkan form tambah penanaman;
+    |#LightBlue|User|
+    :Isi form data penanaman;
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data;
+    if (Data valid?) then (Ya)
+        :Simpan data penanaman ke database;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Tampilkan pesan error;
+    endif
+elseif (Edit) then
+    |#LightBlue|User|
+    :Klik tombol edit;
+    |#LightGreen|Sistem|
+    :Tampilkan form edit dengan data terisi;
+    |#LightBlue|User|
+    :Edit data penanaman;
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data;
+    if (Data valid?) then (Ya)
+        :Update data penanaman di database;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Tampilkan pesan error;
+    endif
+elseif (Hapus) then
+    |#LightBlue|User|
+    :Klik tombol hapus;
+    |#LightGreen|Sistem|
+    :Tampilkan konfirmasi hapus;
+    |#LightBlue|User|
+    if (Konfirmasi hapus?) then (Ya)
+        |#LightGreen|Sistem|
+        :Hapus data penanaman dari database;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Batal hapus;
+    endif
+elseif (Tracking) then
+    |#LightBlue|User|
+    :Klik tombol tracking;
+    |#LightGreen|Sistem|
+    :Tampilkan halaman tracking perkembangan;
+    |#LightBlue|User|
+    :Lihat dan update tracking;
+else (Lihat Detail)
+    |#LightBlue|User|
+    :Klik tombol lihat detail;
+    |#LightGreen|Sistem|
+    :Tampilkan detail data penanaman;
+    |#LightBlue|User|
+    :Lihat detail penanaman;
+endif
+
+stop
+
+@enduml

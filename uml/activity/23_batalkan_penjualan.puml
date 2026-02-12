@@ -1,0 +1,51 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Batalkan Penjualan
+
+|#LightBlue|Petugas BBI|
+start
+:Dari daftar penjualan;
+:Pilih penjualan yang akan dibatalkan;
+:Klik batalkan penjualan;
+:Konfirmasi pembatalan;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Load data penjualan dari database;
+:Load data sale items;
+:Check status penjualan;
+
+if (Dapat dibatalkan?) then (Ya)
+    :Begin database transaction;
+    :Restore stok yang sudah dikurangi;
+    :Update status penjualan menjadi "dibatalkan";
+    :Create transaction record (reversal);
+    :Create history record;
+    :Commit transaction;
+    :Success message;
+    :Redirect ke daftar penjualan;
+    |#LightBlue|Petugas BBI|
+    :Lihat pesan penjualan berhasil dibatalkan;
+else (Tidak)
+    :Error: penjualan tidak dapat dibatalkan\n(status sudah final atau sudah lama);
+    :Tampilkan pesan error;
+    :Redirect ke daftar penjualan;
+    |#LightBlue|Petugas BBI|
+    :Lihat pesan penjualan tidak dapat dibatalkan;
+endif
+
+stop
+
+@enduml

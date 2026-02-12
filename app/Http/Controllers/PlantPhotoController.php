@@ -29,25 +29,19 @@ class PlantPhotoController extends Controller
             'taken_at' => 'nullable|date',
         ]);
 
-        $uploadedPhotos = [];
-
         foreach ($request->file('photos') as $photo) {
             $filePath = $photo->store('plant-photos', 'public');
-            
-            $uploadedPhotos[] = [
-                'plant_id' => $plant->id,
+
+            PlantPhoto::create([
+                'plant_id' => $plant->plant_id,
                 'file_path' => $filePath,
                 'file_name' => $photo->getClientOriginalName(),
                 'file_size' => $photo->getSize(),
                 'mime_type' => $photo->getMimeType(),
                 'description' => $data['description'],
                 'taken_at' => $data['taken_at'] ?: now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
+            ]);
         }
-
-        PlantPhoto::insert($uploadedPhotos);
         
         return redirect()->route('plants.photos.index', $plant)
             ->with('success', 'Foto berhasil diupload');
@@ -60,11 +54,21 @@ class PlantPhotoController extends Controller
 
     public function edit(Plant $plant, PlantPhoto $photo)
     {
+        // Prevent penangkar from editing photos
+        if (auth()->user()->role === 'penangkar') {
+            abort(403, 'Anda tidak memiliki izin untuk mengedit foto.');
+        }
+        
         return view('planting/plants/photos/edit', compact('plant', 'photo'));
     }
 
     public function update(Request $request, Plant $plant, PlantPhoto $photo)
     {
+        // Prevent penangkar from updating photos
+        if (auth()->user()->role === 'penangkar') {
+            abort(403, 'Anda tidak memiliki izin untuk mengedit foto.');
+        }
+        
         $data = $request->validate([
             'description' => 'nullable|string',
             'taken_at' => 'nullable|date',
@@ -78,6 +82,11 @@ class PlantPhotoController extends Controller
 
     public function destroy(Plant $plant, PlantPhoto $photo)
     {
+        // Prevent penangkar from deleting photos
+        if (auth()->user()->role === 'penangkar') {
+            abort(403, 'Anda tidak memiliki izin untuk menghapus foto.');
+        }
+        
         // Delete file from storage
         if (Storage::disk('public')->exists($photo->file_path)) {
             Storage::disk('public')->delete($photo->file_path);

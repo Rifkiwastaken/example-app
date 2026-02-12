@@ -1,0 +1,53 @@
+@startuml Sequence Diagram - Tracking Perkembangan Tanaman
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Tracking Perkembangan Tanaman
+
+actor "Kepala Satgas/Penangkar" as User
+participant "PlantingController" as Controller
+participant "Planting Model" as Planting
+participant "Plant Model" as Plant
+participant "Database" as DB
+
+User -> Controller: GET /plantings/{id}
+activate Controller
+Controller -> Controller: validateRole
+Controller -> Planting: findById
+activate Planting
+Planting -> DB: SELECT * FROM plantings LEFT JOIN plants WHERE plantings.id = ?
+DB --> Planting: planting data
+Planting --> Controller: Planting
+deactivate Planting
+
+Controller --> User: render halaman tracking
+deactivate Controller
+
+User -> Controller: PUT /plantings/{id} update perkembangan
+activate Controller
+Controller -> Controller: validate
+Controller -> Planting: findById
+activate Planting
+Planting -> DB: SELECT * FROM plantings WHERE id = ?
+DB --> Planting: planting data
+Planting --> Controller: Planting
+deactivate Planting
+
+alt Validation Success
+    Controller -> Planting: update
+    activate Planting
+    Planting -> DB: UPDATE plantings SET germination_stage = ? WHERE id = ?
+    DB --> Planting: updated
+    Planting --> Controller: updated
+    deactivate Planting
+    
+    Controller --> User: response success
+else Not Valid
+    Controller --> User: show form
+end
+deactivate Controller
+
+@enduml
+

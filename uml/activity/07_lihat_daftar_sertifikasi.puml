@@ -1,0 +1,32 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Lihat Daftar Sertifikasi
+
+|#LightBlue|Petugas Sertifikasi/Admin|
+start
+:Masuk ke halaman kelola sertifikasi;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data sertifikasi dari database;
+:Load data laporan sertifikasi;
+:Menampilkan daftar sertifikasi;
+
+|#LightBlue|Petugas Sertifikasi/Admin|
+:Lihat daftar sertifikasi;
+
+stop
+
+@enduml

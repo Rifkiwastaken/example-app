@@ -1,0 +1,218 @@
+@startuml Activity Diagram - Modul Manajemen Stok dan Gudang
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Modul Manajemen Stok dan Gudang
+
+' ============================================
+' Use Case: Lihat Daftar Stok
+' ============================================
+|#LightBlue|Petugas Gudang/Admin|
+start
+:Masuk ke halaman daftar stok;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data stok dari database;
+:Query data inventory types;
+:Query data lots;
+:Display daftar stok dengan summary;
+
+|#LightBlue|Petugas Gudang/Admin|
+:Lihat daftar stok;
+:Filter berdasarkan gudang/bin;
+:Lihat detail stok;
+
+stop
+
+' ============================================
+' Use Case: Tambah Stok Baru
+' ============================================
+|#LightBlue|Petugas Gudang|
+start
+:Masuk ke form tambah stok;
+:Pilih tipe benih;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data inventory types;
+:Query data gudang dan bin;
+:Query data sertifikasi yang lulus;
+:Display form tambah stok;
+
+|#LightBlue|Petugas Gudang|
+:Pilih benih dari sertifikasi;
+:Input jumlah stok\n(quantity, unit);
+:Input lokasi gudang dan bin;
+:Input tanggal kadaluarsa;
+:Submit form;
+
+|#LightGreen|Sistem|
+:Validasi data stok;
+:Check kapasitas bin;
+:Insert ke tabel inventory_type_seeds;
+:Insert ke tabel inventory_lots (jika perlu);
+:Update total stok;
+:Create history record;
+:Success message;
+:Redirect ke halaman detail stok;
+
+stop
+
+' ============================================
+' Use Case: Kelola Gudang
+' ============================================
+|#LightBlue|Petugas Gudang/Admin|
+start
+:Masuk ke halaman kelola gudang;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data gudang dari database;
+:Display daftar gudang;
+
+|#LightBlue|Petugas Gudang/Admin|
+if (Aksi?) then (Tambah Gudang)
+    :Masuk ke form tambah gudang;
+    :Input data gudang\n(nama, alamat, kapasitas);
+    :Submit form;
+    
+    |#LightGreen|Sistem|
+    :Validasi data gudang;
+    :Insert ke tabel warehouses;
+    :Success message;
+else (Edit Gudang)
+    :Pilih gudang;
+    :Edit data gudang;
+    :Submit form;
+    
+    |#LightGreen|Sistem|
+    :Update data di tabel warehouses;
+    :Success message;
+else (Hapus Gudang)
+    :Pilih gudang;
+    :Konfirmasi penghapusan;
+    
+    |#LightGreen|Sistem|
+    :Check stok di gudang;
+    if (Gudang kosong?) then (Ya)
+        :Delete dari tabel warehouses;
+        :Success message;
+    else (Tidak)
+        :Error: gudang masih berisi stok;
+    endif
+endif
+
+stop
+
+' ============================================
+' Use Case: Kelola Bin
+' ============================================
+|#LightBlue|Petugas Gudang/Admin|
+start
+:Dari halaman kelola gudang;
+:Pilih gudang;
+:Klik kelola bin;
+
+|#LightGreen|Sistem|
+:Query data bin dari database;
+:Filter berdasarkan gudang;
+:Display daftar bin;
+
+|#LightBlue|Petugas Gudang/Admin|
+if (Aksi?) then (Tambah Bin)
+    :Masuk ke form tambah bin;
+    :Input data bin\n(nama, internal_id, max_capacity);
+    :Submit form;
+    
+    |#LightGreen|Sistem|
+    :Validasi data bin;
+    :Check internal_id unik;
+    :Insert ke tabel bins;
+    :Success message;
+else (Edit Bin)
+    :Pilih bin;
+    :Edit data bin;
+    :Submit form;
+    
+    |#LightGreen|Sistem|
+    :Update data di tabel bins;
+    :Success message;
+else (Hapus Bin)
+    :Pilih bin;
+    :Konfirmasi penghapusan;
+    
+    |#LightGreen|Sistem|
+    :Check stok di bin;
+    if (Bin kosong?) then (Ya)
+        :Delete dari tabel bins;
+        :Success message;
+    else (Tidak)
+        :Error: bin masih berisi stok;
+    endif
+endif
+
+stop
+
+' ============================================
+' Use Case: Adjustment Stok
+' ============================================
+|#LightBlue|Petugas Gudang/Admin|
+start
+:Masuk ke halaman adjustment stok;
+:Pilih tipe benih;
+
+|#LightGreen|Sistem|
+:Load data stok saat ini;
+:Display form adjustment;
+
+|#LightBlue|Petugas Gudang/Admin|
+:Pilih jenis adjustment\n(penambahan/pengurangan);
+:Input jumlah adjustment;
+:Input alasan adjustment;
+:Submit form;
+
+|#LightGreen|Sistem|
+:Validasi data adjustment;
+:Check stok tersedia (untuk pengurangan);
+:Update stok di database;
+:Create transaction record;
+:Create history record;
+:Success message;
+:Redirect ke halaman detail stok;
+
+stop
+
+' ============================================
+' Use Case: Lihat History Transaksi
+' ============================================
+|#LightBlue|Petugas Gudang/Admin|
+start
+:Masuk ke halaman history transaksi;
+:Pilih tipe benih atau gudang;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data transaksi dari database;
+:Query data history stok;
+:Filter berdasarkan parameter;
+:Display daftar history transaksi;
+
+|#LightBlue|Petugas Gudang/Admin|
+:Lihat history transaksi;
+:Filter berdasarkan tanggal;
+:Export laporan (jika perlu);
+
+stop
+
+@enduml

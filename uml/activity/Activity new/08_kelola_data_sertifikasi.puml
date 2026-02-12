@@ -1,0 +1,106 @@
+@startuml
+' Referensi: Use Case Overview (00_use_case_overview.puml)
+' Use case 08: Mengelola data sertifikasi
+' Aktor: Admin/Kepala Sek, Petugas BBI
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Mengelola data sertifikasi
+
+|#LightBlue|User|
+start
+:Masuk ke halaman kelola sertifikasi;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data sertifikasi dari database;
+:Load data panen dan laporan terkait;
+:Menampilkan daftar sertifikasi;
+
+|#LightBlue|User|
+:Lihat daftar sertifikasi;
+
+if (Pilih aksi?) then (Tambah Baru)
+    |#LightBlue|User|
+    :Klik tombol tambah sertifikasi;
+    |#LightGreen|Sistem|
+    :Tampilkan form tambah sertifikasi;
+    |#LightBlue|User|
+    :Pilih panen yang akan disertifikasi;
+    :Isi form data sertifikasi;
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data;
+    if (Data valid?) then (Ya)
+        :Simpan data sertifikasi ke database;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Tampilkan pesan error;
+    endif
+elseif (Buat Laporan) then
+    |#LightBlue|User|
+    :Klik tombol buat laporan;
+    |#LightGreen|Sistem|
+    :Tampilkan form laporan pemeriksaan;
+    |#LightBlue|User|
+    :Isi form laporan;
+    :Upload dokumen scan;
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data;
+    if (Data valid?) then (Ya)
+        :Simpan laporan ke database;
+        :Simpan file dokumen;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Tampilkan pesan error;
+    endif
+elseif (Edit Laporan) then
+    |#LightBlue|User|
+    :Klik tombol edit laporan;
+    |#LightGreen|Sistem|
+    :Tampilkan form edit dengan data terisi;
+    |#LightBlue|User|
+    :Edit data laporan;
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data;
+    if (Data valid?) then (Ya)
+        :Update data laporan di database;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Tampilkan pesan error;
+    endif
+elseif (Evaluasi) then
+    |#LightBlue|User|
+    :Klik tombol evaluasi;
+    |#LightGreen|Sistem|
+    :Tampilkan form evaluasi;
+    |#LightBlue|User|
+    :Isi hasil evaluasi;
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Update status sertifikasi;
+    :Tampilkan pesan sukses;
+else (Lihat Detail)
+    |#LightBlue|User|
+    :Klik tombol lihat detail;
+    |#LightGreen|Sistem|
+    :Tampilkan detail data sertifikasi;
+    |#LightBlue|User|
+    :Lihat detail sertifikasi;
+endif
+
+stop
+
+@enduml

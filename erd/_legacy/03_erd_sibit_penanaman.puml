@@ -1,0 +1,235 @@
+@startuml ERD - SIBESTI Modul Penanaman
+!theme plain
+left to right direction
+scale 0.9
+skinparam linetype ortho
+skinparam roundcorner 8
+skinparam shadowing false
+
+title SIBESTI - Modul Penanaman ERD
+' Semua ID menggunakan VARCHAR(36) dengan format {nama_tabel}_id
+' Tabel locations telah dihapus
+' Tanggal Update: Februari 2026
+
+entity "plant_types" as plant_types {
+    * **plant_type_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    category : VARCHAR(255)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "plants" as plants {
+    * **plant_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    plant_type_id : VARCHAR(36) <<FK>>
+    variety : VARCHAR(255)
+    status : ENUM('perencanaan','ditanam','dipanen','selesai')
+    progress : TINYINT
+    planting_location_id : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "planting_locations" as planting_locations {
+    * **planting_location_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    location_type : ENUM('lapangan','greenhouse','grow_room','padang_rumput','petak_ternak','lainnya')
+    planting_format : ENUM('petak','cover_crop','row','lainnya')
+    num_beds : INT
+    bed_length_m : DECIMAL(8,2)
+    bed_width_m : DECIMAL(8,2)
+    map_size : VARCHAR(255)
+    light_condition : VARCHAR(255)
+    description : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "plantings" as plantings {
+    * **planting_id** : VARCHAR(36) <<PK>>
+    --
+    plant_id : VARCHAR(36) <<FK>>
+    planting_location_id : VARCHAR(36) <<FK>>
+    bed_label : VARCHAR(255)
+    days_to_emerge : INT
+    spacing_between_plants : VARCHAR(255)
+    spacing_between_rows : VARCHAR(255)
+    sown_at : DATE
+    quantity_planted : INT
+    planted_at : DATE
+    days_to_harvest : INT
+    expected_yield_per_hectare : DECIMAL(12,2)
+    area_ha : DECIMAL(10,2)
+    perennial : BOOLEAN
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "harvests" as harvests {
+    * **harvest_id** : VARCHAR(36) <<PK>>
+    --
+    plant_id : VARCHAR(36) <<FK>>
+    planting_id : VARCHAR(36) <<FK>>
+    planting_location_id : VARCHAR(36) <<FK>>
+    harvested_at : DATE
+    batch_no : VARCHAR(255)
+    note : TEXT
+    source : VARCHAR(255)
+    quality : VARCHAR(255)
+    quantity : DECIMAL(12,2)
+    unit : VARCHAR(50)
+    loss_quantity : DECIMAL(12,2)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "planting_losses" as planting_losses {
+    * **planting_loss_id** : VARCHAR(36) <<PK>>
+    --
+    planting_id : VARCHAR(36) <<FK>>
+    loss_date : DATE
+    loss_amount : DECIMAL(12,2)
+    loss_reason : VARCHAR(255)
+    description : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "treatments" as treatments {
+    * **treatment_id** : VARCHAR(36) <<PK>>
+    --
+    planting_location_id : VARCHAR(36) <<FK>>
+    treatment_type : VARCHAR(255)
+    treatment_name : VARCHAR(255)
+    product_detail : VARCHAR(255)
+    application_method : VARCHAR(255)
+    treatment_date : DATE
+    amount_applied : DECIMAL(10,2)
+    unit_measurement : VARCHAR(255)
+    total_cost : DECIMAL(10,2)
+    responsible_person_id : VARCHAR(36) <<FK>>
+    edited_by : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "nutrients" as nutrients {
+    * **nutrient_id** : VARCHAR(36) <<PK>>
+    --
+    planting_location_id : VARCHAR(36) <<FK>>
+    planting_id : VARCHAR(36) <<FK>>
+    nutrient_name : VARCHAR(255)
+    product_applied : VARCHAR(255)
+    amount_applied : DECIMAL(10,2)
+    unit : VARCHAR(50)
+    application_method : VARCHAR(255)
+    application_date : DATE
+    total_cost : DECIMAL(15,2)
+    technician : VARCHAR(255)
+    description : TEXT
+    responsible_person_id : VARCHAR(36) <<FK>>
+    edited_by : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "plant_notes" as plant_notes {
+    * **plant_note_id** : VARCHAR(36) <<PK>>
+    --
+    plant_id : VARCHAR(36) <<FK>>
+    description : TEXT
+    note_date : DATE
+    keywords : VARCHAR(255)
+    attachment_path : VARCHAR(255)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "plant_photos" as plant_photos {
+    * **plant_photo_id** : VARCHAR(36) <<PK>>
+    --
+    plant_id : VARCHAR(36) <<FK>>
+    file_path : VARCHAR(255)
+    file_name : VARCHAR(255)
+    file_size : BIGINT
+    mime_type : VARCHAR(255)
+    description : TEXT
+    taken_at : DATETIME
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "planting_location_notes" as planting_location_notes {
+    * **planting_location_note_id** : VARCHAR(36) <<PK>>
+    --
+    planting_location_id : VARCHAR(36) <<FK>>
+    title : VARCHAR(255)
+    description : TEXT
+    note_date : DATE
+    keywords : VARCHAR(255)
+    attachment_path : VARCHAR(255)
+    user_id : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "planting_location_photos" as planting_location_photos {
+    * **planting_location_photo_id** : VARCHAR(36) <<PK>>
+    --
+    planting_location_id : VARCHAR(36) <<FK>>
+    file_path : VARCHAR(255)
+    file_name : VARCHAR(255)
+    file_size : BIGINT
+    mime_type : VARCHAR(100)
+    description : TEXT
+    taken_at : TIMESTAMP
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "users" as users {
+    * **user_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    email : VARCHAR(255) <<UNIQUE>>
+    role : ENUM
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+' Relationships
+plant_types ||--o{ plants : "plant_type_id"
+plants }o--|| planting_locations : "planting_location_id"
+plants ||--o{ plantings : "plant_id"
+plants ||--o{ harvests : "plant_id"
+plants ||--o{ plant_notes : "plant_id"
+plants ||--o{ plant_photos : "plant_id"
+plants ||--o{ nutrients : "planting_id"
+
+planting_locations ||--o{ plantings : "planting_location_id"
+planting_locations ||--o{ harvests : "planting_location_id"
+planting_locations ||--o{ treatments : "planting_location_id"
+planting_locations ||--o{ nutrients : "planting_location_id"
+planting_locations ||--o{ planting_location_notes : "planting_location_id"
+planting_locations ||--o{ planting_location_photos : "planting_location_id"
+
+plantings ||--o{ harvests : "planting_id"
+plantings ||--o{ planting_losses : "planting_id"
+
+users ||--o{ treatments : "responsible_person_id"
+users ||--o{ nutrients : "responsible_person_id"
+users ||--o{ planting_location_notes : "user_id"
+
+note as N1
+SIBESTI Modul Penanaman
+plants.status: perencanaan, ditanam, dipanen, selesai
+Tabel locations telah dihapus
+PK: VARCHAR(36) format {nama_tabel}_id
+Update: Februari 2026
+end note
+
+@enduml

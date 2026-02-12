@@ -4,11 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasCustomId;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TaskTemplate extends Model
 {
     use HasFactory;
+    use HasCustomId;
+
+    protected $primaryKey = 'task_template_id';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'name',
@@ -28,7 +34,7 @@ class TaskTemplate extends Model
      */
     public function tasks(): HasMany
     {
-        return $this->hasMany(Task::class, 'template_id');
+        return $this->hasMany(Task::class, 'template_id', 'task_template_id');
     }
 
     /**
@@ -36,7 +42,7 @@ class TaskTemplate extends Model
      */
     public function series(): HasMany
     {
-        return $this->hasMany(TaskSeries::class, 'template_id');
+        return $this->hasMany(TaskSeries::class, 'template_id', 'task_template_id');
     }
 
     /**
@@ -74,6 +80,9 @@ class TaskTemplate extends Model
         return $query->where('is_active', true);
     }
 }
+
+
+
 
 
 

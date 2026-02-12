@@ -1,0 +1,165 @@
+@startuml Activity Diagram - Modul Penjualan
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Modul Penjualan
+
+' ============================================
+' Use Case: Lihat Daftar Penjualan
+' ============================================
+|#LightBlue|Petugas BBI/Admin|
+start
+:Masuk ke halaman daftar penjualan;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data penjualan dari database;
+:Load data sale items;
+:Display daftar penjualan dengan summary;
+
+|#LightBlue|Petugas BBI/Admin|
+:Lihat daftar penjualan;
+:Filter berdasarkan tanggal/pelanggan;
+:Lihat detail penjualan;
+
+stop
+
+' ============================================
+' Use Case: Input Data Penjualan
+' ============================================
+|#LightBlue|Petugas BBI|
+start
+:Masuk ke form input penjualan;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data stok tersedia;
+:Query data gudang dan bin;
+:Display form input penjualan;
+
+|#LightBlue|Petugas BBI|
+:Input data pelanggan\n(nama, kontak, alamat);
+:Pilih list untuk dijual;
+:Input item penjualan\n(inventory_type, quantity, unit_price);
+:Submit form;
+
+|#LightGreen|Sistem|
+:Validasi data penjualan;
+:Check stok tersedia;
+:Check kapasitas gudang;
+
+if (Stok cukup?) then (Ya)
+    :Proses penjualan;
+    :Insert ke tabel sales;
+    :Insert ke tabel sale_items;
+    :Update stok (FIFO);
+    :Create transaction record;
+    :Generate nomor nota;
+    :Success message;
+    :Redirect ke halaman detail penjualan;
+else (Tidak)
+    :Error: stok tidak cukup;
+    :Kembali ke form;
+endif
+
+stop
+
+' ============================================
+' Use Case: Pilih List untuk dijual
+' ============================================
+|#LightBlue|Petugas BBI/Petugas Gudang|
+start
+:Dalam form input penjualan;
+:Klik pilih list untuk dijual;
+
+|#LightGreen|Sistem|
+:Query data stok tersedia dari database;
+:Query data inventory types;
+:Filter stok yang siap dijual;
+:Display daftar stok tersedia;
+
+|#LightBlue|Petugas BBI/Petugas Gudang|
+:Pilih tipe benih;
+:Pilih lot/bin (jika perlu);
+:Input quantity yang akan dijual;
+:Konfirmasi pilihan;
+
+|#LightGreen|Sistem|
+:Validasi pilihan;
+:Check stok tersedia;
+:Simpan pilihan ke form;
+:Update total harga;
+
+stop
+
+' ============================================
+' Use Case: Proses Penjualan
+' ============================================
+|#LightBlue|Petugas BBI|
+start
+:Setelah pilih list untuk dijual;
+:Klik proses penjualan;
+
+|#LightGreen|Sistem|
+:Validasi semua item;
+:Check stok untuk setiap item;
+:Calculate total harga;
+:Apply metode FIFO untuk pengurangan stok;
+
+if (Semua item valid?) then (Ya)
+    :Create record penjualan;
+    :Update stok di database;
+    :Create transaction records;
+    :Generate nota penjualan;
+    :Success message;
+else (Tidak)
+    :Error: ada item yang stok tidak cukup;
+    :Tampilkan item yang bermasalah;
+endif
+
+|#LightBlue|Petugas BBI|
+:Lihat nota penjualan;
+:Print/cetak nota (jika perlu);
+
+stop
+
+' ============================================
+' Use Case: Batalkan Penjualan
+' ============================================
+|#LightBlue|Petugas BBI|
+start
+:Dari daftar penjualan;
+:Pilih penjualan yang akan dibatalkan;
+:Klik batalkan penjualan;
+:Konfirmasi pembatalan;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Load data penjualan;
+:Check status penjualan;
+
+if (Dapat dibatalkan?) then (Ya)
+    :Restore stok yang sudah dikurangi;
+    :Update status penjualan menjadi "dibatalkan";
+    :Create transaction record (reversal);
+    :Create history record;
+    :Success message;
+else (Tidak)
+    :Error: penjualan tidak dapat dibatalkan;
+endif
+
+:Redirect ke daftar penjualan;
+
+stop
+
+@enduml

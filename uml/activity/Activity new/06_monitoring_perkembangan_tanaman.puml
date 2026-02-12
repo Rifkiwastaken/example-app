@@ -1,0 +1,109 @@
+@startuml
+' Referensi: Use Case Overview (00_use_case_overview.puml)
+' Use case 06: Monitoring Perkembangan Tanaman
+' Aktor: Admin/Kepala Sek, Penangkar/Kepala Satgas
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Monitoring Perkembangan Tanaman
+
+|#LightBlue|Admin/Penangkar|
+start
+:Masuk ke halaman monitoring perkembangan tanaman;
+:Pilih penanaman yang akan dimonitor;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna (Admin atau Penangkar);
+:Load data penanaman dari database;
+:Load history laporan, nutrisi, perawatan, dan catatan;
+:Menampilkan halaman monitoring perkembangan;
+
+|#LightBlue|Admin/Penangkar|
+:Lihat data perkembangan tanaman;
+
+if (Pilih jenis data yang akan ditambahkan?) then (Laporan)
+    |#LightBlue|Admin/Penangkar|
+    :Klik tombol tambah laporan;
+    |#LightGreen|Sistem|
+    :Tampilkan form tambah laporan;
+    |#LightBlue|Admin/Penangkar|
+    :Isi form laporan\n(tanggal, deskripsi, kondisi tanaman);
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data laporan;
+    if (Data valid?) then (Ya)
+        :Simpan laporan ke database;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Tampilkan pesan error;
+    endif
+elseif (Nutrisi) then
+    |#LightBlue|Admin/Penangkar|
+    :Klik tombol tambah nutrisi;
+    |#LightGreen|Sistem|
+    :Tampilkan form tambah nutrisi;
+    |#LightBlue|Admin/Penangkar|
+    :Isi form nutrisi\n(produk, jumlah, metode aplikasi, tanggal, biaya);
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data nutrisi;
+    if (Data valid?) then (Ya)
+        :Simpan nutrisi ke database;
+        :Buat expense otomatis jika ada biaya;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Tampilkan pesan error;
+    endif
+elseif (Perawatan) then
+    |#LightBlue|Admin/Penangkar|
+    :Klik tombol tambah perawatan;
+    |#LightGreen|Sistem|
+    :Tampilkan form tambah perawatan;
+    |#LightBlue|Admin/Penangkar|
+    :Isi form perawatan\n(jenis, produk, metode aplikasi, tanggal, biaya);
+    :Upload dokumen pendukung (opsional);
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data perawatan;
+    :Simpan file attachment jika ada;
+    if (Data valid?) then (Ya)
+        :Simpan perawatan ke database;
+        :Buat expense otomatis jika ada biaya;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Tampilkan pesan error;
+    endif
+else (Catatan)
+    |#LightBlue|Admin/Penangkar|
+    :Klik tombol tambah catatan;
+    |#LightGreen|Sistem|
+    :Tampilkan form tambah catatan;
+    |#LightBlue|Admin/Penangkar|
+    :Isi form catatan\n(judul, deskripsi, tanggal, keywords);
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data catatan;
+    if (Data valid?) then (Ya)
+        :Simpan catatan ke database;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Tampilkan pesan error;
+    endif
+endif
+
+|#LightBlue|Admin/Penangkar|
+:Lihat data perkembangan yang telah ditambahkan;
+
+stop
+
+@enduml

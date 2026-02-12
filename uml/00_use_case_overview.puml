@@ -1,0 +1,107 @@
+@startuml Use Case Diagram - Sistem Informasi Manajemen Perbenihan
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+}
+skinparam actor {
+    BackgroundColor #FFF9C4
+    BorderColor #F57F17
+}
+
+title Use Case Overview - Sistem Informasi Manajemen Perbenihan
+
+' Aktor (4 role sesuai diagram)
+actor "Admin / Kepala Sek" as Admin
+actor "Petugas BBI" as PetugasBBI
+actor "Penangkar / Kepala Satgas" as Penangkar
+actor "Petugas Gudang" as PetugasGudang
+
+rectangle "Sistem informasi manajemen perbenihan" {
+
+    ' Data Tanaman & Lokasi Penanaman
+    usecase "Mengelola data tanaman" as UC_KelolaTanaman
+    usecase "Melihat data tanaman" as UC_LihatTanaman
+    usecase "Mengelola data lokasi penanaman" as UC_KelolaLokasi
+    usecase "Melihat data lokasi penanaman" as UC_LihatLokasi
+    usecase "Mengelola data Penanaman" as UC_KelolaPenanaman
+    usecase "Monitoring Perkembangan Tanaman" as UC_MonitoringTanaman
+    usecase "Mengelola data panen" as UC_KelolaPanen
+
+    ' Sertifikasi
+    usecase "Mengelola data sertifikasi" as UC_KelolaSertifikasi
+
+    ' Umum / Sistem
+    usecase "Login" as UC_Login
+    usecase "Logout" as UC_Logout
+    usecase "Mengelola Profile" as UC_KelolaProfile
+    usecase "Menambahkan User" as UC_TambahUser
+    usecase "Mengakses Dashboard" as UC_Dashboard
+
+    ' Stok & Gudang
+    usecase "Menambahkan data stok benih" as UC_TambahStokBenih
+    usecase "Mengelola data stok benih" as UC_KelolaStokBenih
+    usecase "Mengelola data lokasi gudang dan bin" as UC_KelolaGudangBin
+
+    ' Penjualan & Laporan
+    usecase "Mengelola data penjualan" as UC_KelolaPenjualan
+    usecase "Mengelola data laporan" as UC_KelolaLaporan
+}
+
+' ========== Admin / Kepala Sek ==========
+Admin --> UC_KelolaTanaman
+Admin --> UC_KelolaLokasi
+Admin --> UC_KelolaPenanaman
+Admin --> UC_MonitoringTanaman
+Admin --> UC_KelolaPanen
+Admin --> UC_KelolaSertifikasi
+Admin --> UC_Login
+Admin --> UC_Logout
+Admin --> UC_KelolaProfile
+Admin --> UC_TambahUser
+Admin --> UC_Dashboard
+Admin --> UC_TambahStokBenih
+Admin --> UC_KelolaGudangBin
+Admin --> UC_KelolaPenjualan
+Admin --> UC_KelolaLaporan
+
+' ========== Petugas BBI ==========
+PetugasBBI --> UC_KelolaSertifikasi
+PetugasBBI --> UC_Login
+PetugasBBI --> UC_Logout
+PetugasBBI --> UC_KelolaProfile
+PetugasBBI --> UC_Dashboard
+PetugasBBI --> UC_TambahStokBenih
+PetugasBBI --> UC_KelolaGudangBin
+PetugasBBI --> UC_KelolaPenjualan
+PetugasBBI --> UC_KelolaLaporan
+
+' ========== Penangkar / Kepala Satgas ==========
+Penangkar --> UC_KelolaTanaman
+Penangkar --> UC_LihatTanaman
+Penangkar --> UC_KelolaLokasi
+Penangkar --> UC_LihatLokasi
+Penangkar --> UC_KelolaPenanaman
+Penangkar --> UC_MonitoringTanaman
+Penangkar --> UC_KelolaPanen
+Penangkar --> UC_Login
+Penangkar --> UC_Logout
+Penangkar --> UC_KelolaProfile
+Penangkar --> UC_Dashboard
+
+' ========== Petugas Gudang ==========
+PetugasGudang --> UC_Login
+PetugasGudang --> UC_Logout
+PetugasGudang --> UC_KelolaProfile
+PetugasGudang --> UC_Dashboard
+PetugasGudang --> UC_TambahStokBenih
+PetugasGudang --> UC_KelolaStokBenih
+PetugasGudang --> UC_KelolaGudangBin
+
+' Relasi Include (use case termasuk use case lain)
+UC_KelolaTanaman ..> UC_LihatTanaman : <<include>>
+UC_KelolaLokasi ..> UC_LihatLokasi : <<include>>
+UC_TambahStokBenih ..> UC_KelolaStokBenih : <<include>>
+
+@enduml

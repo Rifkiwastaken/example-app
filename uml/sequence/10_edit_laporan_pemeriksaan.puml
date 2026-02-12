@@ -1,0 +1,57 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Edit Laporan Pemeriksaan
+
+actor "Petugas Sertifikasi/Admin" as User
+participant "CertificationController" as Controller
+participant "CertificationReport" as Report
+participant "Database" as DB
+
+User -> User: dari daftar sertifikasi()
+User -> User: klik edit laporan()
+User -> Controller: edit(report_id)
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Report: CertificationReport::findOrFail(report_id)
+activate Report
+Report -> DB: SELECT * FROM certification_reports WHERE id = ?
+DB --> Report: return report data
+Report --> Controller: return Report
+deactivate Report
+
+Controller --> User: return view edit dengan data()
+deactivate Controller
+User -> User: tampilkan form edit laporan()
+
+User -> User: ubah data laporan()
+User -> Controller: update(Request, report_id)
+activate Controller
+Controller -> Controller: validate(Request)
+Controller -> Report: CertificationReport::findOrFail(report_id)
+activate Report
+Report -> DB: SELECT * FROM certification_reports WHERE id = ?
+DB --> Report: return report data
+Report --> Controller: return Report
+deactivate Report
+
+alt Data Valid
+    Controller -> Report: CertificationReport::update(data)
+    activate Report
+    Report -> DB: UPDATE certification_reports SET report_number_bpsb = ? WHERE id = ?
+    DB --> Report: return updated
+    Report --> Controller: return updated
+    deactivate Report
+    
+    Controller --> User: redirect back dengan success message()
+    User -> User: tampilkan pesan laporan berhasil diupdate()
+else Data Tidak Valid
+    Controller --> User: redirect back dengan validation errors()
+    User -> User: tampilkan form dengan pesan error()
+end
+deactivate Controller
+
+@enduml

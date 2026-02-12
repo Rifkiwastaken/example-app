@@ -1,0 +1,54 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Input Data Penanaman
+
+|#LightBlue|Kepala Satgas/Penangkar|
+start
+:Masuk ke halaman input penanaman;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data tanaman dari database;
+:Query data lokasi penanaman dari database;
+:Menampilkan form input penanaman;
+
+|#LightBlue|Kepala Satgas/Penangkar|
+:Isi data penanaman\n(plant_id, planting_location_id, bed_label);
+:Isi detail penanaman\n(spacing, sowing_depth, start_method);
+:Isi data perkembangan\n(germination_stage, days_to_emerge);
+:Submit form;
+
+|#LightGreen|Sistem|
+:Validasi input data;
+:Check tanaman terdaftar;
+:Check lokasi terdaftar;
+
+if (Data valid?) then (Ya)
+    :Insert ke tabel plantings;
+    :Generate ID penanaman;
+    :Success message;
+    :Redirect ke halaman detail;
+    |#LightBlue|Kepala Satgas/Penangkar|
+    :Lihat pesan penanaman berhasil ditambahkan;
+else (Tidak)
+    :Error message;
+    :Kembali ke form;
+    |#LightBlue|Kepala Satgas/Penangkar|
+    :Lihat form dengan pesan error;
+endif
+
+stop
+
+@enduml

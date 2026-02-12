@@ -1,0 +1,36 @@
+@startuml Sequence Diagram - Upload Dokumen Scan
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Upload Dokumen Scan
+
+actor "Petugas Sertifikasi" as User
+participant "CertificationController" as Controller
+participant "CertificationReport Model" as Report
+participant "Storage" as Storage
+participant "Database" as DB
+
+User -> Controller: POST /certifications/{id}/reports with file
+activate Controller
+Controller -> Controller: validateFile
+Controller -> Storage: store file certifications
+activate Storage
+Storage -> Storage: generateUniqueFileName
+Storage -> Storage: saveFile
+Storage --> Controller: file_path
+deactivate Storage
+
+Controller -> Report: update document_path
+activate Report
+Report -> DB: UPDATE certification_reports SET document_path = ? WHERE id = ?
+DB --> Report: updated
+Report --> Controller: updated
+deactivate Report
+
+Controller --> User: success message
+deactivate Controller
+
+@enduml
+

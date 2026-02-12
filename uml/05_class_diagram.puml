@@ -1,0 +1,611 @@
+@startuml Class Diagram - SIBESTI
+!theme plain
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+skinparam roundcorner 8
+skinparam shadowing false
+skinparam packageStyle rectangle
+left to right direction
+
+title Class Diagram SIBESTI\nBentuk mengikuti standar UML | Tanpa PK | Relasi: panah\nUpdate: Februari 2026
+
+' ============================================================
+' 1. USER & LOKASI
+' ============================================================
+package "User & Lokasi" #E8F4FD {
+  class User {
+    -name: string
+    -email: string
+    -password: string
+    -role: enum
+    -location_id: string
+    -full_name: string
+    -status: enum
+    --
+    +location(): BelongsTo
+    +managedPlantingLocations(): BelongsToMany
+    +workedPlantingLocations(): BelongsToMany
+    +isAdmin(): boolean
+    +getRoleLabelAttribute(): string
+  }
+
+  class Location {
+    -name: string
+    -city: string
+    -district: string
+    -type: enum
+    -description: text
+    -google_maps_link: string
+    --
+    +users(): HasMany
+    +getTypeLabelAttribute(): string
+  }
+}
+
+' ============================================================
+' 2. MODUL PENANAMAN
+' ============================================================
+package "Modul Penanaman" #E8F8E8 {
+  class PlantType {
+    -name: string
+    -category: string
+    -variety: text
+    --
+    +plants(): HasMany
+  }
+
+  class Plant {
+    -name: string
+    -plant_type_id: string
+    -planting_location_id: string
+    -variety: string
+    -status: enum
+    -progress: int
+    --
+    +type(): BelongsTo
+    +plantingLocation(): BelongsTo
+    +plantings(): HasMany
+    +harvests(): HasMany
+    +notes(): HasMany
+    +photos(): HasMany
+    +certifications(): HasMany
+  }
+
+  class PlantingLocation {
+    -name: string
+    -location_id: string
+    -location_type: enum
+    -planting_format: enum
+    -description: text
+    --
+    +location(): BelongsTo
+    +plants(): HasMany
+    +plantings(): HasMany
+    +harvests(): HasMany
+    +treatments(): HasMany
+    +nutrients(): HasMany
+  }
+
+  class Planting {
+    -plant_id: string
+    -planting_location_id: string
+    -bed_label: string
+    -quantity_planted: decimal
+    -planted_at: date
+    -is_completed: boolean
+    --
+    +plant(): BelongsTo
+    +plantingLocation(): BelongsTo
+    +harvests(): HasMany
+    +plantingLosses(): HasMany
+  }
+
+  class Harvest {
+    -plant_id: string
+    -planting_id: string
+    -planting_location_id: string
+    -harvested_at: date
+    -batch_no: string
+    -quantity: decimal
+    -unit: string
+    --
+    +plant(): BelongsTo
+    +planting(): BelongsTo
+    +plantingLocation(): BelongsTo
+    +certifications(): HasMany
+  }
+
+  class PlantingLoss {
+    -planting_id: string
+    -loss_date: date
+    -loss_amount: decimal
+    -loss_reason: string
+    --
+    +planting(): BelongsTo
+  }
+
+  class PlantNote {
+    -plant_id: string
+    -description: text
+    -note_date: date
+    --
+    +plant(): BelongsTo
+  }
+
+  class PlantPhoto {
+    -plant_id: string
+    -file_path: string
+    -file_name: string
+    --
+    +plant(): BelongsTo
+  }
+
+  class PlantingLocationNote {
+    -planting_location_id: string
+    -title: string
+    -description: text
+    -user_id: string
+    --
+    +plantingLocation(): BelongsTo
+    +user(): BelongsTo
+  }
+
+  class PlantingLocationPhoto {
+    -planting_location_id: string
+    -file_path: string
+    -file_name: string
+    --
+    +plantingLocation(): BelongsTo
+  }
+
+  class Treatment {
+    -planting_location_id: string
+    -planting_id: string
+    -treatment_type: string
+    -treatment_date: date
+    -responsible_person_id: string
+    --
+    +plantingLocation(): BelongsTo
+    +planting(): BelongsTo
+    +responsiblePerson(): BelongsTo
+  }
+
+  class Nutrient {
+    -planting_location_id: string
+    -plant_id: string
+    -product_applied: string
+    -application_date: date
+    -responsible_person_id: string
+    --
+    +plantingLocation(): BelongsTo
+    +plant(): BelongsTo
+    +responsiblePerson(): BelongsTo
+  }
+
+  class Expense {
+    -planting_location_id: string
+    -expense_name: string
+    -amount: decimal
+    -expense_type: enum
+    -expense_date: date
+    --
+    +plantingLocation(): BelongsTo
+  }
+}
+
+' ============================================================
+' 3. MODUL SERTIFIKASI
+' ============================================================
+package "Modul Sertifikasi" #FFF9E6 {
+  class Certification {
+    -harvest_id: string
+    -plant_id: string
+    -planting_location_id: string
+    -certification_status: string
+    -seed_class_requested: string
+    --
+    +harvest(): BelongsTo
+    +plant(): BelongsTo
+    +plantingLocation(): BelongsTo
+    +reports(): HasMany
+    +getStatusLabelAttribute(): string
+  }
+
+  class CertificationReport {
+    -certification_id: string
+    -report_number_bpsb: string
+    -report_date: date
+    -conclusion: enum
+    -expiry_date: date
+    -certified_seed_quantity: decimal
+    --
+    +certification(): BelongsTo
+  }
+}
+
+' ============================================================
+' 4. MODUL GUDANG & INVENTORI
+' ============================================================
+package "Modul Gudang & Inventori" #FFEEEE {
+  class Warehouse {
+    -name: string
+    -internal_id: string
+    -tracking_type: enum
+    -description: text
+    --
+    +bins(): HasMany
+    +inventoryLots(): HasMany
+  }
+
+  class Bin {
+    -warehouse_id: string
+    -name: string
+    -internal_id: string
+    -max_capacity: decimal
+    --
+    +warehouse(): BelongsTo
+    +inventoryLots(): HasMany
+  }
+
+  class InventoryType {
+    -category: string
+    -name: string
+    -sku: string
+    -unit: string
+    -responsible_person_id: string
+    --
+    +responsiblePerson(): BelongsTo
+    +lots(): HasMany
+    +transactions(): HasMany
+    +saleItems(): HasMany
+    +notes(): HasMany
+    +photos(): HasMany
+  }
+
+  class InventoryLot {
+    -inventory_type_id: string
+    -warehouse_id: string
+    -bin_id: string
+    -certification_id: string
+    -production_id: string
+    -initial_stock: decimal
+    -current_stock: decimal
+    -status: enum
+    --
+    +inventoryType(): BelongsTo
+    +warehouse(): BelongsTo
+    +bin(): BelongsTo
+    +certification(): BelongsTo
+    +transactions(): HasMany
+    +saleItems(): HasMany
+  }
+
+  class InventoryTransaction {
+    -inventory_type_id: string
+    -inventory_lot_id: string
+    -transaction_type: enum
+    -quantity: decimal
+    -user_id: string
+    --
+    +inventoryType(): BelongsTo
+    +inventoryLot(): BelongsTo
+    +user(): BelongsTo
+  }
+
+  class InventoryNote {
+    -inventory_type_id: string
+    -content: text
+    -user_id: string
+    --
+    +inventoryType(): BelongsTo
+    +user(): BelongsTo
+  }
+
+  class InventoryPhoto {
+    -inventory_type_id: string
+    -photo_path: string
+    -user_id: string
+    --
+    +inventoryType(): BelongsTo
+    +user(): BelongsTo
+  }
+
+  class InventoryTypeSeed {
+    -inventory_type_id: string
+    -plant_id: string
+    -planting_location_id: string
+    -quantity: decimal
+    -filled_by_user_id: string
+    --
+    +inventoryType(): BelongsTo
+    +plant(): BelongsTo
+    +plantingLocation(): BelongsTo
+    +filledByUser(): BelongsTo
+  }
+
+  class InventoryTypeCertificationReport {
+    -inventory_type_id: string
+    -certification_report_id: string
+    -quantity: decimal
+    --
+    +inventoryType(): BelongsTo
+    +certificationReport(): BelongsTo
+  }
+
+  class InventoryTypeWarehouse {
+    -inventory_type_id: string
+    -warehouse_id: string
+    -bin_id: string
+    --
+    +inventoryType(): BelongsTo
+    +warehouse(): BelongsTo
+    +bin(): BelongsTo
+  }
+
+  class SeedHistory {
+    -inventory_type_seed_id: string
+    -inventory_type_id: string
+    -action: string
+    -user_id: string
+    --
+    +inventoryTypeSeed(): BelongsTo
+    +inventoryType(): BelongsTo
+    +user(): BelongsTo
+  }
+}
+
+' ============================================================
+' 5. MODUL PENJUALAN
+' ============================================================
+package "Modul Penjualan" #F0E6FF {
+  class Sale {
+    -receipt_number: string
+    -sale_date: date
+    -buyer_name: string
+    -total_amount: decimal
+    -payment_method: enum
+    -payment_status: enum
+    -user_id: string
+    --
+    +user(): BelongsTo
+    +items(): HasMany
+    +getPaymentMethodLabelAttribute(): string
+    +generateReceiptNumber(): string
+  }
+
+  class SaleItem {
+    -sale_id: string
+    -inventory_type_id: string
+    -inventory_lot_id: string
+    -quantity: decimal
+    -unit_price: decimal
+    -subtotal: decimal
+    --
+    +sale(): BelongsTo
+    +inventoryType(): BelongsTo
+    +inventoryLot(): BelongsTo
+  }
+}
+
+' ============================================================
+' 6. MODUL TUGAS
+' ============================================================
+package "Modul Tugas" #E8E8E8 {
+  class TaskTemplate {
+    -name: string
+    -description: text
+    -tasks_list: json
+    -association: enum
+    -is_active: boolean
+    --
+    +tasks(): HasMany
+    +series(): HasMany
+    +getAssociationLabelAttribute(): string
+  }
+
+  class TaskSeries {
+    -name: string
+    -template_id: string
+    -series_tasks: json
+    -is_active: boolean
+    --
+    +template(): BelongsTo
+    +tasks(): HasMany
+  }
+
+  class Task {
+    -title: string
+    -description: text
+    -new_status: enum
+    -new_priority: enum
+    -due_date: date
+    -assigned_to: string
+    -planting_location_id: string
+    -planting_id: string
+    -template_id: string
+    -series_id: string
+    -created_by: string
+    --
+    +assignedUser(): BelongsTo
+    +createdByUser(): BelongsTo
+    +template(): BelongsTo
+    +series(): BelongsTo
+    +plantingLocation(): BelongsTo
+    +planting(): BelongsTo
+    +isOverdue(): boolean
+  }
+}
+
+' ============================================================
+' 7. PENDUKUNG
+' ============================================================
+package "Pendukung" #F5F5F5 {
+  class Attachment {
+    -planting_location_id: string
+    -title: string
+    -file_path: string
+    -created_by: string
+    --
+    +plantingLocation(): BelongsTo
+    +createdByUser(): BelongsTo
+  }
+
+  class LandingPageSetting {
+    -key: string
+    -value: text
+    --
+    +getValue(key: string, default: string): string
+    +setValue(key: string, value: string): void
+    +getAllSettings(): array
+  }
+}
+
+' ============================================================
+' CONTROLLERS
+' ============================================================
+package "Controllers" #F0F0F0 {
+  class PlantingController {
+    +index(): View
+    +create(): View
+    +store(request: Request): RedirectResponse
+    +show(plant: Plant): View
+    +edit(plant: Plant): View
+    +update(request: Request, plant: Plant): RedirectResponse
+    +destroy(plant: Plant): RedirectResponse
+  }
+
+  class PlantingLocationController {
+    +index(): View
+    +create(): View
+    +store(request: Request): RedirectResponse
+    +show(plantingLocation: PlantingLocation): View
+    +edit(plantingLocation: PlantingLocation): View
+    +update(request: Request, plantingLocation: PlantingLocation): RedirectResponse
+    +destroy(plantingLocation: PlantingLocation): RedirectResponse
+  }
+
+  class CertificationController {
+    +index(): View
+    +create(): View
+    +store(request: Request): RedirectResponse
+    +show(certification: Certification): View
+    +edit(certification: Certification): View
+    +update(request: Request, certification: Certification): RedirectResponse
+  }
+
+  class SaleController {
+    +index(): View
+    +create(): View
+    +store(request: Request): RedirectResponse
+    +show(sale: Sale): View
+  }
+
+  class UserController {
+    +index(): View
+    +create(): View
+    +store(request: Request): RedirectResponse
+    +show(user: User): View
+    +edit(user: User): View
+    +update(request: Request, user: User): RedirectResponse
+    +destroy(user: User): RedirectResponse
+  }
+
+  class WarehouseController {
+    +index(): View
+    +create(): View
+    +store(request: Request): RedirectResponse
+    +show(warehouse: Warehouse): View
+    +edit(warehouse: Warehouse): View
+    +update(request: Request, warehouse: Warehouse): RedirectResponse
+    +destroy(warehouse: Warehouse): RedirectResponse
+  }
+}
+
+' ============================================================
+' RELASI ANTAR OBJEK (panah saja)
+' ============================================================
+User --> Location
+Plant --> PlantType
+Plant --> PlantingLocation
+Planting --> Plant
+Planting --> PlantingLocation
+Harvest --> Plant
+Harvest --> Planting
+Harvest --> PlantingLocation
+PlantingLoss --> Planting
+PlantNote --> Plant
+PlantPhoto --> Plant
+PlantingLocationNote --> PlantingLocation
+PlantingLocationNote --> User
+PlantingLocationPhoto --> PlantingLocation
+Treatment --> PlantingLocation
+Treatment --> Plant
+Treatment --> User
+Nutrient --> PlantingLocation
+Nutrient --> Plant
+Nutrient --> User
+Expense --> PlantingLocation
+Certification --> Harvest
+Certification --> Plant
+Certification --> PlantingLocation
+CertificationReport --> Certification
+Bin --> Warehouse
+InventoryLot --> InventoryType
+InventoryLot --> Warehouse
+InventoryLot --> Bin
+InventoryLot --> Certification
+InventoryTransaction --> InventoryType
+InventoryTransaction --> InventoryLot
+InventoryTransaction --> User
+InventoryNote --> InventoryType
+InventoryNote --> User
+InventoryPhoto --> InventoryType
+InventoryPhoto --> User
+InventoryType --> User
+InventoryTypeSeed --> InventoryType
+InventoryTypeSeed --> Plant
+InventoryTypeSeed --> PlantingLocation
+InventoryTypeSeed --> User
+InventoryTypeCertificationReport --> InventoryType
+InventoryTypeCertificationReport --> CertificationReport
+InventoryTypeWarehouse --> InventoryType
+InventoryTypeWarehouse --> Warehouse
+InventoryTypeWarehouse --> Bin
+SeedHistory --> InventoryTypeSeed
+SeedHistory --> InventoryType
+SeedHistory --> User
+Sale --> User
+SaleItem --> Sale
+SaleItem --> InventoryType
+SaleItem --> InventoryLot
+TaskSeries --> TaskTemplate
+Task --> TaskTemplate
+Task --> TaskSeries
+Task --> User
+Task --> PlantingLocation
+Task --> Plant
+Attachment --> PlantingLocation
+Attachment --> User
+
+' Controller ..> Model (dependency, dashed)
+PlantingController ..> Plant : uses
+PlantingController ..> PlantingLocation : uses
+PlantingLocationController ..> PlantingLocation : uses
+CertificationController ..> Certification : uses
+CertificationController ..> Harvest : uses
+SaleController ..> Sale : uses
+SaleController ..> SaleItem : uses
+UserController ..> User : uses
+UserController ..> Location : uses
+WarehouseController ..> Warehouse : uses
+WarehouseController ..> Bin : uses
+
+note bottom
+  **SIBESTI Class Diagram**
+  - Atribut: format -nama: tipe (tanpa PK)
+  - Method: format +nama(): returnType
+  - Relasi: panah penuh = FK, panah putus-putus = controller uses model
+  - Update: Februari 2026
+end note
+
+@enduml

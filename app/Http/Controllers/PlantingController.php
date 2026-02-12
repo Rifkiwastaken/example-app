@@ -38,37 +38,54 @@ class PlantingController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'plant_id' => 'required|exists:plants,id',
-            'planting_location_id' => 'required|exists:planting_locations,id',
-            'bed_label' => 'nullable|string|max:255',
-            'days_to_emerge' => 'nullable|integer|min:0',
-            'spacing_between_plants' => 'nullable|numeric|min:0',
-            'spacing_between_rows' => 'nullable|numeric|min:0',
-            'sowing_depth' => 'nullable|numeric|min:0',
-            'avg_height' => 'nullable|numeric|min:0',
-            'start_method' => 'nullable|string|max:255',
-            'germination_stage' => 'nullable|string|max:255',
-            'seeds_per_hole' => 'nullable|integer|min:1',
-            'light_profile' => 'nullable|string|max:255',
-            'soil_condition' => 'nullable|string|max:255',
-            'planting_detail' => 'nullable|string',
-            'pruning_detail' => 'nullable|string',
-            'perennial' => 'boolean',
-            'days_to_flower' => 'nullable|integer|min:0',
-            'days_to_harvest' => 'nullable|integer|min:0',
-            'harvest_window_days' => 'nullable|integer|min:0',
-            'expected_loss_rate' => 'nullable|numeric|min:0|max:100',
-            'harvest_unit' => 'nullable|string|max:255',
-            'expected_yield_per_hectare' => 'nullable|numeric|min:0',
-            'quantity_planted' => 'nullable|numeric|min:0',
-            'planted_at' => 'nullable|date',
-        ]);
+        try {
+            $data = $request->validate([
+                'plant_id' => 'required|exists:plants,plant_id',
+                'planting_location_id' => 'required|exists:planting_locations,planting_location_id',
+                'bed_label' => 'nullable|string|max:255',
+                'days_to_emerge' => 'nullable|integer|min:0',
+                'spacing_between_plants' => 'nullable|numeric|min:0',
+                'spacing_between_rows' => 'nullable|numeric|min:0',
+                'sowing_depth' => 'nullable|numeric|min:0',
+                'avg_height' => 'nullable|numeric|min:0',
+                'start_method' => 'nullable|string|max:255',
+                'germination_stage' => 'nullable|string|max:255',
+                'seeds_per_hole' => 'nullable|integer|min:1',
+                'light_profile' => 'nullable|string|max:255',
+                'soil_condition' => 'nullable|string|max:255',
+                'planting_detail' => 'nullable|string',
+                'pruning_detail' => 'nullable|string',
+                'perennial' => 'boolean',
+                'days_to_flower' => 'nullable|integer|min:0',
+                'days_to_harvest' => 'nullable|integer|min:0',
+                'harvest_window_days' => 'nullable|integer|min:0',
+                'expected_loss_rate' => 'nullable|numeric|min:0|max:100',
+                'harvest_unit' => 'nullable|string|max:255',
+                'expected_yield_per_hectare' => 'nullable|numeric|min:0',
+                'quantity_planted' => 'nullable|numeric|min:0',
+                'planted_at' => 'nullable|date',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()
+                ->withErrors($e->errors())
+                ->withInput();
+        }
 
-        $planting = Planting::create($data);
-        
-        return redirect()->route('plants.show', $planting->plant)
-            ->with('success', 'Data penanaman berhasil ditambahkan');
+        try {
+            $planting = Planting::create($data);
+            
+            return redirect()->route('plants.show', $planting->plant)
+                ->with('success', 'Data penanaman berhasil ditambahkan');
+        } catch (\Exception $e) {
+            \Log::error('Error creating planting: ' . $e->getMessage(), [
+                'exception' => $e,
+                'request_data' => $request->except(['_token'])
+            ]);
+            
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan saat menyimpan data penanaman: ' . $e->getMessage())
+                ->withInput();
+        }
     }
 
     public function show(Planting $planting)
@@ -88,8 +105,8 @@ class PlantingController extends Controller
     public function update(Request $request, Planting $planting)
     {
         $data = $request->validate([
-            'plant_id' => 'required|exists:plants,id',
-            'planting_location_id' => 'required|exists:planting_locations,id',
+            'plant_id' => 'required|exists:plants,plant_id',
+            'planting_location_id' => 'required|exists:planting_locations,planting_location_id',
             'bed_label' => 'nullable|string|max:255',
             'days_to_emerge' => 'nullable|integer|min:0',
             'spacing_between_plants' => 'nullable|numeric|min:0',
@@ -129,6 +146,9 @@ class PlantingController extends Controller
             ->with('success', 'Data penanaman berhasil dihapus');
     }
 }
+
+
+
 
 
 

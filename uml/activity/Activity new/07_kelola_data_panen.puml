@@ -1,0 +1,90 @@
+@startuml
+' Referensi: Use Case Overview (00_use_case_overview.puml)
+' Use case 07: Mengelola data panen
+' Aktor: Admin/Kepala Sek, Penangkar/Kepala Satgas
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Mengelola data panen
+
+|#LightBlue|User|
+start
+:Masuk ke halaman kelola panen;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data panen dari database;
+:Load data penanaman terkait;
+:Menampilkan daftar panen;
+
+|#LightBlue|User|
+:Lihat daftar panen;
+
+if (Pilih aksi?) then (Tambah Baru)
+    |#LightBlue|User|
+    :Klik tombol tambah panen;
+    |#LightGreen|Sistem|
+    :Tampilkan form tambah panen;
+    |#LightBlue|User|
+    :Pilih penanaman yang akan dipanen;
+    :Isi form data panen;
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data;
+    if (Data valid?) then (Ya)
+        :Simpan data panen ke database;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Tampilkan pesan error;
+    endif
+elseif (Edit) then
+    |#LightBlue|User|
+    :Klik tombol edit;
+    |#LightGreen|Sistem|
+    :Tampilkan form edit dengan data terisi;
+    |#LightBlue|User|
+    :Edit data panen;
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data;
+    if (Data valid?) then (Ya)
+        :Update data panen di database;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Tampilkan pesan error;
+    endif
+elseif (Hapus) then
+    |#LightBlue|User|
+    :Klik tombol hapus;
+    |#LightGreen|Sistem|
+    :Tampilkan konfirmasi hapus;
+    |#LightBlue|User|
+    if (Konfirmasi hapus?) then (Ya)
+        |#LightGreen|Sistem|
+        :Hapus data panen dari database;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Batal hapus;
+    endif
+else (Lihat Detail)
+    |#LightBlue|User|
+    :Klik tombol lihat detail;
+    |#LightGreen|Sistem|
+    :Tampilkan detail data panen;
+    |#LightBlue|User|
+    :Lihat detail panen;
+endif
+
+stop
+
+@enduml

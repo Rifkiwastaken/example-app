@@ -1,0 +1,37 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Lihat Daftar Stok
+
+actor "Petugas Gudang/Admin" as User
+participant "InventoryTypeController" as Controller
+participant "InventoryType" as InvType
+participant "InventoryTypeSeed" as Seed
+participant "Database" as DB
+
+User -> User: akses halaman kelola stok()
+User -> Controller: index()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> InvType: InventoryType::with('inventoryTypeSeeds')->get()
+activate InvType
+InvType -> DB: SELECT * FROM inventory_types LEFT JOIN inventory_type_seeds
+DB --> InvType: return inventory_types dengan data lengkap[]
+InvType --> Controller: return inventory_types[]
+deactivate InvType
+
+Controller -> Seed: Seed::calculateTotalStock()
+activate Seed
+Seed -> DB: SELECT SUM(total_seed_quantity) FROM inventory_type_seeds WHERE inventory_type_id = ?
+DB --> Seed: return total_stock
+Seed --> Controller: return total_stock
+deactivate Seed
+
+Controller --> User: return view index dengan data dan summary()
+deactivate Controller
+User -> User: tampilkan daftar stok dengan summary()
+
+@enduml

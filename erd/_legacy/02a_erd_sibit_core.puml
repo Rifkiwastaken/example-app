@@ -1,0 +1,292 @@
+@startuml ERD - SIBESTI (Core: User, Tanaman, Penanaman)
+!theme plain
+left to right direction
+scale 0.9
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam roundcorner 8
+skinparam shadowing false
+
+title SIBESTI Core Module ERD
+' Sistem Informasi Benih Bersertifikat
+' Semua ID menggunakan VARCHAR(36) dengan format {nama_tabel}_id
+' Tabel locations telah dihapus (drop_locations_table)
+' Tanggal Update: Februari 2026
+
+entity "users" as users {
+    * **user_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    email : VARCHAR(255) <<UNIQUE>>
+    password : VARCHAR(255)
+    email_verified_at : TIMESTAMP
+    role : ENUM('admin','kepala_satuan_tugas','petugas_sertifikasi','petugas_gudang','petugas_bbi','penangkar')
+    location_placement : VARCHAR(255)
+    photo_path : VARCHAR(255)
+    full_name : VARCHAR(255)
+    status : ENUM('active','inactive')
+    contact_type : ENUM('pegawai_uptd_bbi_tpph','pegawai_gudang','petugas_sertifikasi','petani','penyuluh','penangkar','lainnya')
+    organization : VARCHAR(255)
+    position : VARCHAR(255)
+    nip : VARCHAR(50)
+    primary_phone : VARCHAR(20)
+    primary_phone_is_whatsapp : TINYINT(1)
+    secondary_phone : VARCHAR(20)
+    address : TEXT
+    province : VARCHAR(100)
+    city : VARCHAR(100)
+    district : VARCHAR(100)
+    village : VARCHAR(100)
+    notes : TEXT
+    remember_token : VARCHAR(100)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "plant_types" as plant_types {
+    * **plant_type_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    category : VARCHAR(255)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "plants" as plants {
+    * **plant_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    plant_type_id : VARCHAR(36) <<FK>>
+    variety : VARCHAR(255)
+    status : ENUM('perencanaan','ditanam','dipanen','selesai')
+    progress : TINYINT
+    planting_location_id : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "planting_locations" as planting_locations {
+    * **planting_location_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    location_type : ENUM('lapangan','greenhouse','grow_room','padang_rumput','petak_ternak','lainnya')
+    planting_format : ENUM('petak','cover_crop','row','lainnya')
+    num_beds : INT
+    bed_length_m : DECIMAL(8,2)
+    bed_width_m : DECIMAL(8,2)
+    map_size : VARCHAR(255)
+    light_condition : VARCHAR(255)
+    description : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "plantings" as plantings {
+    * **planting_id** : VARCHAR(36) <<PK>>
+    --
+    plant_id : VARCHAR(36) <<FK>>
+    planting_location_id : VARCHAR(36) <<FK>>
+    bed_label : VARCHAR(255)
+    days_to_emerge : INT
+    spacing_between_plants : VARCHAR(255)
+    spacing_between_rows : VARCHAR(255)
+    sown_at : DATE
+    start_method : ENUM
+    germination_stage : ENUM
+    quantity_planted : INT
+    planted_at : DATE
+    days_to_harvest : INT
+    expected_yield_per_hectare : DECIMAL(12,2)
+    area_ha : DECIMAL(10,2)
+    perennial : BOOLEAN
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "harvests" as harvests {
+    * **harvest_id** : VARCHAR(36) <<PK>>
+    --
+    plant_id : VARCHAR(36) <<FK>>
+    planting_id : VARCHAR(36) <<FK>>
+    planting_location_id : VARCHAR(36) <<FK>>
+    harvested_at : DATE
+    batch_no : VARCHAR(255)
+    quantity : DECIMAL(12,2)
+    unit : VARCHAR(50)
+    quality : VARCHAR(255)
+    loss_quantity : DECIMAL(12,2)
+    note : TEXT
+    source : VARCHAR(255)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "planting_losses" as planting_losses {
+    * **planting_loss_id** : VARCHAR(36) <<PK>>
+    --
+    planting_id : VARCHAR(36) <<FK>>
+    loss_date : DATE
+    loss_amount : DECIMAL(12,2)
+    loss_reason : VARCHAR(255)
+    description : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "treatments" as treatments {
+    * **treatment_id** : VARCHAR(36) <<PK>>
+    --
+    planting_location_id : VARCHAR(36) <<FK>>
+    treatment_type : VARCHAR(255)
+    treatment_name : VARCHAR(255)
+    product_detail : VARCHAR(255)
+    application_method : VARCHAR(255)
+    treatment_date : DATE
+    amount_applied : DECIMAL(10,2)
+    unit_measurement : VARCHAR(255)
+    total_cost : DECIMAL(10,2)
+    responsible_person_id : VARCHAR(36) <<FK>>
+    edited_by : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "nutrients" as nutrients {
+    * **nutrient_id** : VARCHAR(36) <<PK>>
+    --
+    planting_location_id : VARCHAR(36) <<FK>>
+    planting_id : VARCHAR(36) <<FK>>
+    nutrient_name : VARCHAR(255)
+    product_applied : VARCHAR(255)
+    amount_applied : DECIMAL(10,2)
+    unit : VARCHAR(50)
+    application_method : VARCHAR(255)
+    application_date : DATE
+    total_cost : DECIMAL(15,2)
+    technician : VARCHAR(255)
+    description : TEXT
+    responsible_person_id : VARCHAR(36) <<FK>>
+    edited_by : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "expenses" as expenses {
+    * **expense_id** : VARCHAR(36) <<PK>>
+    --
+    planting_location_id : VARCHAR(36) <<FK>>
+    expense_name : VARCHAR(255)
+    amount : DECIMAL(15,2)
+    expense_type : ENUM('treatment','nutrient','labor','equipment','other')
+    expense_date : DATE
+    treatment_id : VARCHAR(36) <<FK>>
+    nutrient_id : VARCHAR(36) <<FK>>
+    responsible_person_id : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "tasks" as tasks {
+    * **task_id** : VARCHAR(36) <<PK>>
+    --
+    title : VARCHAR(255)
+    description : TEXT
+    priority : ENUM('low','medium','high','highest')
+    status : ENUM('pending','in_progress','completed')
+    due_date : DATE
+    location : VARCHAR(255)
+    planting_location_id : VARCHAR(36) <<FK>>
+    planting_id : VARCHAR(36) <<FK>>
+    assigned_to : VARCHAR(36) <<FK>>
+    template_id : VARCHAR(36) <<FK>>
+    series_id : VARCHAR(36) <<FK>>
+    created_by : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "task_templates" as task_templates {
+    * **task_template_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    description : TEXT
+    tasks_list : JSON
+    association : ENUM
+    is_active : TINYINT(1)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "task_series" as task_series {
+    * **task_series_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    description : TEXT
+    template_id : VARCHAR(36) <<FK>>
+    series_tasks : JSON
+    is_active : TINYINT(1)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "user_planting_location_land_manager" as user_pl_manager {
+    * **user_planting_location_land_manager_id** : VARCHAR(36) <<PK>>
+    --
+    planting_location_id : VARCHAR(36) <<FK>>
+    user_id : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "user_planting_location_land_worker" as user_pl_worker {
+    * **user_planting_location_land_worker_id** : VARCHAR(36) <<PK>>
+    --
+    planting_location_id : VARCHAR(36) <<FK>>
+    user_id : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+' Relationships
+users ||--o{ treatments : "responsible_person_id"
+users ||--o{ nutrients : "responsible_person_id"
+users ||--o{ expenses : "responsible_person_id"
+users ||--o{ tasks : "created_by"
+users ||--o{ tasks : "assigned_to"
+users ||--o{ user_pl_manager : "user_id"
+users ||--o{ user_pl_worker : "user_id"
+
+plant_types ||--o{ plants : "plant_type_id"
+
+plants ||--o{ plantings : "plant_id"
+plants ||--o{ harvests : "plant_id"
+plants }o--|| planting_locations : "planting_location_id"
+
+planting_locations ||--o{ plantings : "planting_location_id"
+planting_locations ||--o{ harvests : "planting_location_id"
+planting_locations ||--o{ treatments : "planting_location_id"
+planting_locations ||--o{ nutrients : "planting_location_id"
+planting_locations ||--o{ expenses : "planting_location_id"
+planting_locations ||--o{ tasks : "planting_location_id"
+planting_locations ||--o{ user_pl_manager : "planting_location_id"
+planting_locations ||--o{ user_pl_worker : "planting_location_id"
+
+plantings ||--o{ harvests : "planting_id"
+plantings ||--o{ planting_losses : "planting_id"
+plantings ||--o{ tasks : "planting_id"
+
+treatments ||--o{ expenses : "treatment_id"
+nutrients ||--o{ expenses : "nutrient_id"
+
+tasks }o--|| task_templates : "template_id"
+tasks }o--|| task_series : "series_id"
+task_series }o--|| task_templates : "template_id"
+
+note as Ncore
+SIBESTI Core Module
+Semua Primary Key menggunakan format VARCHAR(36) dengan
+nama kolom: {nama_tabel}_id (contoh: user_id, plant_id)
+Tabel locations telah dihapus
+end note
+
+@enduml

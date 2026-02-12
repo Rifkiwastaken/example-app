@@ -1,0 +1,24 @@
+@startuml
+' SIBESTI - Sequence Diagram | UC10: Logout (Use Case Overview)
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - UC10 Logout
+
+actor "User" as User
+boundary "LayoutView" as View
+control "AuthController" as Controller
+
+User -> View: klik tombol logout()
+View -> Controller: logout(request)
+activate Controller
+Controller -> Controller: Auth::logout()
+Controller -> Controller: invalidateSession()
+Controller -> Controller: clearSessionData()
+Controller --> View: redirect ke halaman login
+deactivate Controller
+View --> User: tampilkan halaman login()
+
+@enduml

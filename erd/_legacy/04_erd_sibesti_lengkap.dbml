@@ -1,0 +1,553 @@
+// SIBESTI Database Schema (DBML)
+// Sistem Informasi Benih Sertifikasi
+// Semua ID menggunakan VARCHAR(36) dengan format {nama_tabel}_id
+// Tanggal Update: Februari 2026
+
+// ============================================
+// USER & LOCATION MANAGEMENT
+// ============================================
+
+Table users {
+  user_id varchar(36) [pk, note: 'UUID Primary Key']
+  name varchar(255)
+  email varchar(255) [unique]
+  email_verified_at timestamp
+  password varchar(255)
+  role enum('admin','pimpinan','petugas_lapangan','penangkar')
+  location_id varchar(36) [ref: > locations.location_id]
+  location_placement varchar(255)
+  photo_path varchar(255)
+  full_name varchar(255)
+  status enum('active','inactive')
+  contact_type enum('internal','external')
+  organization varchar(255)
+  position varchar(255)
+  nip varchar(50)
+  primary_phone varchar(20)
+  secondary_phone varchar(20)
+  address text
+  province varchar(100)
+  city varchar(100)
+  district varchar(100)
+  village varchar(100)
+  notes text
+  remember_token varchar(100)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table locations {
+  location_id varchar(36) [pk, note: 'UUID Primary Key']
+  name varchar(255)
+  city varchar(255)
+  district varchar(255)
+  type enum('kantor','lapangan','gudang','lainnya')
+  description text
+  google_maps_link varchar(500)
+  photo varchar(255)
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================
+// PLANTING MODULE
+// ============================================
+
+Table plant_types {
+  plant_type_id varchar(36) [pk, note: 'UUID Primary Key']
+  name varchar(255)
+  category varchar(255)
+  variety text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table plants {
+  plant_id varchar(36) [pk, note: 'UUID Primary Key']
+  name varchar(255)
+  plant_type_id varchar(36) [ref: > plant_types.plant_type_id]
+  variety varchar(255)
+  status enum('perencanaan','aktif','panen','selesai')
+  progress int
+  planting_location_id varchar(36) [ref: > planting_locations.planting_location_id]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table planting_locations {
+  planting_location_id varchar(36) [pk, note: 'UUID Primary Key']
+  name varchar(255)
+  location_id varchar(36) [ref: > locations.location_id]
+  location_type enum('sawah','kebun','greenhouse','polybag','lainnya')
+  planting_format enum('bedengan','baris','kotak','acak','lainnya')
+  planting_format_custom varchar(255)
+  num_beds int
+  bed_length_m decimal(10,2)
+  bed_width_m decimal(10,2)
+  map_size decimal(10,2)
+  light_condition varchar(255)
+  description text
+  location_summary text
+  administrative_address text
+  google_maps_link varchar(500)
+  land_status varchar(255)
+  ownership_status varchar(255)
+  water_source varchar(255)
+  soil_type varchar(255)
+  elevation_masl int
+  primary_photo_path varchar(255)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table plantings {
+  planting_id varchar(36) [pk, note: 'UUID Primary Key']
+  plant_id varchar(36) [ref: > plants.plant_id]
+  planting_location_id varchar(36) [ref: > planting_locations.planting_location_id]
+  bed_label varchar(255)
+  days_to_emerge int
+  spacing_between_plants decimal(10,2)
+  spacing_between_rows decimal(10,2)
+  sowing_depth decimal(10,2)
+  avg_height decimal(10,2)
+  start_method enum('biji','bibit','stek','okulasi','lainnya')
+  germination_stage enum('biji','kecambah','bibit','dewasa')
+  seeds_per_hole int
+  light_profile enum('full_sun','partial_shade','full_shade')
+  soil_condition enum('kering','lembab','basah')
+  planting_detail text
+  pruning_detail text
+  perennial tinyint(1)
+  days_to_flower int
+  days_to_harvest int
+  harvest_window_days int
+  expected_loss_rate decimal(5,2)
+  harvest_unit enum('kg','gram','buah','ikat','lainnya')
+  expected_yield_per_hectare decimal(15,2)
+  quantity_planted decimal(15,2)
+  planted_at date
+  is_completed tinyint(1)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table harvests {
+  harvest_id varchar(36) [pk, note: 'UUID Primary Key']
+  plant_id varchar(36) [ref: > plants.plant_id]
+  planting_id varchar(36) [ref: > plantings.planting_id]
+  planting_location_id varchar(36) [ref: > planting_locations.planting_location_id]
+  harvested_at date
+  batch_no varchar(255)
+  note text
+  source varchar(255)
+  quality varchar(255)
+  quantity decimal(15,2)
+  unit varchar(50)
+  loss_quantity decimal(15,2)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table planting_losses {
+  planting_loss_id varchar(36) [pk, note: 'UUID Primary Key']
+  planting_id varchar(36) [ref: > plantings.planting_id]
+  loss_date date
+  loss_amount decimal(15,2)
+  loss_reason varchar(255)
+  description text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table treatments {
+  treatment_id varchar(36) [pk, note: 'UUID Primary Key']
+  planting_location_id varchar(36) [ref: > planting_locations.planting_location_id]
+  planting_id varchar(36) [ref: > plantings.planting_id]
+  treatment_type varchar(255)
+  treatment_name varchar(255)
+  product_detail text
+  application_method varchar(255)
+  treatment_date date
+  amount_applied decimal(15,2)
+  unit_measurement varchar(50)
+  total_cost decimal(15,2)
+  responsible_person_id varchar(36) [ref: > users.user_id]
+  edited_by varchar(36) [ref: > users.user_id]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table nutrients {
+  nutrient_id varchar(36) [pk, note: 'UUID Primary Key']
+  planting_location_id varchar(36) [ref: > planting_locations.planting_location_id]
+  planting_id varchar(36) [ref: > plantings.planting_id]
+  product_applied varchar(255)
+  amount_applied decimal(15,2)
+  unit varchar(50)
+  application_method varchar(255)
+  application_date date
+  total_cost decimal(15,2)
+  responsible_person_id varchar(36) [ref: > users.user_id]
+  attachment_id varchar(36) [ref: > attachments.attachment_id]
+  edited_by varchar(36) [ref: > users.user_id]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table expenses {
+  expense_id varchar(36) [pk, note: 'UUID Primary Key']
+  planting_location_id varchar(36) [ref: > planting_locations.planting_location_id]
+  expense_name varchar(255)
+  amount decimal(15,2)
+  expense_type enum('treatment','nutrient','labor','equipment','other')
+  expense_date date
+  treatment_id varchar(36) [ref: > treatments.treatment_id]
+  nutrient_id varchar(36) [ref: > nutrients.nutrient_id]
+  responsible_person_id varchar(36) [ref: > users.user_id]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table plant_notes {
+  plant_note_id varchar(36) [pk, note: 'UUID Primary Key']
+  plant_id varchar(36) [ref: > plants.plant_id]
+  description text
+  note_date date
+  keywords varchar(255)
+  attachment_path varchar(255)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table plant_photos {
+  plant_photo_id varchar(36) [pk, note: 'UUID Primary Key']
+  plant_id varchar(36) [ref: > plants.plant_id]
+  file_path varchar(255)
+  file_name varchar(255)
+  file_size int
+  mime_type varchar(100)
+  description text
+  taken_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table planting_location_notes {
+  planting_location_note_id varchar(36) [pk, note: 'UUID Primary Key']
+  planting_location_id varchar(36) [ref: > planting_locations.planting_location_id]
+  title varchar(255)
+  description text
+  note_date date
+  keywords varchar(255)
+  attachment_path varchar(255)
+  user_id varchar(36) [ref: > users.user_id]
+  assigned_to json
+  read_by json
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table planting_location_photos {
+  planting_location_photo_id varchar(36) [pk, note: 'UUID Primary Key']
+  planting_location_id varchar(36) [ref: > planting_locations.planting_location_id]
+  file_path varchar(255)
+  file_name varchar(255)
+  file_size int
+  mime_type varchar(100)
+  description text
+  taken_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table attachments {
+  attachment_id varchar(36) [pk, note: 'UUID Primary Key']
+  planting_location_id varchar(36) [ref: > planting_locations.planting_location_id]
+  title varchar(255)
+  description text
+  attachment_date date
+  file_path varchar(255)
+  file_name varchar(255)
+  file_size int
+  mime_type varchar(100)
+  created_by varchar(36) [ref: > users.user_id]
+  edited_at timestamp
+  edited_by varchar(36) [ref: > users.user_id]
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================
+// CERTIFICATION MODULE
+// ============================================
+
+Table certifications {
+  certification_id varchar(36) [pk, note: 'UUID Primary Key']
+  harvest_id varchar(36) [ref: > harvests.harvest_id]
+  planting_location_id varchar(36) [ref: > planting_locations.planting_location_id]
+  plant_id varchar(36) [ref: > plants.plant_id]
+  certification_status varchar(255)
+  seed_class_requested varchar(255)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table certification_reports {
+  certification_report_id varchar(36) [pk, note: 'UUID Primary Key']
+  certification_id varchar(36) [ref: > certifications.certification_id]
+  report_number_bpsb varchar(255)
+  report_date date
+  growing_season varchar(255)
+  inspection_phase varchar(255)
+  inspector_name varchar(255)
+  seed_class_result varchar(255)
+  isolation_north decimal(10,2)
+  isolation_east decimal(10,2)
+  isolation_south decimal(10,2)
+  isolation_west decimal(10,2)
+  plant_characteristics_match tinyint(1)
+  pest_disease_condition text
+  weed_condition enum('bersih','sedikit','sedang','banyak')
+  population_per_sample int
+  other_variety_mix_count int
+  other_variety_mix_percentage decimal(5,2)
+  estimated_yield decimal(15,2)
+  conclusion enum('lulus','tidak_lulus','perlu_pemeriksaan_ulang')
+  scan_file_path varchar(255)
+  expiry_date date
+  certified_seed_quantity decimal(15,2)
+  estimated_sale_price_per_kg decimal(15,2)
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================
+// INVENTORY MODULE
+// ============================================
+
+Table warehouses {
+  warehouse_id varchar(36) [pk, note: 'UUID Primary Key']
+  name varchar(255)
+  internal_id varchar(50) [unique]
+  tracking_type enum('per_lot','aggregate')
+  description text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table bins {
+  bin_id varchar(36) [pk, note: 'UUID Primary Key']
+  warehouse_id varchar(36) [ref: > warehouses.warehouse_id]
+  name varchar(255)
+  internal_id varchar(50)
+  max_capacity decimal(15,2)
+  capacity_unit varchar(50)
+  description text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table inventory_types {
+  inventory_type_id varchar(36) [pk, note: 'UUID Primary Key']
+  category varchar(255)
+  name varchar(255)
+  sku varchar(100) [unique]
+  electronic_id varchar(255)
+  unit varchar(50)
+  estimated_value_per_unit decimal(15,2)
+  estimated_kg_per_unit decimal(15,2)
+  track_individual_lots tinyint(1)
+  low_stock_threshold decimal(15,2)
+  low_stock_unit varchar(50)
+  low_stock_email varchar(255)
+  description text
+  responsible_person_id varchar(36) [ref: > users.user_id]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table inventory_lots {
+  inventory_lot_id varchar(36) [pk, note: 'UUID Primary Key']
+  inventory_type_id varchar(36) [ref: > inventory_types.inventory_type_id]
+  production_id varchar(255)
+  expiry_date date
+  status enum('available','reserved','sold','expired','damaged')
+  initial_stock decimal(15,2)
+  current_stock decimal(15,2)
+  stock_unit varchar(50)
+  warehouse_id varchar(36) [ref: > warehouses.warehouse_id]
+  bin_id varchar(36) [ref: > bins.bin_id]
+  certification_id varchar(36) [ref: > certifications.certification_id]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table inventory_transactions {
+  inventory_transaction_id varchar(36) [pk, note: 'UUID Primary Key']
+  inventory_type_id varchar(36) [ref: > inventory_types.inventory_type_id]
+  inventory_lot_id varchar(36) [ref: > inventory_lots.inventory_lot_id]
+  transaction_type enum('masuk','keluar','adjustment','transfer')
+  quantity decimal(15,2)
+  unit varchar(50)
+  warehouse_id varchar(36) [ref: > warehouses.warehouse_id]
+  bin_id varchar(36) [ref: > bins.bin_id]
+  reason varchar(255)
+  notes text
+  user_id varchar(36) [ref: > users.user_id]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table inventory_type_warehouses {
+  inventory_type_warehouse_id varchar(36) [pk, note: 'UUID Primary Key']
+  inventory_type_id varchar(36) [ref: > inventory_types.inventory_type_id]
+  warehouse_id varchar(36) [ref: > warehouses.warehouse_id]
+  bin_id varchar(36) [ref: > bins.bin_id]
+  warehouse_only tinyint(1)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table inventory_notes {
+  inventory_note_id varchar(36) [pk, note: 'UUID Primary Key']
+  inventory_type_id varchar(36) [ref: > inventory_types.inventory_type_id]
+  content text
+  user_id varchar(36) [ref: > users.user_id]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table inventory_photos {
+  inventory_photo_id varchar(36) [pk, note: 'UUID Primary Key']
+  inventory_type_id varchar(36) [ref: > inventory_types.inventory_type_id]
+  photo_path varchar(255)
+  caption text
+  user_id varchar(36) [ref: > users.user_id]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table inventory_type_seeds {
+  inventory_type_seed_id varchar(36) [pk, note: 'UUID Primary Key']
+  inventory_type_id varchar(36) [ref: > inventory_types.inventory_type_id]
+  plant_id varchar(36) [ref: > plants.plant_id]
+  planting_location_id varchar(36) [ref: > planting_locations.planting_location_id]
+  quantity decimal(15,2)
+  estimated_sale_price_per_kg decimal(15,2)
+  expiry_date date
+  filled_by_user_id varchar(36) [ref: > users.user_id]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table inventory_type_certification_reports {
+  inventory_type_certification_report_id varchar(36) [pk, note: 'UUID Primary Key']
+  inventory_type_id varchar(36) [ref: > inventory_types.inventory_type_id]
+  certification_report_id varchar(36) [ref: > certification_reports.certification_report_id]
+  quantity decimal(15,2)
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================
+// SALES MODULE
+// ============================================
+
+Table sales {
+  sale_id varchar(36) [pk, note: 'UUID Primary Key']
+  receipt_number varchar(50) [unique]
+  sale_date date
+  buyer_name varchar(255)
+  buyer_contact varchar(255)
+  total_amount decimal(15,2)
+  payment_method enum('tunai','transfer','kredit')
+  payment_status enum('pending','paid','partial','cancelled')
+  notes text
+  user_id varchar(36) [ref: > users.user_id]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table sale_items {
+  sale_item_id varchar(36) [pk, note: 'UUID Primary Key']
+  sale_id varchar(36) [ref: > sales.sale_id]
+  inventory_type_id varchar(36) [ref: > inventory_types.inventory_type_id]
+  inventory_lot_id varchar(36) [ref: > inventory_lots.inventory_lot_id]
+  quantity decimal(15,2)
+  unit varchar(50)
+  unit_price decimal(15,2)
+  subtotal decimal(15,2)
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================
+// TASK MANAGEMENT
+// ============================================
+
+Table tasks {
+  task_id varchar(36) [pk, note: 'UUID Primary Key']
+  title varchar(255)
+  description text
+  priority enum('low','medium','high','urgent')
+  status enum('pending','in_progress','completed','cancelled')
+  due_date date
+  assigned_to varchar(36) [ref: > users.user_id]
+  planting_location_id varchar(36) [ref: > planting_locations.planting_location_id]
+  planting_id varchar(36) [ref: > plantings.planting_id]
+  template_id varchar(36) [ref: > task_templates.task_template_id]
+  series_id varchar(36) [ref: > task_series.task_series_id]
+  created_by varchar(36) [ref: > users.user_id]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table task_templates {
+  task_template_id varchar(36) [pk, note: 'UUID Primary Key']
+  name varchar(255)
+  description text
+  tasks_list json
+  association enum('planting_location','planting','general')
+  is_active tinyint(1)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table task_series {
+  task_series_id varchar(36) [pk, note: 'UUID Primary Key']
+  name varchar(255)
+  description text
+  template_id varchar(36) [ref: > task_templates.task_template_id]
+  series_tasks json
+  is_active tinyint(1)
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================
+// SUPPORT TABLES
+// ============================================
+
+Table user_planting_location_land_manager {
+  user_planting_location_land_manager_id varchar(36) [pk, note: 'UUID Primary Key']
+  planting_location_id varchar(36) [ref: > planting_locations.planting_location_id]
+  user_id varchar(36) [ref: > users.user_id]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table user_planting_location_land_worker {
+  user_planting_location_land_worker_id varchar(36) [pk, note: 'UUID Primary Key']
+  planting_location_id varchar(36) [ref: > planting_locations.planting_location_id]
+  user_id varchar(36) [ref: > users.user_id]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table landing_page_settings {
+  landing_page_setting_id varchar(36) [pk, note: 'UUID Primary Key']
+  key_name varchar(100) [unique]
+  value text
+  created_at timestamp
+  updated_at timestamp
+}

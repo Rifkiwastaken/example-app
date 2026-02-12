@@ -1,0 +1,35 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Lihat Daftar Stok
+
+|#LightBlue|Petugas Gudang/Admin|
+start
+:Masuk ke halaman kelola stok;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data stok dari database;
+:Query data inventory types;
+:Query data lots;
+:Menampilkan daftar stok dengan summary;
+
+|#LightBlue|Petugas Gudang/Admin|
+:Lihat daftar stok;
+:Filter berdasarkan gudang/bin;
+:Lihat detail stok;
+
+stop
+
+@enduml

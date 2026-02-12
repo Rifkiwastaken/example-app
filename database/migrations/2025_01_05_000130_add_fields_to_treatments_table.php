@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('treatments', function (Blueprint $table) {
             if (!Schema::hasColumn('treatments', 'subtract_from_inventory')) {
-                $table->foreignId('subtract_from_inventory')->nullable()->after('product_detail')->constrained('inventory_types')->onDelete('set null');
+                $table->foreignId('subtract_from_inventory')->nullable()->after('product_detail')->onDelete('set null');
             }
             if (!Schema::hasColumn('treatments', 'batch_number')) {
                 $table->string('batch_number')->nullable()->after('technician');
@@ -28,7 +28,7 @@ return new class extends Migration
                 $table->date('retreat_date')->nullable()->after('treatment_date');
             }
             if (!Schema::hasColumn('treatments', 'planting_id')) {
-                $table->foreignId('planting_id')->nullable()->after('planting_location_id')->constrained('plantings')->onDelete('set null');
+                $table->string('planting_id', 36)->nullable()->after('planting_location_id')->foreign('planting_id')->references('planting_id')->on('plantings')->onDelete('set null');
             }
         });
     }
@@ -62,6 +62,9 @@ return new class extends Migration
         });
     }
 };
+
+
+
 
 
 

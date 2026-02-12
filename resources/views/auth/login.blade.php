@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - SIBIT</title>
+    <title>Login - SIBESTI</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -28,6 +28,12 @@
         .welcome-text {
             text-align: center;
             color: #333;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle-text {
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.9rem;
             margin-bottom: 2rem;
         }
         .form-control {
@@ -50,23 +56,6 @@
         .btn-login:hover {
             background-color: #218838;
         }
-        .form-check-input:checked {
-            background-color: #28a745;
-            border-color: #28a745;
-        }
-        .links {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 1rem;
-        }
-        .links a {
-            color: #007bff;
-            text-decoration: none;
-            font-size: 0.9rem;
-        }
-        .links a:hover {
-            text-decoration: underline;
-        }
     </style>
 </head>
 <body>
@@ -74,8 +63,9 @@
         <div class="row justify-content-center">
             <div class="col-md-6">
                 <div class="login-card">
-                    <div class="logo">SIBIT</div>
+                    <div class="logo">SIBESTI</div>
                     <div class="welcome-text">Selamat Datang</div>
+                    <div class="subtitle-text">Sistem Informasi Benih Bersertifikat</div>
                     
                     @if ($errors->any())
                         <div class="alert alert-danger">
@@ -100,19 +90,7 @@
                             <input type="password" class="form-control" id="password" name="password" required>
                         </div>
                         
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="remember" name="remember">
-                            <label class="form-check-label" for="remember">
-                                Keep me signed in
-                            </label>
-                        </div>
-                        
                         <button type="submit" class="btn btn-primary btn-login">Sign In</button>
-                        
-                        <div class="links">
-                            <a href="#">Forgot your password?</a>
-                            <a href="#">No account? Learn more.</a>
-                        </div>
                     </form>
                 </div>
             </div>

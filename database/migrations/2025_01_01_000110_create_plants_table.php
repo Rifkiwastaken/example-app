@@ -10,14 +10,14 @@ return new class extends Migration
     {
         if (!Schema::hasTable('plants')) {
             Schema::create('plants', function (Blueprint $table) {
-                $table->id();
+                $table->string('plant_id', 36)->primary();
                 $table->string('name');
-                $table->foreignId('plant_type_id')->nullable()->constrained('plant_types')->nullOnDelete();
+                $table->string('plant_type_id', 36)->nullable()->nullOnDelete();
                 $table->string('variety')->nullable();
                 $table->enum('status', ['perencanaan', 'ditanam', 'dipanen', 'selesai'])->default('perencanaan');
                 $table->unsignedTinyInteger('progress')->default(0); // 0..100
                 // defer FK to planting_locations until table exists; keep column for now
-                $table->foreignId('planting_location_id')->nullable();
+                $table->string('planting_location_id', 36)->nullable();
                 $table->timestamps();
             });
         }

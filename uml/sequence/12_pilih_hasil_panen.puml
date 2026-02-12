@@ -1,0 +1,57 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Pilih Hasil Panen
+
+actor "Petugas Sertifikasi" as User
+participant "CertificationController" as Controller
+participant "Harvest" as Harvest
+participant "Plant" as Plant
+participant "PlantingLocation" as PlantingLocation
+participant "Database" as DB
+
+User -> User: dalam proses evaluasi()
+User -> User: klik pilih hasil panen()
+User -> Controller: pilihPanen()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Harvest: Harvest::with('plant', 'planting', 'plantingLocation')->get()
+activate Harvest
+Harvest -> DB: SELECT * FROM harvests LEFT JOIN plants LEFT JOIN plantings LEFT JOIN planting_locations
+DB --> Harvest: return harvests dengan data lengkap[]
+Harvest --> Controller: return harvests[]
+deactivate Harvest
+
+Controller -> Plant: Plant::get()
+activate Plant
+Plant -> DB: SELECT * FROM plants
+DB --> Plant: return plants[]
+Plant --> Controller: return plants[]
+deactivate Plant
+
+Controller --> User: return view pilih panen dengan data()
+deactivate Controller
+User -> User: tampilkan daftar hasil panen()
+
+User -> User: pilih hasil panen dari daftar()
+User -> User: konfirmasi pilihan()
+User -> Controller: setPanen(harvest_id, certification_id)
+activate Controller
+Controller -> Controller: validate(Request)
+Controller -> Harvest: Harvest::findOrFail(harvest_id)
+activate Harvest
+Harvest -> DB: SELECT * FROM harvests WHERE id = ?
+DB --> Harvest: return harvest data
+Harvest --> Controller: return Harvest
+deactivate Harvest
+
+Controller -> Controller: Certification::update(['harvest_id' => harvest_id])
+Controller -> Controller: simpan relasi()
+Controller --> User: redirect back dengan success message()
+deactivate Controller
+User -> User: tampilkan pesan hasil panen berhasil dipilih()
+
+@enduml

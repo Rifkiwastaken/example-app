@@ -1,0 +1,90 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Tambah Stok Baru
+
+actor "Petugas Gudang" as User
+participant "InventoryTypeController" as Controller
+participant "InventoryType" as InvType
+participant "InventoryTypeSeed" as Seed
+participant "Certification" as Certification
+participant "Warehouse" as Warehouse
+participant "Bin" as Bin
+participant "SeedHistory" as History
+participant "Database" as DB
+
+User -> User: akses halaman tambah stok()
+User -> User: pilih tipe benih()
+User -> Controller: create(inventory_type_id)
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> InvType: InventoryType::findOrFail(inventory_type_id)
+activate InvType
+InvType -> DB: SELECT * FROM inventory_types WHERE id = ?
+DB --> InvType: return inventory_type data
+InvType --> Controller: return InvType
+deactivate InvType
+
+Controller -> Certification: Certification::where('certification_status', 'lulus')->get()
+activate Certification
+Certification -> DB: SELECT * FROM certifications WHERE certification_status = 'lulus'
+DB --> Certification: return available_certifications[]
+Certification --> Controller: return available_certifications[]
+deactivate Certification
+
+Controller -> Warehouse: Warehouse::get()
+activate Warehouse
+Warehouse -> DB: SELECT * FROM warehouses
+DB --> Warehouse: return warehouses[]
+Warehouse --> Controller: return warehouses[]
+deactivate Warehouse
+
+Controller -> Bin: Bin::get()
+activate Bin
+Bin -> DB: SELECT * FROM bins
+DB --> Bin: return bins[]
+Bin --> Controller: return bins[]
+deactivate Bin
+
+Controller --> User: return view create dengan data()
+deactivate Controller
+User -> User: tampilkan form tambah stok()
+
+User -> User: isi data stok()
+User -> Controller: store(Request)
+activate Controller
+Controller -> Controller: validate(Request)
+Controller -> InvType: InventoryType::findOrFail(inventory_type_id)
+activate InvType
+InvType -> DB: SELECT * FROM inventory_types WHERE id = ?
+DB --> InvType: return inventory_type data
+InvType --> Controller: return InvType
+deactivate InvType
+
+alt Data Valid
+    Controller -> Seed: InventoryTypeSeed::create(data)
+    activate Seed
+    Seed -> DB: INSERT INTO inventory_type_seeds VALUES
+    DB --> Seed: return seed_id
+    Seed --> Controller: return Seed
+    deactivate Seed
+    
+    Controller -> History: SeedHistory::create(['action' => 'create'])
+    activate History
+    History -> DB: INSERT INTO seed_histories VALUES
+    DB --> History: return history_id
+    History --> Controller: return created
+    deactivate History
+    
+    Controller --> User: redirect back dengan success message()
+    User -> User: tampilkan pesan stok berhasil ditambahkan()
+else Data Tidak Valid
+    Controller --> User: redirect back dengan validation errors()
+    User -> User: tampilkan form dengan pesan error()
+end
+deactivate Controller
+
+@enduml

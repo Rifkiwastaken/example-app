@@ -1,0 +1,143 @@
+@startuml ERD - SIBESTI (Support Module)
+!theme plain
+left to right direction
+scale 0.9
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam roundcorner 8
+skinparam shadowing false
+
+title SIBESTI Support Module ERD
+' Sistem Informasi Benih Bersertifikat
+' Semua ID menggunakan VARCHAR(36) dengan format {nama_tabel}_id
+' Tabel locations telah dihapus
+' Tanggal Update: Februari 2026
+
+entity "plants" as plants {
+    * **plant_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    plant_type_id : VARCHAR(36) <<FK>>
+    variety : VARCHAR(255)
+    status : ENUM('perencanaan','ditanam','dipanen','selesai')
+    progress : TINYINT
+    planting_location_id : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "plant_notes" as plant_notes {
+    * **plant_note_id** : VARCHAR(36) <<PK>>
+    --
+    plant_id : VARCHAR(36) <<FK>>
+    description : TEXT
+    note_date : DATE
+    keywords : VARCHAR(255)
+    attachment_path : VARCHAR(255)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "plant_photos" as plant_photos {
+    * **plant_photo_id** : VARCHAR(36) <<PK>>
+    --
+    plant_id : VARCHAR(36) <<FK>>
+    file_path : VARCHAR(255)
+    file_name : VARCHAR(255)
+    file_size : BIGINT
+    mime_type : VARCHAR(255)
+    description : TEXT
+    taken_at : DATETIME
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "planting_locations" as planting_locations {
+    * **planting_location_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    location_type : ENUM
+    planting_format : ENUM
+    description : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "planting_location_notes" as planting_location_notes {
+    * **planting_location_note_id** : VARCHAR(36) <<PK>>
+    --
+    planting_location_id : VARCHAR(36) <<FK>>
+    title : VARCHAR(255)
+    description : TEXT
+    note_date : DATE
+    keywords : VARCHAR(255)
+    attachment_path : VARCHAR(255)
+    user_id : VARCHAR(36) <<FK>>
+    assigned_to : JSON
+    read_by : JSON
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "planting_location_photos" as planting_location_photos {
+    * **planting_location_photo_id** : VARCHAR(36) <<PK>>
+    --
+    planting_location_id : VARCHAR(36) <<FK>>
+    file_path : VARCHAR(255)
+    file_name : VARCHAR(255)
+    file_size : BIGINT
+    mime_type : VARCHAR(100)
+    description : TEXT
+    taken_at : TIMESTAMP
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "attachments" as attachments {
+    * **attachment_id** : VARCHAR(36) <<PK>>
+    --
+    planting_location_id : VARCHAR(36) <<FK>>
+    title : VARCHAR(255)
+    description : TEXT
+    attachment_date : DATE
+    file_path : VARCHAR(255)
+    file_name : VARCHAR(255)
+    file_size : BIGINT
+    mime_type : VARCHAR(100)
+    created_by : VARCHAR(36) <<FK>>
+    edited_at : TIMESTAMP
+    edited_by : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "users" as users {
+    * **user_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    email : VARCHAR(255) <<UNIQUE>>
+    role : ENUM
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+' Relationships
+plants ||--o{ plant_notes : "plant_id"
+plants ||--o{ plant_photos : "plant_id"
+
+planting_locations ||--o{ planting_location_notes : "planting_location_id"
+planting_locations ||--o{ planting_location_photos : "planting_location_id"
+planting_locations ||--o{ attachments : "planting_location_id"
+
+users ||--o{ planting_location_notes : "user_id"
+users ||--o{ attachments : "created_by"
+users ||--o{ attachments : "edited_by"
+
+note as Nsupport
+SIBESTI Support Module
+Mengelola catatan, foto, dan lampiran.
+Semua Primary Key menggunakan format VARCHAR(36).
+Tabel locations telah dihapus.
+end note
+
+@enduml

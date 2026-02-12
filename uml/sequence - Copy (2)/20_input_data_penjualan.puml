@@ -1,0 +1,91 @@
+@startuml Sequence Diagram - Input Data Penjualan
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Input Data Penjualan
+
+actor "Petugas BBI" as User
+participant "SaleController" as Controller
+participant "Sale Model" as Sale
+participant "SaleItem Model" as SaleItem
+participant "InventoryType Model" as InvType
+participant "InventoryLot Model" as Lot
+participant "Warehouse Model" as Warehouse
+participant "Database" as DB
+
+User -> Controller: GET /sales/create
+activate Controller
+Controller -> Controller: validateRole
+Controller -> Warehouse: getAll
+activate Warehouse
+Warehouse -> DB: SELECT * FROM warehouses
+DB --> Warehouse: warehouses[]
+Warehouse --> Controller: warehouses[]
+deactivate Warehouse
+
+Controller -> InvType: getAvailable
+activate InvType
+InvType -> DB: SELECT * FROM inventory_types WHERE status = available
+DB --> InvType: inventory_types[]
+InvType --> Controller: inventory_types[]
+deactivate InvType
+
+Controller --> User: render form create penjualan
+deactivate Controller
+
+User -> Controller: POST /sales data penjualan
+activate Controller
+Controller -> Controller: validate
+Controller -> Controller: validateStock
+
+loop For each item
+    Controller -> Lot: getAvailableLots
+    activate Lot
+    Lot -> DB: SELECT * FROM inventory_lots WHERE inventory_type_id = ? ORDER BY created_at ASC
+    DB --> Lot: lots[]
+    Lot --> Controller: lots[]
+    deactivate Lot
+    
+    Controller -> Controller: checkAvailableQuantity
+end
+
+alt All Items Valid
+    Controller -> DB: BEGIN TRANSACTION
+    
+    Controller -> Sale: create sale data
+    activate Sale
+    Sale -> DB: INSERT INTO sales customer_name customer_contact
+    DB --> Sale: sale_id
+    Sale --> Controller: Sale
+    deactivate Sale
+    
+    loop For each item
+        Controller -> SaleItem: create item data
+        activate SaleItem
+        SaleItem -> DB: INSERT INTO sale_items sale_id inventory_type_id quantity
+        DB --> SaleItem: item_id
+        SaleItem --> Controller: SaleItem
+        deactivate SaleItem
+        
+        Controller -> Lot: reduceStock FIFO
+        activate Lot
+        loop Reduce stock FIFO
+            Lot -> DB: UPDATE inventory_lots SET quantity = quantity - ? WHERE id = ?
+            DB --> Lot: updated
+        end
+        Lot --> Controller: stock_reduced
+        deactivate Lot
+    end
+    
+    Controller -> DB: COMMIT TRANSACTION
+    Controller --> User: response success
+else Not Valid
+    Controller -> DB: ROLLBACK TRANSACTION
+    Controller --> User: show form
+end
+deactivate Controller
+
+@enduml
+

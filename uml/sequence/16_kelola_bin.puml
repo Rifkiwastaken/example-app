@@ -1,0 +1,112 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Kelola Bin
+
+actor "Petugas Gudang/Admin" as User
+participant "WarehouseController" as Controller
+participant "Warehouse" as Warehouse
+participant "Bin" as Bin
+participant "Database" as DB
+
+User -> User: dari halaman kelola gudang()
+User -> User: pilih gudang()
+User -> User: klik kelola bin()
+User -> Controller: showBins(warehouse_id)
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Warehouse: Warehouse::findOrFail(warehouse_id)
+activate Warehouse
+Warehouse -> DB: SELECT * FROM warehouses WHERE id = ?
+DB --> Warehouse: return warehouse data
+Warehouse --> Controller: return Warehouse
+deactivate Warehouse
+
+Controller -> Bin: Bin::where('warehouse_id', warehouse_id)->get()
+activate Bin
+Bin -> DB: SELECT * FROM bins WHERE warehouse_id = ?
+DB --> Bin: return bins[]
+Bin --> Controller: return bins[]
+deactivate Bin
+
+Controller --> User: return view kelola bin dengan data()
+deactivate Controller
+User -> User: tampilkan daftar bin()
+
+alt Aksi Tambah Bin
+    User -> User: klik tambah bin()
+    User -> Controller: storeBin(Request, warehouse_id)
+    activate Controller
+    Controller -> Controller: validate(Request)
+    Controller -> Warehouse: Warehouse::findOrFail(warehouse_id)
+    activate Warehouse
+    Warehouse -> DB: SELECT * FROM warehouses WHERE id = ?
+    DB --> Warehouse: return warehouse data
+    Warehouse --> Controller: return Warehouse
+    deactivate Warehouse
+    
+    Controller -> Bin: Bin::create(data)
+    activate Bin
+    Bin -> DB: INSERT INTO bins VALUES
+    DB --> Bin: return bin_id
+    Bin --> Controller: return Bin
+    deactivate Bin
+    
+    Controller --> User: redirect back dengan success message()
+    deactivate Controller
+    User -> User: tampilkan pesan bin berhasil ditambahkan()
+else Aksi Edit Bin
+    User -> User: klik edit bin()
+    User -> Controller: updateBin(Request, bin_id)
+    activate Controller
+    Controller -> Controller: validate(Request)
+    Controller -> Bin: Bin::findOrFail(bin_id)
+    activate Bin
+    Bin -> DB: SELECT * FROM bins WHERE id = ?
+    DB --> Bin: return bin data
+    Bin --> Controller: return Bin
+    Bin -> Bin: Bin::update(data)
+    Bin -> DB: UPDATE bins SET name = ? WHERE id = ?
+    DB --> Bin: return updated
+    Bin --> Controller: return updated
+    deactivate Bin
+    
+    Controller --> User: redirect back dengan success message()
+    deactivate Controller
+    User -> User: tampilkan pesan bin berhasil diupdate()
+else Aksi Hapus Bin
+    User -> User: klik hapus bin()
+    User -> User: konfirmasi penghapusan()
+    User -> Controller: destroyBin(bin_id)
+    activate Controller
+    Controller -> Controller: validateRole()
+    Controller -> Bin: Bin::findOrFail(bin_id)
+    activate Bin
+    Bin -> DB: SELECT * FROM bins WHERE id = ?
+    DB --> Bin: return bin data
+    Bin --> Controller: return Bin
+    deactivate Bin
+    
+    Controller -> Controller: check stok di bin()
+    
+    alt Bin Kosong
+        Controller -> Bin: Bin::delete()
+        activate Bin
+        Bin -> DB: DELETE FROM bins WHERE id = ?
+        DB --> Bin: return deleted
+        Bin --> Controller: return deleted
+        deactivate Bin
+        
+        Controller --> User: redirect back dengan success message()
+        User -> User: tampilkan pesan bin berhasil dihapus()
+    else Bin Masih Berisi Stok
+        Controller --> User: redirect back dengan error message()
+        User -> User: tampilkan pesan bin masih berisi stok()
+    end
+    deactivate Controller
+end
+
+@enduml

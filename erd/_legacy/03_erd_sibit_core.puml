@@ -1,0 +1,106 @@
+@startuml ERD - SIBESTI Core Tables
+!theme plain
+left to right direction
+scale 0.9
+skinparam linetype ortho
+skinparam roundcorner 8
+skinparam shadowing false
+
+title SIBESTI Core Tables ERD
+' Semua ID menggunakan VARCHAR(36) dengan format {nama_tabel}_id
+' Tabel locations telah dihapus (drop_locations_table)
+' Tanggal Update: Februari 2026
+
+entity "users" as users {
+    * **user_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    email : VARCHAR(255) <<UNIQUE>>
+    password : VARCHAR(255)
+    role : ENUM('admin','kepala_satuan_tugas','petugas_sertifikasi','petugas_gudang','petugas_bbi','penangkar')
+    location_placement : VARCHAR(255)
+    status : ENUM('active','inactive')
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "plant_types" as plant_types {
+    * **plant_type_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    category : VARCHAR(255)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "plants" as plants {
+    * **plant_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    plant_type_id : VARCHAR(36) <<FK>>
+    variety : VARCHAR(255)
+    status : ENUM('perencanaan','ditanam','dipanen','selesai')
+    progress : TINYINT
+    planting_location_id : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "planting_locations" as planting_locations {
+    * **planting_location_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    location_type : ENUM('lapangan','greenhouse','grow_room','padang_rumput','petak_ternak','lainnya')
+    planting_format : ENUM('petak','cover_crop','row','lainnya')
+    map_size : VARCHAR(255)
+    description : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "plantings" as plantings {
+    * **planting_id** : VARCHAR(36) <<PK>>
+    --
+    plant_id : VARCHAR(36) <<FK>>
+    planting_location_id : VARCHAR(36) <<FK>>
+    bed_label : VARCHAR(255)
+    quantity_planted : INT
+    planted_at : DATE
+    days_to_harvest : INT
+    area_ha : DECIMAL(10,2)
+    is_completed : TINYINT(1)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "harvests" as harvests {
+    * **harvest_id** : VARCHAR(36) <<PK>>
+    --
+    plant_id : VARCHAR(36) <<FK>>
+    planting_id : VARCHAR(36) <<FK>>
+    planting_location_id : VARCHAR(36) <<FK>>
+    harvested_at : DATE
+    batch_no : VARCHAR(255)
+    quantity : DECIMAL(12,2)
+    unit : VARCHAR(50)
+    quality : VARCHAR(255)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+' Relationships
+plant_types ||--o{ plants : "plant_type_id"
+plants }o--|| planting_locations : "planting_location_id"
+plants ||--o{ plantings : "plant_id"
+plants ||--o{ harvests : "plant_id"
+planting_locations ||--o{ plantings : "planting_location_id"
+planting_locations ||--o{ harvests : "planting_location_id"
+plantings ||--o{ harvests : "planting_id"
+
+note as N1
+SIBESTI Core Tables
+PK: VARCHAR(36) dengan format {nama_tabel}_id
+Tabel locations telah dihapus
+end note
+
+@enduml

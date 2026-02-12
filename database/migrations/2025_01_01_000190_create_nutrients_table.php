@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('nutrients', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('planting_location_id')->constrained()->onDelete('cascade');
+            $table->string('nutrient_id', 36)->primary();
+            $table->string('planting_location_id', 36)->onDelete('cascade');
             $table->string('product_applied');
             $table->decimal('amount_applied', 10, 2);
             $table->string('application_method'); // Penyebaran, Kompos, Granul, etc.
@@ -45,6 +45,9 @@ return new class extends Migration
         Schema::dropIfExists('nutrients');
     }
 };
+
+
+
 
 
 

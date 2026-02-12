@@ -1,0 +1,66 @@
+@startuml Sequence Diagram - Adjustment Stok
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Adjustment Stok
+
+actor "Petugas Gudang/Admin" as User
+participant "InventoryTypeController" as Controller
+participant "InventoryTypeSeed Model" as Seed
+participant "InventoryTransaction Model" as Transaction
+participant "SeedHistory Model" as History
+participant "Database" as DB
+
+User -> Controller: POST /seed-stock/{id}/stock-adjustment data
+activate Controller
+Controller -> Controller: validateRole
+Controller -> Controller: validate
+Controller -> Seed: findById
+activate Seed
+Seed -> DB: SELECT * FROM inventory_type_seeds WHERE id = ?
+DB --> Seed: seed data
+Seed --> Controller: Seed
+deactivate Seed
+
+alt Adjustment Type Penambahan
+    Controller -> Seed: update quantity increase
+    activate Seed
+    Seed -> DB: UPDATE inventory_type_seeds SET total_seed_quantity = ? WHERE id = ?
+    DB --> Seed: updated
+    Seed --> Controller: updated
+    deactivate Seed
+    
+else Adjustment Type Pengurangan
+    alt Stok Cukup
+        Controller -> Seed: update quantity decrease
+        activate Seed
+        Seed -> DB: UPDATE inventory_type_seeds SET total_seed_quantity = ? WHERE id = ?
+        DB --> Seed: updated
+        Seed --> Controller: updated
+        deactivate Seed
+    else Stok Tidak Cukup
+        Controller --> User: stok tidak cukup
+    end
+end
+
+Controller -> Transaction: create transaction type adjustment
+activate Transaction
+Transaction -> DB: INSERT INTO inventory_transactions transaction_type quantity
+DB --> Transaction: transaction_id
+Transaction --> Controller: created
+deactivate Transaction
+
+Controller -> History: create history action adjustment
+activate History
+History -> DB: INSERT INTO seed_histories inventory_type_seed_id action
+DB --> History: history_id
+History --> Controller: created
+deactivate History
+
+Controller --> User: response success
+deactivate Controller
+
+@enduml
+

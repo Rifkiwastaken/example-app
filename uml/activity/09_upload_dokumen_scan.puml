@@ -1,0 +1,43 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Upload Dokumen Scan
+
+|#LightBlue|Petugas Sertifikasi|
+start
+:Dalam proses buat laporan;
+:Klik upload dokumen scan;
+
+|#LightGreen|Sistem|
+:Validasi file dokumen;
+:Check format file valid;
+
+if (File valid?) then (Ya)
+    :Simpan file dokumen;
+    :Generate nama file unik;
+    :Link dokumen ke laporan;
+    :Success message;
+    :Redirect ke halaman laporan;
+    |#LightBlue|Petugas Sertifikasi|
+    :Lihat pesan dokumen berhasil diupload;
+else (Tidak)
+    :Error message;
+    :Kembali ke form;
+    |#LightBlue|Petugas Sertifikasi|
+    :Lihat pesan format file tidak valid;
+endif
+
+stop
+
+@enduml

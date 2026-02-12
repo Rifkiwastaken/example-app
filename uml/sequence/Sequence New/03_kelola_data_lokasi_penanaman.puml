@@ -1,0 +1,73 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - UC03 Mengelola Data Lokasi Penanaman
+
+actor "User" as User
+boundary "PlantingLocationView" as View
+control "PlantingLocationController" as Controller
+entity "PlantingLocation" as Location
+entity "User" as UserModel
+
+User -> View: akses halaman kelola lokasi()
+View -> Controller: index()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Location: all()
+activate Location
+Location --> Controller: return planting_locations[]
+deactivate Location
+Controller --> View: return planting_locations[]
+deactivate Controller
+View --> User: tampilkan daftar lokasi()
+
+User -> View: klik tombol tambah lokasi()
+View -> Controller: create()
+activate Controller
+Controller -> UserModel: orderBy('name')->get()
+activate UserModel
+UserModel --> Controller: return users[]
+deactivate UserModel
+Controller --> View: return users[]
+deactivate Controller
+View --> User: tampilkan form tambah lokasi()
+
+User -> View: isi form data lokasi()
+View -> Controller: store(request)
+activate Controller
+Controller -> Controller: validate(request)
+Controller -> Location: create(data)
+activate Location
+Location -> Location: save()
+Location --> Controller: return planting_location
+deactivate Location
+
+alt Ada Land Manager Users
+    Controller -> Location: syncLandManagerUsers(land_manager_ids[])
+    activate Location
+    Location -> Location: attachUsers('land_manager')
+    Location --> Controller: return success
+    deactivate Location
+end
+
+alt Ada Land Worker Users
+    Controller -> Location: syncLandWorkerUsers(land_worker_ids[])
+    activate Location
+    Location -> Location: attachUsers('land_worker')
+    Location --> Controller: return success
+    deactivate Location
+end
+
+alt Data Valid
+    Controller --> View: redirect dengan pesan sukses
+    View --> User: tampilkan pesan lokasi berhasil ditambahkan()
+else Data Tidak Valid
+    Controller --> View: redirect back dengan validation errors()
+    View --> User: tampilkan form dengan pesan error()
+end
+deactivate Controller
+
+@enduml

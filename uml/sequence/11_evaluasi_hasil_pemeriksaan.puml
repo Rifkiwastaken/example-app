@@ -1,0 +1,80 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Evaluasi Hasil Pemeriksaan
+
+actor "Petugas Sertifikasi/Admin" as User
+participant "CertificationController" as Controller
+participant "Certification" as Certification
+participant "CertificationReport" as Report
+participant "Database" as DB
+
+User -> User: akses halaman evaluasi()
+User -> User: pilih hasil panen untuk dievaluasi()
+User -> Controller: evaluasi(certification_id)
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Report: CertificationReport::with('certification')->findOrFail(report_id)
+activate Report
+Report -> DB: SELECT * FROM certification_reports LEFT JOIN certifications WHERE id = ?
+DB --> Report: return report dengan data lengkap
+Report --> Controller: return Report
+deactivate Report
+
+Controller --> User: return view evaluasi dengan data()
+deactivate Controller
+User -> User: tampilkan form evaluasi()
+
+User -> User: review hasil pemeriksaan()
+User -> User: input kesimpulan evaluasi()
+User -> Controller: updateEvaluasi(Request, certification_id)
+activate Controller
+Controller -> Controller: validate(Request)
+Controller -> Report: CertificationReport::findOrFail(report_id)
+activate Report
+Report -> DB: SELECT * FROM certification_reports WHERE id = ?
+DB --> Report: return report data
+Report --> Controller: return Report
+deactivate Report
+
+alt Hasil Evaluasi LULUS
+    Controller -> Report: CertificationReport::update(['conclusion' => 'lulus'])
+    activate Report
+    Report -> DB: UPDATE certification_reports SET conclusion = 'lulus' WHERE id = ?
+    DB --> Report: return updated
+    Report --> Controller: return updated
+    deactivate Report
+    
+    Controller -> Certification: Certification::update(['certification_status' => 'lulus'])
+    activate Certification
+    Certification -> DB: UPDATE certifications SET certification_status = 'lulus' WHERE id = ?
+    DB --> Certification: return updated
+    Certification --> Controller: return updated
+    deactivate Certification
+    
+    Controller --> User: redirect back dengan success message()
+    User -> User: tampilkan pesan sertifikasi lulus()
+else Hasil Evaluasi TIDAK LULUS
+    Controller -> Report: CertificationReport::update(['conclusion' => 'tidak_lulus'])
+    activate Report
+    Report -> DB: UPDATE certification_reports SET conclusion = 'tidak_lulus' WHERE id = ?
+    DB --> Report: return updated
+    Report --> Controller: return updated
+    deactivate Report
+    
+    Controller -> Certification: Certification::update(['certification_status' => 'tidak_lulus'])
+    activate Certification
+    Certification -> DB: UPDATE certifications SET certification_status = 'tidak_lulus' WHERE id = ?
+    DB --> Certification: return updated
+    Certification --> Controller: return updated
+    deactivate Certification
+    
+    Controller --> User: redirect back dengan success message()
+    User -> User: tampilkan pesan sertifikasi tidak lulus()
+end
+deactivate Controller
+
+@enduml

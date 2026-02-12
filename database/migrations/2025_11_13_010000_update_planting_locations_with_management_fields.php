@@ -26,14 +26,6 @@ return new class extends Migration
             $table->string('planting_format_custom')->nullable()->after('planting_format');
             $table->string('primary_photo_path')->nullable()->after('google_maps_link');
         });
-
-        Schema::create('contact_planting_location', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('planting_location_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('contact_id')->constrained()->cascadeOnDelete();
-            $table->timestamps();
-            $table->unique(['planting_location_id', 'contact_id'], 'planting_location_contact_unique');
-        });
     }
 
     /**
@@ -41,8 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('contact_planting_location');
-
         Schema::table('planting_locations', function (Blueprint $table) {
             $table->dropColumn([
                 'location_summary',
@@ -59,6 +49,9 @@ return new class extends Migration
         });
     }
 };
+
+
+
 
 
 

@@ -1,13 +1,15 @@
 @extends('layouts.app')
 
-@section('title', 'Manajemen Akun - SIBIT')
+@section('title', 'Manajemen Akun - SIBESTI')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="mb-0">Manajemen Akun</h4>
+    @if(auth()->user()->isAdmin())
     <a href="{{ route('users.create') }}" class="btn btn-success">
         <i class="fas fa-plus me-2"></i>Akun Baru
     </a>
+    @endif
 </div>
 
 @if(session('success'))
@@ -34,7 +36,6 @@
                         <th>Email</th>
                         <th>Role/Peran</th>
                         <th>Lokasi Penempatan</th>
-                        <th>Status</th>
                         <th width="150">Aksi</th>
                     </tr>
                 </thead>
@@ -43,10 +44,15 @@
                     <tr>
                         <td>
                             <div class="d-flex align-items-center">
-                                <div class="bg-primary rounded-circle me-3 d-flex align-items-center justify-content-center text-white" 
-                                     style="width: 40px; height: 40px;">
-                                    <i class="fas fa-user"></i>
-                                </div>
+                                @if($user->photo_path)
+                                    <img src="{{ Storage::url($user->photo_path) }}" class="rounded-circle me-3" 
+                                         style="width: 40px; height: 40px; object-fit: cover;" alt="{{ $user->name }}">
+                                @else
+                                    <div class="bg-primary rounded-circle me-3 d-flex align-items-center justify-content-center text-white" 
+                                         style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                @endif
                                 <div>
                                     <strong>{{ $user->name }}</strong>
                                     @if($user->id === auth()->id())
@@ -66,20 +72,14 @@
                             @endif
                         </td>
                         <td>
-                            @if($user->location)
-                                <span class="badge bg-success">{{ $user->location->name }}</span>
+                            @if($user->location_placement)
+                                <span class="badge bg-success">{{ $user->location_placement }}</span>
                             @else
                                 <span class="text-muted">Belum ditugaskan</span>
                             @endif
                         </td>
                         <td>
-                            @if($user->email_verified_at)
-                                <span class="badge bg-success">Aktif</span>
-                            @else
-                                <span class="badge bg-warning">Belum Verifikasi</span>
-                            @endif
-                        </td>
-                        <td>
+                            @if(auth()->user()->isAdmin())
                             <div class="btn-group" role="group">
                                 <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-outline-info" title="Lihat">
                                     <i class="fas fa-eye"></i>
@@ -88,21 +88,25 @@
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 @if($user->id !== auth()->id())
-                                <form action="{{ route('users.destroy', $user) }}" method="POST" class="d-inline" 
-                                      onsubmit="return confirm('Apakah Anda yakin ingin menghapus akun ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        title="Hapus"
+                                        onclick="confirmDelete('{{ route('users.destroy', $user) }}', '{{ addslashes($user->name) }}', 'akun')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                                 @endif
                             </div>
+                            @else
+                            <div class="btn-group" role="group">
+                                <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-outline-info" title="Lihat">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                            @endif
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center py-4">
+                        <td colspan="5" class="text-center py-4">
                             <div class="text-muted">
                                 <i class="fas fa-users fa-3x mb-3"></i>
                                 <p>Belum ada akun yang terdaftar.</p>
@@ -189,6 +193,9 @@
     </div>
 </div>
 @endsection
+
+
+
 
 
 

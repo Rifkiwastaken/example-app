@@ -1,0 +1,68 @@
+@startuml
+' Referensi: Use Case Overview (00_use_case_overview.puml)
+' Use case 11: Mengelola Profile
+' Aktor: Admin/Kepala Sek, Petugas BBI, Penangkar/Kepala Satgas, Petugas Gudang
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Mengelola Profile
+
+|#LightBlue|User|
+start
+:Masuk ke halaman profile;
+
+|#LightGreen|Sistem|
+:Validasi session;
+:Load data user dari database;
+:Tampilkan form profile dengan data terisi;
+
+|#LightBlue|User|
+:Lihat data profile;
+
+if (Edit profile?) then (Ya)
+    |#LightBlue|User|
+    :Edit data profile;
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data;
+    if (Data valid?) then (Ya)
+        :Update data user di database;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Tampilkan pesan error;
+    endif
+elseif (Ubah password?) then (Ya)
+    |#LightBlue|User|
+    :Masukkan password lama;
+    :Masukkan password baru;
+    :Konfirmasi password baru;
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi password lama;
+    if (Password lama benar?) then (Tidak)
+        :Tampilkan pesan error;
+        stop
+    endif
+    :Validasi password baru;
+    if (Password baru valid?) then (Tidak)
+        :Tampilkan pesan error;
+        stop
+    endif
+    :Update password di database;
+    :Tampilkan pesan sukses;
+else (Tidak)
+endif
+
+stop
+
+@enduml

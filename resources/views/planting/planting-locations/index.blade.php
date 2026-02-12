@@ -1,60 +1,33 @@
 @extends('layouts.app')
 
-@section('title', 'Lokasi Penanaman - SIBIT')
+@section('title', 'Lokasi Penanaman - SIBESTI')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="mb-0">Lokasi Penanaman</h4>
-    <div class="btn-group">
+    @if(auth()->user()->isAdmin() || auth()->user()->role === 'kepala_satuan_tugas')
         <a href="{{ route('planting-locations.create') }}" class="btn btn-success">Lokasi Tanam</a>
-        <div class="dropdown">
-            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                <i class="fas fa-ellipsis-v"></i>
-            </button>
-            <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#">Ekspor Data</a></li>
-                <li><a class="dropdown-item" href="#">Cetak Laporan</a></li>
-            </ul>
-        </div>
-    </div>
+    @endif
 </div>
 
 <!-- Filter Section -->
 <div class="card mb-4">
     <div class="card-body">
-        <div class="row">
-            <div class="col-md-4">
-                <label class="form-label">Lokasi</label>
-                <select class="form-select" id="locationFilter">
-                    <option value="">Semua Lokasi</option>
-                    @foreach($locations as $location)
-                        <option value="{{ $location->id }}">{{ $location->name }}</option>
-                    @endforeach
-                </select>
+        <form method="GET" action="{{ route('planting-locations.index') }}" id="filterForm">
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">Penugasan</label>
+                    <select class="form-select" name="assignment" id="assignmentFilter">
+                        <option value="">Semua Penugasan</option>
+                        @foreach($assignedUsers as $user)
+                            <option value="{{ $user->user_id }}" {{ request('assignment') == $user->user_id ? 'selected' : '' }}>
+                                {{ $user->name }}@if($user->role) - {{ $user->role_label }}@endif
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
-            <div class="col-md-4">
-                <label class="form-label">Tipe Lokasi</label>
-                <select class="form-select" id="typeFilter">
-                    <option value="">Semua Tipe</option>
-                    <option value="lapangan">Lapangan</option>
-                    <option value="greenhouse">Greenhouse</option>
-                    <option value="grow_room">Grow Room</option>
-                    <option value="padang_rumput">Padang Rumput</option>
-                    <option value="petak_ternak">Petak Ternak</option>
-                    <option value="lainnya">Lainnya</option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Format Penanaman</label>
-                <select class="form-select" id="formatFilter">
-                    <option value="">Semua Format</option>
-                    <option value="ditanam_dalam_petak">Ditanam dalam Petak</option>
-                    <option value="cover_crop">Tanaman Penutup</option>
-                    <option value="row_crop">Tanaman Baris</option>
-                    <option value="lainnya">Lainnya</option>
-                </select>
-            </div>
-        </div>
+        </form>
     </div>
 </div>
 
@@ -64,10 +37,15 @@
         <div class="d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Daftar Lokasi Penanaman</h5>
             <div class="d-flex align-items-center gap-3">
-                <div class="input-group" style="width: 300px;">
-                    <input type="text" class="form-control" placeholder="Cari" id="searchInput">
-                    <span class="input-group-text"><i class="fas fa-search"></i></span>
-                </div>
+                <form method="GET" action="{{ route('planting-locations.index') }}" class="d-flex">
+                    <input type="hidden" name="assignment" value="{{ request('assignment') }}">
+                    <div class="input-group" style="width: 300px;">
+                        <input type="text" class="form-control" name="search" placeholder="Cari nama lokasi..." value="{{ request('search') }}" id="searchInput">
+                        <button type="submit" class="input-group-text btn btn-outline-secondary">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -79,10 +57,9 @@
                         <tr>
                             <th>Nama</th>
                             <th>Tipe</th>
-                            <th>Format Penanaman</th>
                             <th>Lokasi</th>
-                            <th>Petak</th>
-                            <th>Luas</th>
+                            <th>Penanggung Jawab Lahan</th>
+                            <th>Pekerja Lahan</th>
                             <th width="100">Aksi</th>
                         </tr>
                     </thead>
@@ -92,11 +69,13 @@
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px; font-size: 12px; font-weight: bold;">
-                                            {{ substr($location->name, 0, 2) }}
+                                            {{ strtoupper(substr($location->name, 0, 2)) }}
                                         </div>
                                         <div>
-                                            <div class="fw-bold">{{ $location->name }}</div>
-                                            <small class="text-muted">{{ $location->id }}-{{ date('Y') }}</small>
+                                            <a href="{{ route('planting-locations.show', $location) }}" class="text-decoration-none fw-bold">{{ $location->name }}</a>
+                                            @if($location->internal_id)
+                                                <br><small class="text-muted">{{ $location->internal_id }}</small>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>
@@ -104,47 +83,62 @@
                                     <span class="badge bg-info">{{ ucfirst(str_replace('_', ' ', $location->location_type)) }}</span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-secondary">{{ ucfirst(str_replace('_', ' ', $location->planting_format)) }}</span>
-                                </td>
-                                <td>{{ $location->baseLocation?->name ?: 'Tidak ada lokasi' }}</td>
-                                <td>
-                                    @if($location->planting_format === 'ditanam_dalam_petak')
-                                        {{ $location->num_beds ?: 0 }} petak
+                                    @if($location->location_summary)
+                                        {{ $location->location_summary }}
                                     @else
-                                        -
+                                        <span class="text-muted">-</span>
                                     @endif
                                 </td>
                                 <td>
-                                    @if($location->map_size)
-                                        {{ number_format($location->map_size, 2) }} Ha
+                                    @if($location->landManagerUsers->count() > 0)
+                                        <div>
+                                            @foreach($location->landManagerUsers as $user)
+                                                <div class="mb-1">
+                                                    <small>
+                                                        <i class="fas fa-user me-1"></i>
+                                                        <strong>{{ $user->name }}</strong>
+                                                        @if($user->role)
+                                                            <span class="text-muted"> - {{ $user->role_label }}</span>
+                                                        @endif
+                                                    </small>
+                                                </div>
+                                            @endforeach
+                                        </div>
                                     @else
-                                        -
+                                        <span class="text-muted">-</span>
                                     @endif
                                 </td>
                                 <td>
-                                    <div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                            <i class="fas fa-ellipsis-v"></i>
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="{{ route('planting-locations.show', $location) }}">
-                                                <i class="fas fa-eye me-2"></i>Lihat Detail
-                                            </a></li>
-                                            <li><a class="dropdown-item" href="{{ route('planting-locations.edit', $location) }}">
-                                                <i class="fas fa-edit me-2"></i>Edit
-                                            </a></li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <form action="{{ route('planting-locations.destroy', $location) }}" method="POST" class="d-inline" 
-                                                      onsubmit="return confirm('Apakah Anda yakin ingin menghapus lokasi penanaman ini?')">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="dropdown-item text-danger border-0 bg-transparent w-100 text-start" style="cursor: pointer;">
-                                                        <i class="fas fa-trash me-2"></i>Hapus
-                                                    </button>
-                                                </form>
-                                            </li>
-                                        </ul>
+                                    @if($location->landWorkerUsers->count() > 0)
+                                        <div>
+                                            @foreach($location->landWorkerUsers as $user)
+                                                <div class="mb-1">
+                                                    <small>
+                                                        <i class="fas fa-user me-1"></i>
+                                                        <strong>{{ $user->name }}</strong>
+                                                        @if($user->role)
+                                                            <span class="text-muted"> - {{ $user->role_label }}</span>
+                                                        @endif
+                                                    </small>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{{ route('planting-locations.show', $location) }}" class="btn btn-sm btn-outline-info" title="Lihat Detail">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        @if(auth()->user()->isAdmin() || auth()->user()->canManagePlantingLocation($location))
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    title="Hapus"
+                                                    onclick="confirmDelete('{{ route('planting-locations.destroy', $location) }}', '{{ addslashes($location->name) }}', 'lokasi penanaman')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -173,25 +167,17 @@
 
 @push('scripts')
 <script>
-// Filter functionality
-document.getElementById('locationFilter').addEventListener('change', function() {
-    // Implement location filter
-    console.log('Filter by location:', this.value);
+// Filter functionality - auto submit on change
+document.getElementById('assignmentFilter').addEventListener('change', function() {
+    document.getElementById('filterForm').submit();
 });
 
-document.getElementById('typeFilter').addEventListener('change', function() {
-    // Implement type filter
-    console.log('Filter by type:', this.value);
-});
-
-document.getElementById('formatFilter').addEventListener('change', function() {
-    // Implement format filter
-    console.log('Filter by format:', this.value);
-});
-
-document.getElementById('searchInput').addEventListener('input', function() {
-    // Implement search functionality
-    console.log('Search:', this.value);
+// Search functionality - submit on Enter key
+document.getElementById('searchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        this.closest('form').submit();
+    }
 });
 </script>
 @endpush

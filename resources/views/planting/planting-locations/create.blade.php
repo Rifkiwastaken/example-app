@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Tambah Lokasi Penanaman - SIBIT')
+@section('title', 'Tambah Lokasi Penanaman - SIBESTI')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -18,6 +18,26 @@
         <h5 class="mb-0">Tambah Lokasi Penanaman</h5>
     </div>
     <div class="card-body">
+        @if(session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+        
+        @if($errors->any())
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <strong>Terjadi kesalahan:</strong>
+                <ul class="mb-0 mt-2">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+        
         <form method="POST" action="{{ route('planting-locations.store') }}" enctype="multipart/form-data">
             @csrf
             
@@ -26,38 +46,17 @@
                     <div class="mb-3">
                         <label class="form-label">Nama Lahan</label>
                         <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" 
-                               value="{{ old('name') }}" placeholder="Example: Northwest Field" required>
+                               value="{{ old('name') }}" required>
                         @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label">Internal Id</label>
-                        <div class="input-group">
-                            <input type="text" name="internal_id" class="form-control @error('internal_id') is-invalid @enderror" 
-                                   value="{{ old('internal_id') }}" placeholder="Example: F001">
-                            <span class="input-group-text"><i class="fas fa-info-circle"></i></span>
-                        </div>
-                        @error('internal_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label class="form-label">Electronic Id</label>
-                        <input type="text" name="electronic_id" class="form-control @error('electronic_id') is-invalid @enderror" 
-                               value="{{ old('electronic_id') }}">
-                        @error('electronic_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
                         <label class="form-label">Tipe Lahan</label>
-                        <select name="location_type" class="form-select @error('location_type') is-invalid @enderror" required>
+                        <select name="location_type" id="location_type" class="form-select @error('location_type') is-invalid @enderror" required onchange="toggleLocationTypeCustom()">
                             <option value="">Pilih tipe lahan</option>
                             <option value="lapangan" {{ old('location_type') == 'lapangan' ? 'selected' : '' }}>Lapangan</option>
+                            <option value="sawah" {{ old('location_type') == 'sawah' ? 'selected' : '' }}>Sawah</option>
                             <option value="greenhouse" {{ old('location_type') == 'greenhouse' ? 'selected' : '' }}>Greenhouse</option>
                             <option value="grow_room" {{ old('location_type') == 'grow_room' ? 'selected' : '' }}>Grow Room</option>
                             <option value="padang_rumput" {{ old('location_type') == 'padang_rumput' ? 'selected' : '' }}>Padang Rumput</option>
@@ -65,25 +64,18 @@
                             <option value="lainnya" {{ old('location_type') == 'lainnya' ? 'selected' : '' }}>Lainnya</option>
                         </select>
                         @error('location_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <div id="location_type_custom_container" class="mt-2" style="display: none;">
+                            <input type="text" name="location_type_custom" id="location_type_custom" 
+                                   class="form-control @error('location_type_custom') is-invalid @enderror" 
+                                   value="{{ old('location_type_custom') }}" 
+                                   placeholder="Masukkan tipe lahan lainnya">
+                            @error('location_type_custom')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label class="form-label">Lokasi Penanaman (Master)</label>
-                        <select name="location_id" class="form-select @error('location_id') is-invalid @enderror" required>
-                            <option value="">Pilih lokasi lahan</option>
-                            @foreach($locations as $location)
-                                <option value="{{ $location->id }}" {{ old('location_id') == $location->id ? 'selected' : '' }}>
-                                    {{ $location->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('location_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-                </div>
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label">Luas Lahan (Ha)</label>
@@ -107,14 +99,6 @@
                         @error('location_summary')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label class="form-label">Link Google Maps</label>
-                        <input type="url" name="google_maps_link" class="form-control @error('google_maps_link') is-invalid @enderror"
-                               value="{{ old('google_maps_link') }}" placeholder="https://maps.google.com/...">
-                        @error('google_maps_link')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-                </div>
             </div>
 
             <div class="mb-3">
@@ -132,51 +116,6 @@
             </div>
 
             <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label class="form-label">Penanggung Jawab</label>
-                        <div class="d-flex gap-2 mb-2">
-                            <select id="contactSelect" class="form-select @error('responsible_contact_ids') is-invalid @enderror">
-                                <option value="">Pilih kontak...</option>
-                                @foreach($contacts as $contact)
-                                    <option value="{{ $contact->id }}" data-name="{{ $contact->full_name }}" data-org="{{ $contact->organization ?? '' }}">
-                                        {{ $contact->full_name }}@if($contact->organization) - {{ $contact->organization }}@endif
-                                    </option>
-                                @endforeach
-                            </select>
-                            <button type="button" class="btn btn-primary" id="addContactBtn">
-                                <i class="fas fa-plus"></i> Tambah
-                            </button>
-                        </div>
-                        <div id="selectedContacts" class="mb-2">
-                            @php
-                                $oldContactIds = collect(old('responsible_contact_ids', []))->filter();
-                            @endphp
-                            @foreach($oldContactIds as $contactId)
-                                @php
-                                    $contact = $contacts->firstWhere('id', $contactId);
-                                @endphp
-                                @if($contact)
-                                    <div class="selected-contact-item mb-2 p-2 border rounded d-flex justify-content-between align-items-center" data-contact-id="{{ $contact->id }}">
-                                        <span>
-                                            <strong>{{ $contact->full_name }}</strong>
-                                            @if($contact->organization)
-                                                <small class="text-muted"> - {{ $contact->organization }}</small>
-                                            @endif
-                                        </span>
-                                        <button type="button" class="btn btn-sm btn-outline-danger remove-contact" title="Hapus">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                        <input type="hidden" name="responsible_contact_ids[]" value="{{ $contact->id }}">
-                                    </div>
-                                @endif
-                            @endforeach
-                        </div>
-                        @error('responsible_contact_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                        @error('responsible_contact_ids.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                        <small class="text-muted">Pilih kontak dari dropdown dan klik "Tambah" untuk menambahkan penanggung jawab.</small>
-                    </div>
-                </div>
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label">Status Lahan</label>
@@ -200,90 +139,90 @@
                     <div class="mb-3">
                         <label class="form-label">Penanggung Jawab Lahan</label>
                         <div class="d-flex gap-2 mb-2">
-                            <select id="landManagerContactSelect" class="form-select @error('land_manager_contact_ids') is-invalid @enderror">
-                                <option value="">Pilih kontak...</option>
-                                @foreach($contacts as $contact)
-                                    <option value="{{ $contact->id }}" data-name="{{ $contact->full_name }}" data-org="{{ $contact->organization ?? '' }}">
-                                        {{ $contact->full_name }}@if($contact->organization) - {{ $contact->organization }}@endif
+                            <select id="landManagerUserSelect" class="form-select @error('land_manager_user_ids') is-invalid @enderror">
+                                <option value="">Pilih user...</option>
+                                @foreach($users as $user)
+                                    <option value="{{ $user->user_id }}" data-name="{{ $user->name }}" data-email="{{ $user->email ?? '' }}" data-role="{{ $user->role_label ?? '' }}">
+                                        {{ $user->name }}@if($user->role) - {{ $user->role_label }}@endif
                                     </option>
                                 @endforeach
                             </select>
-                            <button type="button" class="btn btn-primary" id="addLandManagerContactBtn">
+                            <button type="button" class="btn btn-primary" id="addLandManagerUserBtn">
                                 <i class="fas fa-plus"></i> Tambah
                             </button>
                         </div>
-                        <div id="selectedLandManagerContacts" class="mb-2">
+                        <div id="selectedLandManagerUsers" class="mb-2">
                             @php
-                                $oldLandManagerContactIds = collect(old('land_manager_contact_ids', []))->filter();
+                                $oldLandManagerUserIds = collect(old('land_manager_user_ids', []))->filter();
                             @endphp
-                            @foreach($oldLandManagerContactIds as $contactId)
+                            @foreach($oldLandManagerUserIds as $userId)
                                 @php
-                                    $contact = $contacts->firstWhere('id', $contactId);
+                                    $user = $users->firstWhere('user_id', $userId);
                                 @endphp
-                                @if($contact)
-                                    <div class="selected-contact-item mb-2 p-2 border rounded d-flex justify-content-between align-items-center" data-contact-id="{{ $contact->id }}">
+                                @if($user)
+                                    <div class="selected-user-item mb-2 p-2 border rounded d-flex justify-content-between align-items-center" data-user-id="{{ $user->user_id }}">
                                         <span>
-                                            <strong>{{ $contact->full_name }}</strong>
-                                            @if($contact->organization)
-                                                <small class="text-muted"> - {{ $contact->organization }}</small>
+                                            <strong>{{ $user->name }}</strong>
+                                            @if($user->role)
+                                                <small class="text-muted"> - {{ $user->role_label }}</small>
                                             @endif
                                         </span>
-                                        <button type="button" class="btn btn-sm btn-outline-danger remove-contact" title="Hapus">
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-user" title="Hapus">
                                             <i class="fas fa-times"></i>
                                         </button>
-                                        <input type="hidden" name="land_manager_contact_ids[]" value="{{ $contact->id }}">
+                                        <input type="hidden" name="land_manager_user_ids[]" value="{{ $user->user_id }}">
                                     </div>
                                 @endif
                             @endforeach
                         </div>
-                        @error('land_manager_contact_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                        @error('land_manager_contact_ids.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                        <small class="text-muted">Pilih kontak dari dropdown dan klik "Tambah" untuk menambahkan penanggung jawab lahan.</small>
+                        @error('land_manager_user_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                        @error('land_manager_user_ids.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                        <small class="text-muted">Pilih user dari dropdown dan klik "Tambah" untuk menambahkan penanggung jawab lahan.</small>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label">Pekerja Lahan</label>
                         <div class="d-flex gap-2 mb-2">
-                            <select id="landWorkerContactSelect" class="form-select @error('land_worker_contact_ids') is-invalid @enderror">
-                                <option value="">Pilih kontak...</option>
-                                @foreach($contacts as $contact)
-                                    <option value="{{ $contact->id }}" data-name="{{ $contact->full_name }}" data-org="{{ $contact->organization ?? '' }}">
-                                        {{ $contact->full_name }}@if($contact->organization) - {{ $contact->organization }}@endif
+                            <select id="landWorkerUserSelect" class="form-select @error('land_worker_user_ids') is-invalid @enderror">
+                                <option value="">Pilih user...</option>
+                                @foreach($users as $user)
+                                    <option value="{{ $user->user_id }}" data-name="{{ $user->name }}" data-email="{{ $user->email ?? '' }}" data-role="{{ $user->role_label ?? '' }}">
+                                        {{ $user->name }}@if($user->role) - {{ $user->role_label }}@endif
                                     </option>
                                 @endforeach
                             </select>
-                            <button type="button" class="btn btn-primary" id="addLandWorkerContactBtn">
+                            <button type="button" class="btn btn-primary" id="addLandWorkerUserBtn">
                                 <i class="fas fa-plus"></i> Tambah
                             </button>
                         </div>
-                        <div id="selectedLandWorkerContacts" class="mb-2">
+                        <div id="selectedLandWorkerUsers" class="mb-2">
                             @php
-                                $oldLandWorkerContactIds = collect(old('land_worker_contact_ids', []))->filter();
+                                $oldLandWorkerUserIds = collect(old('land_worker_user_ids', []))->filter();
                             @endphp
-                            @foreach($oldLandWorkerContactIds as $contactId)
+                            @foreach($oldLandWorkerUserIds as $userId)
                                 @php
-                                    $contact = $contacts->firstWhere('id', $contactId);
+                                    $user = $users->firstWhere('user_id', $userId);
                                 @endphp
-                                @if($contact)
-                                    <div class="selected-contact-item mb-2 p-2 border rounded d-flex justify-content-between align-items-center" data-contact-id="{{ $contact->id }}">
+                                @if($user)
+                                    <div class="selected-user-item mb-2 p-2 border rounded d-flex justify-content-between align-items-center" data-user-id="{{ $user->user_id }}">
                                         <span>
-                                            <strong>{{ $contact->full_name }}</strong>
-                                            @if($contact->organization)
-                                                <small class="text-muted"> - {{ $contact->organization }}</small>
+                                            <strong>{{ $user->name }}</strong>
+                                            @if($user->role)
+                                                <small class="text-muted"> - {{ $user->role_label }}</small>
                                             @endif
                                         </span>
-                                        <button type="button" class="btn btn-sm btn-outline-danger remove-contact" title="Hapus">
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-user" title="Hapus">
                                             <i class="fas fa-times"></i>
                                         </button>
-                                        <input type="hidden" name="land_worker_contact_ids[]" value="{{ $contact->id }}">
+                                        <input type="hidden" name="land_worker_user_ids[]" value="{{ $user->user_id }}">
                                     </div>
                                 @endif
                             @endforeach
                         </div>
-                        @error('land_worker_contact_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                        @error('land_worker_contact_ids.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                        <small class="text-muted">Pilih kontak dari dropdown dan klik "Tambah" untuk menambahkan pekerja lahan.</small>
+                        @error('land_worker_user_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                        @error('land_worker_user_ids.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                        <small class="text-muted">Pilih user dari dropdown dan klik "Tambah" untuk menambahkan pekerja lahan.</small>
                     </div>
                 </div>
             </div>
@@ -512,7 +451,24 @@
 
 @push('scripts')
 <script>
+function toggleLocationTypeCustom() {
+    const locationType = document.getElementById('location_type');
+    const customContainer = document.getElementById('location_type_custom_container');
+    const customInput = document.getElementById('location_type_custom');
+    
+    if (locationType.value === 'lainnya') {
+        customContainer.style.display = 'block';
+        customInput.required = true;
+    } else {
+        customContainer.style.display = 'none';
+        customInput.required = false;
+        customInput.value = '';
+    }
+}
+
+// Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+    toggleLocationTypeCustom();
     const formatCards = document.querySelectorAll('.planting-format-card');
     const bedDetails = document.getElementById('bedDetails');
     const plantingFormatCustomWrapper = document.getElementById('plantingFormatCustomWrapper');
@@ -572,19 +528,19 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleCustom();
     });
 
-    // Handle contact selection
-    const contactSelect = document.getElementById('contactSelect');
-    const addContactBtn = document.getElementById('addContactBtn');
-    const selectedContacts = document.getElementById('selectedContacts');
+    // Handle land manager user selection
+    const landManagerUserSelect = document.getElementById('landManagerUserSelect');
+    const addLandManagerUserBtn = document.getElementById('addLandManagerUserBtn');
+    const selectedLandManagerUsers = document.getElementById('selectedLandManagerUsers');
 
-    function getSelectedContactIds() {
-        return Array.from(selectedContacts.querySelectorAll('input[type="hidden"]'))
+    function getSelectedLandManagerUserIds() {
+        return Array.from(selectedLandManagerUsers.querySelectorAll('input[type="hidden"]'))
             .map(input => input.value);
     }
 
-    function updateContactDropdown() {
-        const selectedIds = getSelectedContactIds();
-        Array.from(contactSelect.options).forEach(option => {
+    function updateLandManagerUserDropdown() {
+        const selectedIds = getSelectedLandManagerUserIds();
+        Array.from(landManagerUserSelect.options).forEach(option => {
             if (option.value && selectedIds.includes(option.value)) {
                 option.style.display = 'none';
             } else {
@@ -593,91 +549,84 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function addContact() {
-        const selectedOption = contactSelect.options[contactSelect.selectedIndex];
+    function addLandManagerUser() {
+        const selectedOption = landManagerUserSelect.options[landManagerUserSelect.selectedIndex];
         if (!selectedOption || !selectedOption.value) {
-            alert('Silakan pilih kontak terlebih dahulu.');
+            alert('Silakan pilih user terlebih dahulu.');
             return;
         }
 
-        const contactId = selectedOption.value;
-        const contactName = selectedOption.dataset.name;
-        const contactOrg = selectedOption.dataset.org || '';
+        const userId = selectedOption.value;
+        const userName = selectedOption.dataset.name;
+        const userRole = selectedOption.dataset.role || '';
 
-        // Check if already added
-        if (getSelectedContactIds().includes(contactId)) {
-            alert('Kontak ini sudah ditambahkan.');
+        if (getSelectedLandManagerUserIds().includes(userId)) {
+            alert('User ini sudah ditambahkan.');
             return;
         }
 
-        // Create contact item
-        const contactItem = document.createElement('div');
-        contactItem.className = 'selected-contact-item mb-2 p-2 border rounded d-flex justify-content-between align-items-center';
-        contactItem.setAttribute('data-contact-id', contactId);
-        contactItem.innerHTML = `
+        const userItem = document.createElement('div');
+        userItem.className = 'selected-user-item mb-2 p-2 border rounded d-flex justify-content-between align-items-center';
+        userItem.setAttribute('data-user-id', userId);
+        userItem.innerHTML = `
             <span>
-                <strong>${contactName}</strong>
-                ${contactOrg ? `<small class="text-muted"> - ${contactOrg}</small>` : ''}
+                <strong>${userName}</strong>
+                ${userRole ? `<small class="text-muted"> - ${userRole}</small>` : ''}
             </span>
-            <button type="button" class="btn btn-sm btn-outline-danger remove-contact" title="Hapus">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-user" title="Hapus">
                 <i class="fas fa-times"></i>
             </button>
-            <input type="hidden" name="responsible_contact_ids[]" value="${contactId}">
+            <input type="hidden" name="land_manager_user_ids[]" value="${userId}">
         `;
 
-        // Add remove event listener
-        contactItem.querySelector('.remove-contact').addEventListener('click', function() {
-            contactItem.remove();
-            updateContactDropdown();
+        userItem.querySelector('.remove-user').addEventListener('click', function() {
+            userItem.remove();
+            updateLandManagerUserDropdown();
         });
 
-        selectedContacts.appendChild(contactItem);
-        contactSelect.value = '';
-        updateContactDropdown();
+        selectedLandManagerUsers.appendChild(userItem);
+        landManagerUserSelect.value = '';
+        updateLandManagerUserDropdown();
     }
 
-    // Add contact button click
-    if (addContactBtn) {
-        addContactBtn.addEventListener('click', addContact);
+    if (addLandManagerUserBtn) {
+        addLandManagerUserBtn.addEventListener('click', addLandManagerUser);
     }
 
-    // Add contact on Enter key in select
-    if (contactSelect) {
-        contactSelect.addEventListener('keypress', function(e) {
+    if (landManagerUserSelect) {
+        landManagerUserSelect.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                addContact();
+                addLandManagerUser();
             }
         });
     }
 
-    // Remove contact buttons
-    selectedContacts.querySelectorAll('.remove-contact').forEach(btn => {
+    selectedLandManagerUsers.querySelectorAll('.remove-user').forEach(btn => {
         btn.addEventListener('click', function() {
-            const contactItem = this.closest('.selected-contact-item');
-            if (contactItem) {
-                contactItem.remove();
-                updateContactDropdown();
+            const userItem = this.closest('.selected-user-item');
+            if (userItem) {
+                userItem.remove();
+                updateLandManagerUserDropdown();
             }
         });
     });
 
-    // Initialize dropdown state
-    updateContactDropdown();
+    updateLandManagerUserDropdown();
 
-    // Handle land manager contact selection
-    const landManagerContactSelect = document.getElementById('landManagerContactSelect');
-    const addLandManagerContactBtn = document.getElementById('addLandManagerContactBtn');
-    const selectedLandManagerContacts = document.getElementById('selectedLandManagerContacts');
+    // Handle land worker user selection
+    const landWorkerUserSelect = document.getElementById('landWorkerUserSelect');
+    const addLandWorkerUserBtn = document.getElementById('addLandWorkerUserBtn');
+    const selectedLandWorkerUsers = document.getElementById('selectedLandWorkerUsers');
 
-    function getSelectedLandManagerContactIds() {
-        return Array.from(selectedLandManagerContacts.querySelectorAll('input[type="hidden"]'))
+    function getSelectedLandWorkerUserIds() {
+        return Array.from(selectedLandWorkerUsers.querySelectorAll('input[type="hidden"]'))
             .map(input => input.value);
     }
 
-    function updateLandManagerContactDropdown() {
-        const selectedIds = getSelectedLandManagerContactIds();
-        Array.from(landManagerContactSelect.options).forEach(option => {
+    function updateLandWorkerUserDropdown() {
+        const selectedIds = getSelectedLandWorkerUserIds();
+        Array.from(landWorkerUserSelect.options).forEach(option => {
             if (option.value && selectedIds.includes(option.value)) {
                 option.style.display = 'none';
             } else {
@@ -686,156 +635,70 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function addLandManagerContact() {
-        const selectedOption = landManagerContactSelect.options[landManagerContactSelect.selectedIndex];
+    function addLandWorkerUser() {
+        const selectedOption = landWorkerUserSelect.options[landWorkerUserSelect.selectedIndex];
         if (!selectedOption || !selectedOption.value) {
-            alert('Silakan pilih kontak terlebih dahulu.');
+            alert('Silakan pilih user terlebih dahulu.');
             return;
         }
 
-        const contactId = selectedOption.value;
-        const contactName = selectedOption.dataset.name;
-        const contactOrg = selectedOption.dataset.org || '';
+        const userId = selectedOption.value;
+        const userName = selectedOption.dataset.name;
+        const userRole = selectedOption.dataset.role || '';
 
-        if (getSelectedLandManagerContactIds().includes(contactId)) {
-            alert('Kontak ini sudah ditambahkan.');
+        if (getSelectedLandWorkerUserIds().includes(userId)) {
+            alert('User ini sudah ditambahkan.');
             return;
         }
 
-        const contactItem = document.createElement('div');
-        contactItem.className = 'selected-contact-item mb-2 p-2 border rounded d-flex justify-content-between align-items-center';
-        contactItem.setAttribute('data-contact-id', contactId);
-        contactItem.innerHTML = `
+        const userItem = document.createElement('div');
+        userItem.className = 'selected-user-item mb-2 p-2 border rounded d-flex justify-content-between align-items-center';
+        userItem.setAttribute('data-user-id', userId);
+        userItem.innerHTML = `
             <span>
-                <strong>${contactName}</strong>
-                ${contactOrg ? `<small class="text-muted"> - ${contactOrg}</small>` : ''}
+                <strong>${userName}</strong>
+                ${userRole ? `<small class="text-muted"> - ${userRole}</small>` : ''}
             </span>
-            <button type="button" class="btn btn-sm btn-outline-danger remove-contact" title="Hapus">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-user" title="Hapus">
                 <i class="fas fa-times"></i>
             </button>
-            <input type="hidden" name="land_manager_contact_ids[]" value="${contactId}">
+            <input type="hidden" name="land_worker_user_ids[]" value="${userId}">
         `;
 
-        contactItem.querySelector('.remove-contact').addEventListener('click', function() {
-            contactItem.remove();
-            updateLandManagerContactDropdown();
+        userItem.querySelector('.remove-user').addEventListener('click', function() {
+            userItem.remove();
+            updateLandWorkerUserDropdown();
         });
 
-        selectedLandManagerContacts.appendChild(contactItem);
-        landManagerContactSelect.value = '';
-        updateLandManagerContactDropdown();
+        selectedLandWorkerUsers.appendChild(userItem);
+        landWorkerUserSelect.value = '';
+        updateLandWorkerUserDropdown();
     }
 
-    if (addLandManagerContactBtn) {
-        addLandManagerContactBtn.addEventListener('click', addLandManagerContact);
+    if (addLandWorkerUserBtn) {
+        addLandWorkerUserBtn.addEventListener('click', addLandWorkerUser);
     }
 
-    if (landManagerContactSelect) {
-        landManagerContactSelect.addEventListener('keypress', function(e) {
+    if (landWorkerUserSelect) {
+        landWorkerUserSelect.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                addLandManagerContact();
+                addLandWorkerUser();
             }
         });
     }
 
-    selectedLandManagerContacts.querySelectorAll('.remove-contact').forEach(btn => {
+    selectedLandWorkerUsers.querySelectorAll('.remove-user').forEach(btn => {
         btn.addEventListener('click', function() {
-            const contactItem = this.closest('.selected-contact-item');
-            if (contactItem) {
-                contactItem.remove();
-                updateLandManagerContactDropdown();
+            const userItem = this.closest('.selected-user-item');
+            if (userItem) {
+                userItem.remove();
+                updateLandWorkerUserDropdown();
             }
         });
     });
 
-    updateLandManagerContactDropdown();
-
-    // Handle land worker contact selection
-    const landWorkerContactSelect = document.getElementById('landWorkerContactSelect');
-    const addLandWorkerContactBtn = document.getElementById('addLandWorkerContactBtn');
-    const selectedLandWorkerContacts = document.getElementById('selectedLandWorkerContacts');
-
-    function getSelectedLandWorkerContactIds() {
-        return Array.from(selectedLandWorkerContacts.querySelectorAll('input[type="hidden"]'))
-            .map(input => input.value);
-    }
-
-    function updateLandWorkerContactDropdown() {
-        const selectedIds = getSelectedLandWorkerContactIds();
-        Array.from(landWorkerContactSelect.options).forEach(option => {
-            if (option.value && selectedIds.includes(option.value)) {
-                option.style.display = 'none';
-            } else {
-                option.style.display = '';
-            }
-        });
-    }
-
-    function addLandWorkerContact() {
-        const selectedOption = landWorkerContactSelect.options[landWorkerContactSelect.selectedIndex];
-        if (!selectedOption || !selectedOption.value) {
-            alert('Silakan pilih kontak terlebih dahulu.');
-            return;
-        }
-
-        const contactId = selectedOption.value;
-        const contactName = selectedOption.dataset.name;
-        const contactOrg = selectedOption.dataset.org || '';
-
-        if (getSelectedLandWorkerContactIds().includes(contactId)) {
-            alert('Kontak ini sudah ditambahkan.');
-            return;
-        }
-
-        const contactItem = document.createElement('div');
-        contactItem.className = 'selected-contact-item mb-2 p-2 border rounded d-flex justify-content-between align-items-center';
-        contactItem.setAttribute('data-contact-id', contactId);
-        contactItem.innerHTML = `
-            <span>
-                <strong>${contactName}</strong>
-                ${contactOrg ? `<small class="text-muted"> - ${contactOrg}</small>` : ''}
-            </span>
-            <button type="button" class="btn btn-sm btn-outline-danger remove-contact" title="Hapus">
-                <i class="fas fa-times"></i>
-            </button>
-            <input type="hidden" name="land_worker_contact_ids[]" value="${contactId}">
-        `;
-
-        contactItem.querySelector('.remove-contact').addEventListener('click', function() {
-            contactItem.remove();
-            updateLandWorkerContactDropdown();
-        });
-
-        selectedLandWorkerContacts.appendChild(contactItem);
-        landWorkerContactSelect.value = '';
-        updateLandWorkerContactDropdown();
-    }
-
-    if (addLandWorkerContactBtn) {
-        addLandWorkerContactBtn.addEventListener('click', addLandWorkerContact);
-    }
-
-    if (landWorkerContactSelect) {
-        landWorkerContactSelect.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addLandWorkerContact();
-            }
-        });
-    }
-
-    selectedLandWorkerContacts.querySelectorAll('.remove-contact').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const contactItem = this.closest('.selected-contact-item');
-            if (contactItem) {
-                contactItem.remove();
-                updateLandWorkerContactDropdown();
-            }
-        });
-    });
-
-    updateLandWorkerContactDropdown();
+    updateLandWorkerUserDropdown();
 });
 </script>
 @endpush

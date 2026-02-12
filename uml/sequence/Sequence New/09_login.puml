@@ -1,0 +1,59 @@
+@startuml
+' SIBESTI - Sequence Diagram | UC09: Login (Use Case Overview)
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - UC09 Login
+
+actor "User" as User
+boundary "LoginView" as View
+control "AuthController" as Controller
+entity "User" as UserModel
+
+User -> View: akses halaman login()
+View -> Controller: showLoginForm()
+activate Controller
+Controller --> View: return view login
+deactivate Controller
+View --> User: tampilkan form login()
+
+User -> View: masukkan email/username()
+User -> View: masukkan password()
+View -> Controller: login(request)
+activate Controller
+Controller -> Controller: validate(request)
+alt Input tidak valid
+    Controller --> View: return back dengan error[]
+    View --> User: tampilkan form dengan error()
+    deactivate Controller
+else Input valid
+    Controller -> UserModel: where('email', request.email)->first()
+    activate UserModel
+    UserModel -> UserModel: find()
+    UserModel --> Controller: return user atau null
+    deactivate UserModel
+
+    alt User tidak ditemukan
+        Controller --> View: return back dengan error[]
+        View --> User: tampilkan form dengan error()
+        deactivate Controller
+    else User ditemukan
+        Controller -> Controller: Hash::check(request.password, user.password)
+        alt Password salah
+            Controller --> View: return back dengan error[]
+            View --> User: tampilkan form dengan error()
+            deactivate Controller
+        else Password benar
+            Controller -> Controller: Auth::login(user)
+            Controller -> Controller: generateSession()
+            Controller -> Controller: setRolePermissions()
+            Controller --> View: redirect ke dashboard dengan pesan sukses
+            deactivate Controller
+            View --> User: masuk ke dashboard()
+        end
+    end
+end
+
+@enduml

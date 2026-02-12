@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Detail Foto - SIBIT')
+@section('title', 'Detail Foto - SIBESTI')
 
 @section('content')
 <!-- Breadcrumbs -->
@@ -144,6 +144,9 @@ function deletePhoto(photoId) {
 </script>
 @endpush
 @endsection
+
+
+
 
 
 

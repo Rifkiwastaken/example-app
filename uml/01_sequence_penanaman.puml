@@ -1,0 +1,270 @@
+@startuml Sequence Diagram - Modul Penanaman
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Modul Penanaman
+
+actor "Kepala Satgas/Penangkar" as User
+participant "PlantingController" as Controller
+participant "Planting Model" as Planting
+participant "Plant Model" as Plant
+participant "PlantingLocation Model" as Location
+participant "Database" as DB
+
+' ============================================
+' Use Case: Lihat Daftar Penanaman
+' ============================================
+== Lihat Daftar Penanaman ==
+
+User -> Controller: GET /planting-locations/{id}
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Location: find(id)
+activate Location
+Location -> DB: SELECT * FROM planting_locations WHERE id = ?
+DB --> Location: location data
+Location --> Controller: PlantingLocation
+deactivate Location
+
+Controller -> Planting: where('planting_location_id', id)->get()
+activate Planting
+Planting -> DB: SELECT * FROM plantings WHERE planting_location_id = ?
+DB --> Planting: plantings[]
+Planting --> Controller: plantings[]
+deactivate Planting
+
+Controller -> Plant: load plants for plantings
+activate Plant
+Plant -> DB: SELECT * FROM plants WHERE id IN (...)
+DB --> Plant: plants[]
+Plant --> Controller: plants[]
+deactivate Plant
+
+Controller --> User: render daftar penanaman
+deactivate Controller
+
+' ============================================
+' Use Case: Input Data Penanaman
+' ============================================
+== Input Data Penanaman ==
+
+User -> Controller: GET /planting-locations/{id}/plantings/create
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Plant: getAll()
+activate Plant
+Plant -> DB: SELECT * FROM plants
+DB --> Plant: plants[]
+Plant --> Controller: plants[]
+deactivate Plant
+
+Controller -> Location: getAll()
+activate Location
+Location -> DB: SELECT * FROM planting_locations
+DB --> Location: locations[]
+Location --> Controller: locations[]
+deactivate Location
+
+Controller --> User: render form create
+deactivate Controller
+
+User -> Controller: POST /planting-locations/{id}/plantings (data)
+activate Controller
+Controller -> Controller: validate(request)
+Controller -> Plant: find(plant_id)
+activate Plant
+Plant -> DB: SELECT * FROM plants WHERE id = ?
+DB --> Plant: plant data
+Plant --> Controller: Plant (exists)
+deactivate Plant
+
+Controller -> Location: find(planting_location_id)
+activate Location
+Location -> DB: SELECT * FROM planting_locations WHERE id = ?
+DB --> Location: location data
+Location --> Controller: Location (exists)
+deactivate Location
+
+alt Validation Success
+    Controller -> Planting: create(data)
+    activate Planting
+    Planting -> DB: INSERT INTO plantings (plant_id, planting_location_id, ...)
+    DB --> Planting: planting_id
+    Planting --> Controller: Planting
+    deactivate Planting
+    
+    Controller --> User: redirect with success message
+else Validation Failed
+    Controller --> User: redirect back with errors
+endif
+deactivate Controller
+
+' ============================================
+' Use Case: Edit Data Penanaman
+' ============================================
+== Edit Data Penanaman ==
+
+User -> Controller: GET /plantings/{id}/edit
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Planting: find(id)
+activate Planting
+Planting -> DB: SELECT * FROM plantings WHERE id = ?
+DB --> Planting: planting data
+Planting --> Controller: Planting
+deactivate Planting
+
+Controller -> Plant: getAll()
+activate Plant
+Plant -> DB: SELECT * FROM plants
+DB --> Plant: plants[]
+Plant --> Controller: plants[]
+deactivate Plant
+
+Controller --> User: render form edit
+deactivate Controller
+
+User -> Controller: PUT /plantings/{id} (updated data)
+activate Controller
+Controller -> Controller: validate(request)
+Controller -> Planting: find(id)
+activate Planting
+Planting -> DB: SELECT * FROM plantings WHERE id = ?
+DB --> Planting: planting data
+Planting --> Controller: Planting
+deactivate Planting
+
+alt Validation Success
+    Controller -> Planting: update(data)
+    activate Planting
+    Planting -> DB: UPDATE plantings SET ... WHERE id = ?
+    DB --> Planting: updated
+    Planting --> Controller: updated
+    deactivate Planting
+    
+    Controller --> User: redirect with success message
+else Validation Failed
+    Controller --> User: redirect back with errors
+endif
+deactivate Controller
+
+' ============================================
+' Use Case: Hapus Data Penanaman
+' ============================================
+== Hapus Data Penanaman ==
+
+User -> Controller: DELETE /plantings/{id}
+activate Controller
+Controller -> Controller: validateRole() [Admin only]
+Controller -> Planting: find(id)
+activate Planting
+Planting -> DB: SELECT * FROM plantings WHERE id = ?
+DB --> Planting: planting data
+Planting --> Controller: Planting
+deactivate Planting
+
+Controller -> Controller: checkRelations()
+
+alt No Relations
+    Controller -> Planting: delete()
+    activate Planting
+    Planting -> DB: DELETE FROM plantings WHERE id = ?
+    DB --> Planting: deleted
+    Planting --> Controller: deleted
+    deactivate Planting
+    
+    Controller --> User: redirect with success message
+else Has Relations
+    Controller --> User: error: cannot delete
+endif
+deactivate Controller
+
+' ============================================
+' Use Case: Trading Perkembangan Tanaman
+' ============================================
+== Trading Perkembangan Tanaman ==
+
+User -> Controller: GET /planting-locations/{id}/plantings/{planting_id}
+activate Controller
+Controller -> Planting: find(planting_id)
+activate Planting
+Planting -> DB: SELECT * FROM plantings WHERE id = ?
+DB --> Planting: planting data
+Planting --> Controller: Planting
+deactivate Planting
+
+Controller --> User: render halaman tracking
+deactivate Controller
+
+User -> Controller: PUT /planting-locations/{id}/plantings/{planting_id} (update perkembangan)
+activate Controller
+Controller -> Controller: validate(request)
+Controller -> Planting: find(planting_id)
+activate Planting
+Planting -> DB: SELECT * FROM plantings WHERE id = ?
+DB --> Planting: planting data
+Planting --> Controller: Planting
+deactivate Planting
+
+alt Validation Success
+    Controller -> Planting: update(perkembangan data)
+    activate Planting
+    Planting -> DB: UPDATE plantings SET germination_stage=?, avg_height=?, ... WHERE id = ?
+    DB --> Planting: updated
+    Planting --> Controller: updated
+    deactivate Planting
+    
+    Controller --> User: redirect with success message
+else Validation Failed
+    Controller --> User: redirect back with errors
+endif
+deactivate Controller
+
+' ============================================
+' Use Case: Input Data Panen
+' ============================================
+== Input Data Panen ==
+
+User -> Controller: GET /harvests/create?planting_id={id}
+activate Controller
+Controller -> Planting: find(planting_id)
+activate Planting
+Planting -> DB: SELECT * FROM plantings WHERE id = ?
+DB --> Planting: planting data
+Planting --> Controller: Planting
+deactivate Planting
+
+Controller --> User: render form input panen
+deactivate Controller
+
+User -> Controller: POST /harvests (data panen)
+activate Controller
+Controller -> Controller: validate(request)
+Controller -> Planting: find(planting_id)
+activate Planting
+Planting -> DB: SELECT * FROM plantings WHERE id = ?
+DB --> Planting: planting data
+Planting --> Controller: Planting
+deactivate Planting
+
+alt Validation Success
+    Controller -> Controller: createHarvest(data)
+    Controller -> DB: INSERT INTO harvests (planting_id, harvest_date, quantity, ...)
+    DB --> Controller: harvest_id
+    
+    Controller -> Planting: update(['status' => 'dipanen'])
+    activate Planting
+    Planting -> DB: UPDATE plantings SET status='dipanen' WHERE id = ?
+    DB --> Planting: updated
+    Planting --> Controller: updated
+    deactivate Planting
+    
+    Controller --> User: redirect with success message
+else Validation Failed
+    Controller --> User: redirect back with errors
+endif
+deactivate Controller
+
+@enduml

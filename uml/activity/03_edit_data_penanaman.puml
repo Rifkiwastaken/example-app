@@ -1,0 +1,42 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Edit Data Penanaman
+
+|#LightBlue|Admin/Kepala Satgas|
+start
+:Dari daftar penanaman;
+:Klik tombol Edit;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Load data penanaman dari database;
+:Menampilkan form edit dengan data existing;
+
+|#LightBlue|Admin/Kepala Satgas|
+:Edit data penanaman;
+:Submit form;
+
+|#LightGreen|Sistem|
+:Validasi input data;
+:Update data di tabel plantings;
+:Success message;
+:Redirect ke halaman detail;
+
+|#LightBlue|Admin/Kepala Satgas|
+:Lihat pesan penanaman berhasil diupdate;
+
+stop
+
+@enduml

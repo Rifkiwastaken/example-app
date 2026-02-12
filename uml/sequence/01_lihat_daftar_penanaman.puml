@@ -1,0 +1,31 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Lihat Daftar Penanaman
+
+actor "Kepala Satgas/Penangkar" as User
+participant "PlantingController" as Controller
+participant "Planting" as Planting
+participant "Plant" as Plant
+participant "PlantingLocation" as PlantingLocation
+participant "Database" as DB
+
+User -> User: akses halaman kelola penanaman()
+User -> Controller: index()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Planting: Planting::with('plant', 'plantingLocation')->paginate(15)
+activate Planting
+Planting -> DB: SELECT * FROM plantings LEFT JOIN plants LEFT JOIN planting_locations LIMIT 15 OFFSET ?
+DB --> Planting: return plantings dengan data lengkap[]
+Planting --> Controller: return plantings[]
+deactivate Planting
+
+Controller --> User: return view index dengan data dan pagination()
+deactivate Controller
+User -> User: tampilkan daftar penanaman dan statistik()
+
+@enduml

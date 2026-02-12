@@ -1,37 +1,20 @@
 @extends('layouts.app')
 
-@section('title', 'Foto Tanaman - SIBIT')
+@section('title', 'Foto Tanaman - SIBESTI')
 
 @section('content')
-<!-- Breadcrumbs -->
-<nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ route('plants.index') }}">My Crops</a></li>
-        <li class="breadcrumb-item"><a href="{{ route('plants.show', $plant) }}">{{ $plant->name }}</a></li>
-        <li class="breadcrumb-item active">Foto</li>
-    </ol>
-</nav>
-
 <!-- Plant Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div class="d-flex align-items-center">
+        <a href="{{ route('plants.index') }}" class="btn btn-secondary me-3">
+            <i class="fas fa-arrow-left me-2"></i>Kembali
+        </a>
         <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; font-size: 18px; font-weight: bold;">
             {{ substr($plant->name, 0, 2) }}
         </div>
         <div>
             <h4 class="mb-0">{{ $plant->name }}</h4>
             <small class="text-muted">{{ $plant->type?->name ?: 'Tidak ada tipe' }}</small>
-        </div>
-    </div>
-    <div class="btn-group">
-        <a href="{{ route('plants.photos.create', $plant) }}" class="btn btn-success">Upload Foto</a>
-        <div class="dropdown">
-            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                <i class="fas fa-ellipsis-v"></i>
-            </button>
-            <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="{{ route('plants.edit', $plant) }}">Edit Plant</a></li>
-            </ul>
         </div>
     </div>
 </div>
@@ -69,8 +52,11 @@
     <div class="tab-pane fade show active">
         <!-- Photos Grid -->
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Foto Tanaman</h5>
+                <a href="{{ route('plants.photos.create', $plant) }}" class="btn btn-success btn-sm">
+                    <i class="fas fa-upload me-1"></i>Upload Foto
+                </a>
             </div>
             <div class="card-body">
                 @if($photos->count() > 0)
@@ -90,13 +76,15 @@
                                                     <li><a class="dropdown-item" href="{{ Storage::url($photo->file_path) }}" target="_blank">
                                                         <i class="fas fa-eye me-2"></i>Lihat
                                                     </a></li>
-                                                    <li><a class="dropdown-item" href="{{ route('plants.photos.edit', [$plant, $photo]) }}">
-                                                        <i class="fas fa-edit me-2"></i>Edit
-                                                    </a></li>
-                                                    <li><hr class="dropdown-divider"></li>
-                                                    <li><a class="dropdown-item text-danger" href="#" onclick="deletePhoto({{ $photo->id }})">
-                                                        <i class="fas fa-trash me-2"></i>Delete
-                                                    </a></li>
+                                                    @if(auth()->user()->role !== 'penangkar')
+                                                        <li><a class="dropdown-item" href="{{ route('plants.photos.edit', [$plant, $photo]) }}">
+                                                            <i class="fas fa-edit me-2"></i>Edit
+                                                        </a></li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li><a class="dropdown-item text-danger" href="#" onclick="deletePhoto({{ $photo->id }})">
+                                                            <i class="fas fa-trash me-2"></i>Delete
+                                                        </a></li>
+                                                    @endif
                                                 </ul>
                                             </div>
                                         </div>

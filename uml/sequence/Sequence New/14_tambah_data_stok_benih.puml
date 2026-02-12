@@ -1,0 +1,72 @@
+@startuml
+' SIBESTI - Sequence Diagram | UC14: Menambahkan Data Stok Benih (Use Case Overview)
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - UC14 Menambahkan Data Stok Benih
+
+actor "User" as User
+boundary "InventoryTypeView" as View
+control "InventoryTypeController" as Controller
+entity "InventoryTypeSeed" as Seed
+entity "CertificationReport" as Report
+entity "InventoryType" as InventoryType
+
+User -> View: akses halaman detail inventory type()
+View -> Controller: show(inventoryType_id)
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> InventoryType: findOrFail(inventoryType_id)
+activate InventoryType
+InventoryType --> Controller: return inventoryType
+deactivate InventoryType
+Controller --> View: return inventoryType
+deactivate Controller
+View --> User: tampilkan halaman detail()
+
+User -> View: klik tombol tambah data stok()
+
+alt Tambah dari Sertifikasi
+    View -> Controller: getCertificationsByPlantType(plant_type_id)
+    activate Controller
+    Controller -> Report: whereHas('certification.plant', ...)->where('conclusion', 'LULUS')->get()
+    activate Report
+    Report --> Controller: return reports[]
+    deactivate Report
+    Controller --> View: return JSON dengan reports[]
+    deactivate Controller
+
+    User -> View: pilih sertifikasi benih()
+    User -> View: pilih stok benih()
+    View -> Controller: addCertifiedSeed(request)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> Report: find(certification_report_id)
+    activate Report
+    Report --> Controller: return report
+    deactivate Report
+    Controller -> Seed: create(data)
+    activate Seed
+    Seed -> Seed: save()
+    Seed --> Controller: return seed
+    deactivate Seed
+    Controller --> View: redirect dengan pesan sukses
+    View --> User: tampilkan pesan sukses()
+    deactivate Controller
+else Tambah Manual
+    View -> Controller: createSeed(request)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> Seed: create(data)
+    activate Seed
+    Seed -> Seed: save()
+    Seed --> Controller: return seed
+    deactivate Seed
+    Controller --> View: redirect dengan pesan sukses
+    View --> User: tampilkan pesan sukses()
+    deactivate Controller
+end
+
+@enduml

@@ -1,0 +1,510 @@
+{
+    "attachments": [
+        {
+            "constraint": "attachments_created_by_foreign",
+            "column": "created_by",
+            "ref_table": "users",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "attachments_edited_by_foreign",
+            "column": "edited_by",
+            "ref_table": "users",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "attachments_planting_location_id_foreign",
+            "column": "planting_location_id",
+            "ref_table": "planting_locations",
+            "ref_column": "id"
+        }
+    ],
+    "bins": [
+        {
+            "constraint": "bins_warehouse_id_foreign",
+            "column": "warehouse_id",
+            "ref_table": "warehouses",
+            "ref_column": "id"
+        }
+    ],
+    "certification_reports": [
+        {
+            "constraint": "certification_reports_certification_id_foreign",
+            "column": "certification_id",
+            "ref_table": "certifications",
+            "ref_column": "id"
+        }
+    ],
+    "certifications": [
+        {
+            "constraint": "certifications_harvest_id_foreign",
+            "column": "harvest_id",
+            "ref_table": "harvests",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "certifications_plant_id_foreign",
+            "column": "plant_id",
+            "ref_table": "plants",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "certifications_planting_location_id_foreign",
+            "column": "planting_location_id",
+            "ref_table": "planting_locations",
+            "ref_column": "id"
+        }
+    ],
+    "expenses": [
+        {
+            "constraint": "expenses_edited_by_foreign",
+            "column": "edited_by",
+            "ref_table": "users",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "expenses_nutrient_id_foreign",
+            "column": "nutrient_id",
+            "ref_table": "nutrients",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "expenses_planting_id_foreign",
+            "column": "planting_id",
+            "ref_table": "plantings",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "expenses_planting_location_id_foreign",
+            "column": "planting_location_id",
+            "ref_table": "planting_locations",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "expenses_responsible_person_id_foreign",
+            "column": "responsible_person_id",
+            "ref_table": "users",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "expenses_treatment_id_foreign",
+            "column": "treatment_id",
+            "ref_table": "treatments",
+            "ref_column": "id"
+        }
+    ],
+    "harvests": [
+        {
+            "constraint": "harvests_edited_by_foreign",
+            "column": "edited_by",
+            "ref_table": "users",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "harvests_plant_id_foreign",
+            "column": "plant_id",
+            "ref_table": "plants",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "harvests_planting_id_foreign",
+            "column": "planting_id",
+            "ref_table": "plantings",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "harvests_planting_location_id_foreign",
+            "column": "planting_location_id",
+            "ref_table": "planting_locations",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "harvests_recorded_by_foreign",
+            "column": "recorded_by",
+            "ref_table": "users",
+            "ref_column": "id"
+        }
+    ],
+    "inventory_lots": [
+        {
+            "constraint": "inventory_lots_bin_id_foreign",
+            "column": "bin_id",
+            "ref_table": "bins",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "inventory_lots_certification_id_foreign",
+            "column": "certification_id",
+            "ref_table": "certifications",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "inventory_lots_inventory_type_id_foreign",
+            "column": "inventory_type_id",
+            "ref_table": "inventory_types",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "inventory_lots_warehouse_id_foreign",
+            "column": "warehouse_id",
+            "ref_table": "warehouses",
+            "ref_column": "id"
+        }
+    ],
+    "inventory_notes": [
+        {
+            "constraint": "inventory_notes_inventory_type_id_foreign",
+            "column": "inventory_type_id",
+            "ref_table": "inventory_types",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "inventory_notes_user_id_foreign",
+            "column": "user_id",
+            "ref_table": "users",
+            "ref_column": "id"
+        }
+    ],
+    "inventory_photos": [
+        {
+            "constraint": "inventory_photos_inventory_type_id_foreign",
+            "column": "inventory_type_id",
+            "ref_table": "inventory_types",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "inventory_photos_user_id_foreign",
+            "column": "user_id",
+            "ref_table": "users",
+            "ref_column": "id"
+        }
+    ],
+    "inventory_type_certification_reports": [
+        {
+            "constraint": "inv_type_cert_reports_cert_fk",
+            "column": "certification_report_id",
+            "ref_table": "certification_reports",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "inv_type_cert_reports_inv_type_fk",
+            "column": "inventory_type_id",
+            "ref_table": "inventory_types",
+            "ref_column": "id"
+        }
+    ],
+    "inventory_type_seeds": [
+        {
+            "constraint": "inv_type_seeds_cert_report_fk",
+            "column": "certification_report_id",
+            "ref_table": "certification_reports",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "inv_type_seeds_inv_type_fk",
+            "column": "inventory_type_id",
+            "ref_table": "inventory_types",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "inv_type_seeds_location_fk",
+            "column": "planting_location_id",
+            "ref_table": "planting_locations",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "inv_type_seeds_plant_fk",
+            "column": "plant_id",
+            "ref_table": "plants",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "inv_type_seeds_user_fk",
+            "column": "filled_by_user_id",
+            "ref_table": "users",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "inventory_type_seeds_edited_by_foreign",
+            "column": "edited_by",
+            "ref_table": "users",
+            "ref_column": "id"
+        }
+    ],
+    "inventory_types": [
+        {
+            "constraint": "inventory_types_plant_id_foreign",
+            "column": "plant_id",
+            "ref_table": "plants",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "inventory_types_responsible_person_id_foreign",
+            "column": "responsible_person_id",
+            "ref_table": "users",
+            "ref_column": "id"
+        }
+    ],
+    "nutrients": [
+        {
+            "constraint": "nutrients_edited_by_foreign",
+            "column": "edited_by",
+            "ref_table": "users",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "nutrients_planting_id_foreign",
+            "column": "planting_id",
+            "ref_table": "plantings",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "nutrients_planting_location_id_foreign",
+            "column": "planting_location_id",
+            "ref_table": "planting_locations",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "nutrients_responsible_person_id_foreign",
+            "column": "responsible_person_id",
+            "ref_table": "users",
+            "ref_column": "id"
+        }
+    ],
+    "plant_notes": [
+        {
+            "constraint": "plant_notes_plant_id_foreign",
+            "column": "plant_id",
+            "ref_table": "plants",
+            "ref_column": "id"
+        }
+    ],
+    "plant_photos": [
+        {
+            "constraint": "plant_photos_plant_id_foreign",
+            "column": "plant_id",
+            "ref_table": "plants",
+            "ref_column": "id"
+        }
+    ],
+    "planting_location_notes": [
+        {
+            "constraint": "planting_location_notes_planting_location_id_foreign",
+            "column": "planting_location_id",
+            "ref_table": "planting_locations",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "planting_location_notes_user_id_foreign",
+            "column": "user_id",
+            "ref_table": "users",
+            "ref_column": "id"
+        }
+    ],
+    "planting_location_photos": [
+        {
+            "constraint": "planting_location_photos_planting_location_id_foreign",
+            "column": "planting_location_id",
+            "ref_table": "planting_locations",
+            "ref_column": "id"
+        }
+    ],
+    "planting_losses": [
+        {
+            "constraint": "planting_losses_planting_id_foreign",
+            "column": "planting_id",
+            "ref_table": "plantings",
+            "ref_column": "id"
+        }
+    ],
+    "plantings": [
+        {
+            "constraint": "plantings_plant_id_foreign",
+            "column": "plant_id",
+            "ref_table": "plants",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "plantings_planting_location_id_foreign",
+            "column": "planting_location_id",
+            "ref_table": "planting_locations",
+            "ref_column": "id"
+        }
+    ],
+    "plants": [
+        {
+            "constraint": "plants_plant_type_id_foreign",
+            "column": "plant_type_id",
+            "ref_table": "plant_types",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "plants_planting_location_id_foreign",
+            "column": "planting_location_id",
+            "ref_table": "planting_locations",
+            "ref_column": "id"
+        }
+    ],
+    "sale_items": [
+        {
+            "constraint": "sale_items_inventory_lot_id_foreign",
+            "column": "inventory_lot_id",
+            "ref_table": "inventory_lots",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "sale_items_inventory_type_id_foreign",
+            "column": "inventory_type_id",
+            "ref_table": "inventory_types",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "sale_items_sale_id_foreign",
+            "column": "sale_id",
+            "ref_table": "sales",
+            "ref_column": "id"
+        }
+    ],
+    "sales": [
+        {
+            "constraint": "sales_planting_location_id_foreign",
+            "column": "planting_location_id",
+            "ref_table": "planting_locations",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "sales_user_id_foreign",
+            "column": "user_id",
+            "ref_table": "users",
+            "ref_column": "id"
+        }
+    ],
+    "seed_histories": [
+        {
+            "constraint": "seed_histories_inventory_type_seed_id_foreign",
+            "column": "inventory_type_seed_id",
+            "ref_table": "inventory_type_seeds",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "seed_histories_user_id_foreign",
+            "column": "user_id",
+            "ref_table": "users",
+            "ref_column": "id"
+        }
+    ],
+    "task_series": [
+        {
+            "constraint": "task_series_template_id_foreign",
+            "column": "template_id",
+            "ref_table": "task_templates",
+            "ref_column": "id"
+        }
+    ],
+    "tasks": [
+        {
+            "constraint": "tasks_assigned_to_foreign",
+            "column": "assigned_to",
+            "ref_table": "users",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "tasks_created_by_foreign",
+            "column": "created_by",
+            "ref_table": "users",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "tasks_last_edited_by_foreign",
+            "column": "last_edited_by",
+            "ref_table": "users",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "tasks_planting_id_foreign",
+            "column": "planting_id",
+            "ref_table": "plantings",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "tasks_planting_location_id_foreign",
+            "column": "planting_location_id",
+            "ref_table": "planting_locations",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "tasks_series_id_foreign",
+            "column": "series_id",
+            "ref_table": "task_series",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "tasks_template_id_foreign",
+            "column": "template_id",
+            "ref_table": "task_templates",
+            "ref_column": "id"
+        }
+    ],
+    "treatments": [
+        {
+            "constraint": "treatments_edited_by_foreign",
+            "column": "edited_by",
+            "ref_table": "users",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "treatments_planting_id_foreign",
+            "column": "planting_id",
+            "ref_table": "plantings",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "treatments_planting_location_id_foreign",
+            "column": "planting_location_id",
+            "ref_table": "planting_locations",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "treatments_responsible_person_id_foreign",
+            "column": "responsible_person_id",
+            "ref_table": "users",
+            "ref_column": "id"
+        }
+    ],
+    "user_planting_location_land_manager": [
+        {
+            "constraint": "user_planting_location_land_manager_planting_location_id_foreign",
+            "column": "planting_location_id",
+            "ref_table": "planting_locations",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "user_planting_location_land_manager_user_id_foreign",
+            "column": "user_id",
+            "ref_table": "users",
+            "ref_column": "id"
+        }
+    ],
+    "user_planting_location_land_worker": [
+        {
+            "constraint": "user_planting_location_land_worker_planting_location_id_foreign",
+            "column": "planting_location_id",
+            "ref_table": "planting_locations",
+            "ref_column": "id"
+        },
+        {
+            "constraint": "user_planting_location_land_worker_user_id_foreign",
+            "column": "user_id",
+            "ref_table": "users",
+            "ref_column": "id"
+        }
+    ],
+    "warehouses": [
+        {
+            "constraint": "warehouses_responsible_person_id_foreign",
+            "column": "responsible_person_id",
+            "ref_table": "users",
+            "ref_column": "id"
+        }
+    ]
+}

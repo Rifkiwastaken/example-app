@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\Location;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -15,7 +14,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::with('location')->paginate(10);
+        $users = User::paginate(10);
         
         return view('users.index', compact('users'));
     }
@@ -25,7 +24,14 @@ class UserController extends Controller
      */
     public function create()
     {
+        // Only admin can create users
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Hanya admin yang dapat menambahkan akun.');
+        }
+        
         $roles = User::getRoles();
+        // Hapus petugas_sertifikasi dari daftar roles
+        unset($roles['petugas_sertifikasi']);
         $statuses = [
             'active' => 'Aktif',
             'inactive' => 'Tidak Aktif',
@@ -48,6 +54,11 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
+        // Only admin can store users
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Hanya admin yang dapat menambahkan akun.');
+        }
+        
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
@@ -91,11 +102,6 @@ class UserController extends Controller
         // Handle checkbox
         $data['primary_phone_is_whatsapp'] = $request->has('primary_phone_is_whatsapp') ? 1 : 0;
         
-        // Remove location_id if location_placement is provided
-        if ($request->filled('location_placement')) {
-            $data['location_id'] = null;
-        }
-        
         // Remove photo from data array (already handled)
         unset($data['photo']);
 
@@ -110,7 +116,6 @@ class UserController extends Controller
      */
     public function show(User $user)
     {
-        $user->load('location');
         return view('users.show', compact('user'));
     }
 
@@ -119,7 +124,14 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
+        // Only admin can edit users
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Hanya admin yang dapat mengedit akun.');
+        }
+        
         $roles = User::getRoles();
+        // Hapus petugas_sertifikasi dari daftar roles
+        unset($roles['petugas_sertifikasi']);
         $statuses = [
             'active' => 'Aktif',
             'inactive' => 'Tidak Aktif',
@@ -142,9 +154,14 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
+        // Only admin can update users
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Hanya admin yang dapat memperbarui akun.');
+        }
+        
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->user_id . ',user_id',
             'password' => 'nullable|string|min:8|confirmed',
             'role' => 'required|in:' . implode(',', array_keys(User::getRoles())),
             'location_placement' => 'nullable|string|max:255',
@@ -190,13 +207,9 @@ class UserController extends Controller
         // Handle checkbox
         $data['primary_phone_is_whatsapp'] = $request->has('primary_phone_is_whatsapp') ? 1 : 0;
         
-        // Remove location_id if location_placement is provided
-        if ($request->filled('location_placement')) {
-            $data['location_id'] = null;
-        }
-        
         // Remove photo from data array (already handled)
         unset($data['photo']);
+        unset($data['password_confirmation']);
 
         $user->update($data);
 
@@ -209,8 +222,13 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
+        // Only admin can delete users
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Hanya admin yang dapat menghapus akun.');
+        }
+        
         // Prevent admin from deleting themselves
-        if ($user->id === auth()->id()) {
+        if ($user->user_id === auth()->user()->user_id) {
             return redirect()->route('users.index')
                 ->with('error', 'Anda tidak dapat menghapus akun sendiri.');
         }

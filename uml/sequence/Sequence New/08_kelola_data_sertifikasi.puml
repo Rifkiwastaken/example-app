@@ -1,0 +1,70 @@
+@startuml
+' SIBESTI - Sequence Diagram | UC08: Mengelola Data Sertifikasi (Use Case Overview)
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - UC08 Mengelola Data Sertifikasi
+
+actor "User" as User
+boundary "CertificationView" as View
+control "CertificationController" as Controller
+entity "Certification" as Certification
+entity "CertificationReport" as Report
+entity "Harvest" as Harvest
+
+User -> View: akses halaman kelola sertifikasi()
+View -> Controller: index()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Certification: with('plant', 'harvest', 'reports')->get()
+activate Certification
+Certification -> Certification: load('plant', 'harvest', 'reports')
+Certification --> Controller: return certifications[]
+deactivate Certification
+Controller --> View: return certifications[]
+deactivate Controller
+View --> User: tampilkan daftar sertifikasi()
+
+alt Buat Laporan
+    User -> View: klik tombol buat laporan()
+    View -> Controller: createReport(certification_id)
+    activate Controller
+    Controller -> Certification: findOrFail(certification_id)
+    activate Certification
+    Certification --> Controller: return certification
+    deactivate Certification
+    Controller --> View: return certification
+    deactivate Controller
+    View --> User: tampilkan form buat laporan()
+    
+    User -> View: isi form laporan()
+    User -> View: upload dokumen scan()
+    View -> Controller: storeReport(request)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> Controller: uploadFile(dokumen)
+    Controller -> Report: create(data)
+    activate Report
+    Report -> Report: save()
+    Report --> Controller: return report
+    deactivate Report
+    Controller --> View: redirect dengan pesan sukses
+    View --> User: tampilkan pesan sukses()
+    deactivate Controller
+else Evaluasi
+    User -> View: klik tombol evaluasi()
+    View -> Controller: evaluate(report_id, request)
+    activate Controller
+    Controller -> Report: findOrFail(report_id)
+    activate Report
+    Report -> Report: update(['conclusion' => request.conclusion])
+    Report --> Controller: return report
+    deactivate Report
+    Controller --> View: redirect dengan pesan sukses
+    View --> User: tampilkan pesan sukses()
+    deactivate Controller
+end
+
+@enduml

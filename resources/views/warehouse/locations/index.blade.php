@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Manajemen Lokasi Gudang - SIBIT')
+@section('title', 'Manajemen Lokasi Gudang - SIBESTI')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -56,20 +56,17 @@
                         </td>
                         <td>
                             <div class="btn-group" role="group">
-                                <a href="{{ route('warehouse-locations.show', ['warehouse_location' => $warehouse->id]) }}" class="btn btn-sm btn-outline-info" title="Detail">
+                                <a href="{{ route('warehouse-locations.show', $warehouse) }}" class="btn btn-sm btn-outline-info" title="Detail">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                <a href="{{ route('warehouse-locations.edit', ['warehouse_location' => $warehouse->id]) }}" class="btn btn-sm btn-outline-warning" title="Edit">
+                                <a href="{{ route('warehouse-locations.edit', $warehouse) }}" class="btn btn-sm btn-outline-warning" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <form action="{{ route('warehouse-locations.destroy', ['warehouse_location' => $warehouse->id]) }}" method="POST" class="d-inline" 
-                                      onsubmit="return confirm('Apakah Anda yakin ingin menghapus gudang ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        title="Hapus"
+                                        onclick="confirmDelete('{{ route('warehouse-locations.destroy', $warehouse) }}', '{{ addslashes($warehouse->name) }}', 'gudang')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>

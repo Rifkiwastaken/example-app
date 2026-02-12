@@ -13,14 +13,14 @@ return new class extends Migration
     {
         if (!Schema::hasTable('planting_location_notes')) {
             Schema::create('planting_location_notes', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('planting_location_id')->constrained('planting_locations')->onDelete('cascade');
+                $table->string('planting_location_note_id', 36)->primary();
+                $table->string('planting_location_id', 36)->onDelete('cascade');
                 $table->string('title')->nullable();
                 $table->text('description');
                 $table->date('note_date');
                 $table->string('keywords')->nullable();
                 $table->string('attachment_path')->nullable();
-                $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
+                $table->string('user_id', 36)->nullable()->onDelete('set null');
                 $table->timestamps();
             });
         }

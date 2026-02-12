@@ -1,0 +1,28 @@
+@startuml Sequence Diagram - Lihat Daftar Sertifikasi
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Lihat Daftar Sertifikasi
+
+actor "Petugas Sertifikasi/Admin" as User
+participant "CertificationController" as Controller
+participant "Certification Model" as Certification
+participant "Database" as DB
+
+User -> Controller: GET /certifications
+activate Controller
+Controller -> Controller: validateRole
+Controller -> Certification: getAll
+activate Certification
+Certification -> DB: SELECT * FROM certifications LEFT JOIN harvests
+DB --> Certification: certifications[]
+Certification --> Controller: certifications[]
+deactivate Certification
+
+Controller --> User: render daftar sertifikasi
+deactivate Controller
+
+@enduml
+

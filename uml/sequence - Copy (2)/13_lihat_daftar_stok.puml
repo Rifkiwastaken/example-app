@@ -1,0 +1,36 @@
+@startuml Sequence Diagram - Lihat Daftar Stok
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Lihat Daftar Stok
+
+actor "Petugas Gudang/Admin" as User
+participant "InventoryTypeController" as Controller
+participant "InventoryType Model" as InvType
+participant "InventoryTypeSeed Model" as Seed
+participant "Database" as DB
+
+User -> Controller: GET /seed-stock
+activate Controller
+Controller -> Controller: validateRole
+Controller -> InvType: getAll
+activate InvType
+InvType -> DB: SELECT * FROM inventory_types LEFT JOIN inventory_type_seeds
+DB --> InvType: inventory_types[]
+InvType --> Controller: inventory_types[]
+deactivate InvType
+
+Controller -> Seed: calculateTotalStock
+activate Seed
+Seed -> DB: SELECT SUM(total_seed_quantity) FROM inventory_type_seeds WHERE inventory_type_id = ?
+DB --> Seed: total_stock
+Seed --> Controller: total_stock
+deactivate Seed
+
+Controller --> User: render daftar stok
+deactivate Controller
+
+@enduml
+

@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('treatments', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('planting_location_id')->constrained()->onDelete('cascade');
+            $table->string('treatment_id', 36)->primary();
+            $table->string('planting_location_id', 36)->onDelete('cascade');
             $table->string('treatment_type'); // Blight, Pupuk, Jamur, etc.
             $table->string('product_detail')->nullable();
             $table->string('opt_institution')->nullable();
@@ -40,6 +40,9 @@ return new class extends Migration
         Schema::dropIfExists('treatments');
     }
 };
+
+
+
 
 
 

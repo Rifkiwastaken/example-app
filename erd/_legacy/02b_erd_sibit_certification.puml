@@ -1,0 +1,133 @@
+@startuml ERD - SIBESTI (Certification Module)
+!theme plain
+left to right direction
+scale 0.9
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam roundcorner 8
+skinparam shadowing false
+
+title SIBESTI Certification Module ERD
+' Sistem Informasi Benih Bersertifikat
+' Semua ID menggunakan VARCHAR(36) dengan format {nama_tabel}_id
+' Tabel locations telah dihapus
+' Tanggal Update: Februari 2026
+
+entity "harvests" as harvests {
+    * **harvest_id** : VARCHAR(36) <<PK>>
+    --
+    plant_id : VARCHAR(36) <<FK>>
+    planting_id : VARCHAR(36) <<FK>>
+    planting_location_id : VARCHAR(36) <<FK>>
+    harvested_at : DATE
+    batch_no : VARCHAR(255)
+    note : TEXT
+    source : VARCHAR(255)
+    quality : VARCHAR(255)
+    quantity : DECIMAL(12,2)
+    unit : VARCHAR(50)
+    loss_quantity : DECIMAL(12,2)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "certifications" as certifications {
+    * **certification_id** : VARCHAR(36) <<PK>>
+    --
+    harvest_id : VARCHAR(36) <<FK>>
+    planting_location_id : VARCHAR(36) <<FK>>
+    plant_id : VARCHAR(36) <<FK>>
+    certification_status : VARCHAR(255)
+    seed_class_requested : VARCHAR(255)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "certification_reports" as certification_reports {
+    * **certification_report_id** : VARCHAR(36) <<PK>>
+    --
+    certification_id : VARCHAR(36) <<FK>>
+    report_number_bpsb : VARCHAR(255) <<UNIQUE>>
+    report_date : DATE
+    growing_season : VARCHAR(255)
+    inspection_phase : VARCHAR(255)
+    inspector_name : VARCHAR(255)
+    reporter_name : VARCHAR(255)
+    seed_class_result : VARCHAR(255)
+    isolation_north : VARCHAR(255)
+    isolation_east : VARCHAR(255)
+    isolation_south : VARCHAR(255)
+    isolation_west : VARCHAR(255)
+    plant_characteristics_match : BOOLEAN
+    pest_disease_condition : TEXT
+    weed_condition : ENUM('Bersih','Cukup Bersih','Kotor')
+    population_per_sample : INT
+    other_variety_mix_count : INT
+    other_variety_mix_percentage : DECIMAL(5,2)
+    estimated_yield : DECIMAL(12,2)
+    conclusion : ENUM('LULUS','TIDAK LULUS')
+    scan_file_path : VARCHAR(255)
+    expiry_date : DATE
+    certified_seed_quantity : DECIMAL(12,2)
+    certified_seed_unit : VARCHAR(50)
+    seed_unit : VARCHAR(50)
+    seed_unit_quantity : DECIMAL(12,2)
+    harvest_per_unit : DECIMAL(12,2)
+    harvest_per_unit_unit : VARCHAR(50)
+    estimated_sale_price_per_kg : DECIMAL(15,2)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "plants" as plants {
+    * **plant_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    plant_type_id : VARCHAR(36) <<FK>>
+    variety : VARCHAR(255)
+    status : ENUM
+    progress : TINYINT
+    planting_location_id : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "planting_locations" as planting_locations {
+    * **planting_location_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    location_type : ENUM
+    planting_format : ENUM
+    description : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "inventory_type_certification_reports" as inv_type_cert_reports {
+    * **inventory_type_certification_report_id** : VARCHAR(36) <<PK>>
+    --
+    inventory_type_id : VARCHAR(36) <<FK>>
+    certification_report_id : VARCHAR(36) <<FK>>
+    quantity : DECIMAL(12,2)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+' Relationships
+harvests ||--o{ certifications : "harvest_id"
+plants ||--o{ harvests : "plant_id"
+plants ||--o{ certifications : "plant_id"
+planting_locations ||--o{ harvests : "planting_location_id"
+planting_locations ||--o{ certifications : "planting_location_id"
+certifications ||--o{ certification_reports : "certification_id"
+certification_reports ||--o{ inv_type_cert_reports : "certification_report_id"
+
+note as Ncert
+SIBESTI Certification Module
+Mengelola proses sertifikasi benih dari hasil panen.
+Semua Primary Key menggunakan format VARCHAR(36).
+weed_condition: Bersih, Cukup Bersih, Kotor
+conclusion: LULUS, TIDAK LULUS
+end note
+
+@enduml

@@ -1,0 +1,68 @@
+@startuml Sequence Diagram - Input Data Panen
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Input Data Panen
+
+actor "Kepala Satgas/Penangkar" as User
+participant "HarvestController" as Controller
+participant "Planting Model" as Planting
+participant "Harvest Model" as Harvest
+participant "Plant Model" as Plant
+participant "Database" as DB
+
+User -> Controller: GET /harvests/create?planting_id={id}
+activate Controller
+Controller -> Controller: validateRole
+Controller -> Planting: findById
+activate Planting
+Planting -> DB: SELECT * FROM plantings LEFT JOIN plants WHERE plantings.id = ?
+DB --> Planting: planting data
+Planting --> Controller: Planting
+deactivate Planting
+
+Controller --> User: render form input panen
+deactivate Controller
+
+User -> Controller: POST /harvests data panen
+activate Controller
+Controller -> Controller: validate
+Controller -> Planting: findById
+activate Planting
+Planting -> DB: SELECT * FROM plantings WHERE id = ?
+DB --> Planting: planting data
+Planting --> Controller: Planting
+deactivate Planting
+
+Controller -> Plant: findById
+activate Plant
+Plant -> DB: SELECT * FROM plants WHERE id = ?
+DB --> Plant: plant data
+Plant --> Controller: Plant
+deactivate Plant
+
+alt Validation Success
+    Controller -> Harvest: create
+    activate Harvest
+    Harvest -> DB: INSERT INTO harvests plant_id planting_id quantity
+    DB --> Harvest: harvest_id
+    Harvest --> Controller: Harvest
+    deactivate Harvest
+    
+    Controller -> Planting: update is_completed true
+    activate Planting
+    Planting -> DB: UPDATE plantings SET is_completed = true WHERE id = ?
+    DB --> Planting: updated
+    Planting --> Controller: updated
+    deactivate Planting
+    
+    Controller --> User: redirect with success message
+else Validation Failed
+    Controller --> User: redirect errors
+endif
+deactivate Controller
+
+@enduml
+

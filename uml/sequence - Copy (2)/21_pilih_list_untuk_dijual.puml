@@ -1,0 +1,70 @@
+@startuml Sequence Diagram - Pilih List untuk dijual
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Pilih List untuk dijual
+
+actor "Petugas BBI/Petugas Gudang" as User
+participant "SaleController" as Controller
+participant "InventoryType Model" as InvType
+participant "InventoryLot Model" as Lot
+participant "Warehouse Model" as Warehouse
+participant "Bin Model" as Bin
+participant "Database" as DB
+
+User -> Controller: GET /sales/get-available-stock
+activate Controller
+Controller -> Controller: validateRole
+Controller -> InvType: getAvailable
+activate InvType
+InvType -> DB: SELECT * FROM inventory_types WHERE status = available
+DB --> InvType: inventory_types[]
+InvType --> Controller: inventory_types[]
+deactivate InvType
+
+Controller -> Lot: getStockSummary
+activate Lot
+Lot -> DB: SELECT inventory_type_id, SUM(quantity) as total FROM inventory_lots WHERE status = available GROUP BY inventory_type_id
+DB --> Lot: stock_summary[]
+Lot --> Controller: stock_summary[]
+deactivate Lot
+
+Controller -> Warehouse: getAll
+activate Warehouse
+Warehouse -> DB: SELECT * FROM warehouses
+DB --> Warehouse: warehouses[]
+Warehouse --> Controller: warehouses[]
+deactivate Warehouse
+
+Controller --> User: JSON response stok tersedia
+deactivate Controller
+
+User -> Controller: POST /sales/validate-stock item data
+activate Controller
+Controller -> Controller: validate
+Controller -> InvType: findById
+activate InvType
+InvType -> DB: SELECT * FROM inventory_types WHERE id = ?
+DB --> InvType: inventory_type data
+InvType --> Controller: InvType
+deactivate InvType
+
+Controller -> Lot: getAvailableQuantity
+activate Lot
+Lot -> DB: SELECT SUM(quantity) FROM inventory_lots WHERE inventory_type_id = ?
+DB --> Lot: available_quantity
+Lot --> Controller: available_quantity
+deactivate Lot
+
+' alt Stock Available
+'     Controller -> Controller: calculateTotalPrice
+'     Controller --> User: JSON response valid
+' else Stock Insufficient
+'     Controller --> User: JSON response error stok tidak cukup
+' endif
+deactivate Controller
+
+@enduml
+

@@ -1,0 +1,68 @@
+@startuml Sequence Diagram - Edit Data Penanaman
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Edit Data Penanaman
+
+actor "Admin/Kepala Satgas" as User
+participant "PlantingController" as Controller
+participant "Planting Model" as Planting
+participant "Plant Model" as Plant
+participant "PlantingLocation Model" as PlantingLocation
+participant "Database" as DB
+
+User -> Controller: GET /plantings/{id}/edit
+activate Controller
+Controller -> Controller: validateRole
+Controller -> Planting: findById
+activate Planting
+Planting -> DB: SELECT * FROM plantings WHERE id = ?
+DB --> Planting: planting data
+Planting --> Controller: Planting
+deactivate Planting
+
+Controller -> Plant: getAll
+activate Plant
+Plant -> DB: SELECT * FROM plants ORDER BY name
+DB --> Plant: plants[]
+Plant --> Controller: plants[]
+deactivate Plant
+
+Controller -> PlantingLocation: getAll
+activate PlantingLocation
+PlantingLocation -> DB: SELECT * FROM planting_locations ORDER BY name
+DB --> PlantingLocation: locations[]
+PlantingLocation --> Controller: locations[]
+deactivate PlantingLocation
+
+Controller --> User: render form edit
+deactivate Controller
+
+User -> Controller: PUT /plantings/{id}
+activate Controller
+Controller -> Controller: validate
+Controller -> Planting: findById
+activate Planting
+Planting -> DB: SELECT * FROM plantings WHERE id = ?
+DB --> Planting: planting data
+Planting --> Controller: Planting
+deactivate Planting
+
+alt Validation Success
+    Controller -> Planting: update
+    activate Planting
+    Planting -> DB: UPDATE plantings SET plant_id = ? WHERE id = ?
+    DB --> Planting: updated
+    Planting --> Controller: updated
+    deactivate Planting
+    
+    Controller --> User: redirect success
+else Validation Failed
+    Controller --> User: redirect errors
+endif
+deactivate Controller
+
+@enduml
+

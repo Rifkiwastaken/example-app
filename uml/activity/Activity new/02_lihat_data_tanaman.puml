@@ -1,0 +1,56 @@
+@startuml
+' Referensi: Use Case Overview (00_use_case_overview.puml)
+' Use case 02: Melihat data tanaman (include dari Mengelola data tanaman)
+' Aktor: Penangkar/Kepala Satgas
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Melihat data tanaman
+
+|#LightBlue|User|
+start
+:Masuk ke halaman data tanaman;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data tanaman dari database;
+:Load data tipe tanaman terkait;
+:Menampilkan daftar tanaman;
+
+|#LightBlue|User|
+:Lihat daftar tanaman;
+
+if (Filter atau cari?) then (Ya)
+    |#LightBlue|User|
+    :Masukkan filter atau kata kunci;
+    :Submit filter;
+    |#LightGreen|Sistem|
+    :Query data dengan filter;
+    :Tampilkan hasil filter;
+else (Tidak)
+endif
+
+if (Lihat detail?) then (Ya)
+    |#LightBlue|User|
+    :Klik tombol lihat detail;
+    |#LightGreen|Sistem|
+    :Load detail data tanaman;
+    :Tampilkan detail tanaman;
+    |#LightBlue|User|
+    :Lihat detail tanaman;
+else (Tidak)
+endif
+
+stop
+
+@enduml

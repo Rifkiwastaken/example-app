@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" id="Defs_Stok_Clean" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_Stok" name="Manajemen Stok & Gudang" isExecutable="true">
+    <bpmn:startEvent id="Start_Stok" name="Mulai" />
+    <bpmn:userTask id="User_PilihAksi" name="Pilih Aksi (Tambah / Adjustment / Pindah)" />
+    <bpmn:exclusiveGateway id="Gw_PilihAksi" name="Aksi?" />
+
+    <bpmn:userTask id="User_TambahStok" name="Tambah Stok" />
+    <bpmn:serviceTask id="Srv_ValidasiStok" name="Validasi Stok" />
+    <bpmn:serviceTask id="Srv_SimpanStok" name="Simpan Inventory Type / Lot" />
+
+    <bpmn:userTask id="User_Adjustment" name="Adjustment Stok" />
+    <bpmn:serviceTask id="Srv_ValidasiAdj" name="Validasi Ketersediaan" />
+    <bpmn:serviceTask id="Srv_SimpanAdj" name="Catat Transaksi Adjustment" />
+
+    <bpmn:userTask id="User_Pindah" name="Pindah Lokasi" />
+    <bpmn:serviceTask id="Srv_ValidasiPindah" name="Validasi Stok" />
+    <bpmn:serviceTask id="Srv_SimpanPindah" name="Catat Transaksi Pindah" />
+
+    <bpmn:endEvent id="End_Stok" name="Selesai" />
+
+    <!-- Flows -->
+    <bpmn:sequenceFlow id="StFlow_1" sourceRef="Start_Stok" targetRef="User_PilihAksi" />
+    <bpmn:sequenceFlow id="StFlow_2" sourceRef="User_PilihAksi" targetRef="Gw_PilihAksi" />
+
+    <bpmn:sequenceFlow id="StFlow_3" sourceRef="Gw_PilihAksi" targetRef="User_TambahStok">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[tambah]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="StFlow_4" sourceRef="Gw_PilihAksi" targetRef="User_Adjustment">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[adjustment]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="StFlow_5" sourceRef="Gw_PilihAksi" targetRef="User_Pindah">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[pindah]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="StFlow_6" sourceRef="User_TambahStok" targetRef="Srv_ValidasiStok" />
+    <bpmn:sequenceFlow id="StFlow_7" sourceRef="Srv_ValidasiStok" targetRef="Srv_SimpanStok" />
+    <bpmn:sequenceFlow id="StFlow_8" sourceRef="Srv_SimpanStok" targetRef="End_Stok" />
+
+    <bpmn:sequenceFlow id="StFlow_9" sourceRef="User_Adjustment" targetRef="Srv_ValidasiAdj" />
+    <bpmn:sequenceFlow id="StFlow_10" sourceRef="Srv_ValidasiAdj" targetRef="Srv_SimpanAdj" />
+    <bpmn:sequenceFlow id="StFlow_11" sourceRef="Srv_SimpanAdj" targetRef="End_Stok" />
+
+    <bpmn:sequenceFlow id="StFlow_12" sourceRef="User_Pindah" targetRef="Srv_ValidasiPindah" />
+    <bpmn:sequenceFlow id="StFlow_13" sourceRef="Srv_ValidasiPindah" targetRef="Srv_SimpanPindah" />
+    <bpmn:sequenceFlow id="StFlow_14" sourceRef="Srv_SimpanPindah" targetRef="End_Stok" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diag_Stok_Clean">
+    <bpmndi:BPMNPlane id="Plane_Stok_Clean" bpmnElement="Process_Stok">
+      <bpmndi:BPMNShape id="DI_Start_Stok" bpmnElement="Start_Stok">
+        <omgdc:Bounds x="120" y="160" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_User_PilihAksi" bpmnElement="User_PilihAksi">
+        <omgdc:Bounds x="190" y="140" width="160" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Gw_PilihAksi" bpmnElement="Gw_PilihAksi" isMarkerVisible="true">
+        <omgdc:Bounds x="380" y="155" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="DI_User_TambahStok" bpmnElement="User_TambahStok">
+        <omgdc:Bounds x="500" y="60" width="150" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Srv_ValidasiStok" bpmnElement="Srv_ValidasiStok">
+        <omgdc:Bounds x="690" y="60" width="150" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Srv_SimpanStok" bpmnElement="Srv_SimpanStok">
+        <omgdc:Bounds x="880" y="60" width="170" height="70" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="DI_User_Adjustment" bpmnElement="User_Adjustment">
+        <omgdc:Bounds x="500" y="150" width="150" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Srv_ValidasiAdj" bpmnElement="Srv_ValidasiAdj">
+        <omgdc:Bounds x="690" y="150" width="150" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Srv_SimpanAdj" bpmnElement="Srv_SimpanAdj">
+        <omgdc:Bounds x="880" y="150" width="170" height="70" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="DI_User_Pindah" bpmnElement="User_Pindah">
+        <omgdc:Bounds x="500" y="240" width="150" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Srv_ValidasiPindah" bpmnElement="Srv_ValidasiPindah">
+        <omgdc:Bounds x="690" y="240" width="150" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DI_Srv_SimpanPindah" bpmnElement="Srv_SimpanPindah">
+        <omgdc:Bounds x="880" y="240" width="170" height="70" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="DI_End_Stok" bpmnElement="End_Stok">
+        <omgdc:Bounds x="1100" y="170" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="DI_StFlow_1" bpmnElement="StFlow_1">
+        <omgdi:waypoint x="156" y="178" />
+        <omgdi:waypoint x="190" y="178" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_StFlow_2" bpmnElement="StFlow_2">
+        <omgdi:waypoint x="350" y="178" />
+        <omgdi:waypoint x="380" y="178" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="DI_StFlow_3" bpmnElement="StFlow_3">
+        <omgdi:waypoint x="430" y="178" />
+        <omgdi:waypoint x="430" y="95" />
+        <omgdi:waypoint x="500" y="95" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_StFlow_4" bpmnElement="StFlow_4">
+        <omgdi:waypoint x="430" y="178" />
+        <omgdi:waypoint x="500" y="185" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_StFlow_5" bpmnElement="StFlow_5">
+        <omgdi:waypoint x="430" y="178" />
+        <omgdi:waypoint x="430" y="275" />
+        <omgdi:waypoint x="500" y="275" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="DI_StFlow_6" bpmnElement="StFlow_6">
+        <omgdi:waypoint x="650" y="95" />
+        <omgdi:waypoint x="690" y="95" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_StFlow_7" bpmnElement="StFlow_7">
+        <omgdi:waypoint x="840" y="95" />
+        <omgdi:waypoint x="880" y="95" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_StFlow_8" bpmnElement="StFlow_8">
+        <omgdi:waypoint x="1050" y="95" />
+        <omgdi:waypoint x="1100" y="188" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="DI_StFlow_9" bpmnElement="StFlow_9">
+        <omgdi:waypoint x="650" y="185" />
+        <omgdi:waypoint x="690" y="185" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_StFlow_10" bpmnElement="StFlow_10">
+        <omgdi:waypoint x="840" y="185" />
+        <omgdi:waypoint x="880" y="185" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_StFlow_11" bpmnElement="StFlow_11">
+        <omgdi:waypoint x="1050" y="185" />
+        <omgdi:waypoint x="1100" y="188" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="DI_StFlow_12" bpmnElement="StFlow_12">
+        <omgdi:waypoint x="650" y="275" />
+        <omgdi:waypoint x="690" y="275" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_StFlow_13" bpmnElement="StFlow_13">
+        <omgdi:waypoint x="840" y="275" />
+        <omgdi:waypoint x="880" y="275" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DI_StFlow_14" bpmnElement="StFlow_14">
+        <omgdi:waypoint x="1050" y="275" />
+        <omgdi:waypoint x="1100" y="188" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

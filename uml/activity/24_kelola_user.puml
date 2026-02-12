@@ -1,0 +1,94 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Kelola User
+
+|#LightBlue|Admin|
+start
+:Masuk ke halaman kelola user;
+
+|#LightGreen|Sistem|
+:Validasi role admin;
+:Query data user dari database;
+:Load data lokasi dan relasi;
+:Menampilkan daftar user;
+
+|#LightBlue|Admin|
+:Lihat daftar user;
+
+if (Aksi?) then (Tambah User)
+    :Masuk ke form tambah user;
+    :Input data user\n(nama, email, password);
+    :Pilih role;
+    :Input data tambahan\n(lokasi, kontak);
+    :Submit form;
+    
+    |#LightGreen|Sistem|
+    :Validasi data user;
+    :Check email unik;
+    :Hash password;
+    :Insert ke tabel users;
+    :Success message;
+    :Redirect ke daftar user;
+    |#LightBlue|Admin|
+    :Lihat pesan user berhasil ditambahkan;
+else (Edit User)
+    :Pilih user dari daftar;
+    :Masuk ke form edit user;
+    :Edit data user;
+    :Edit password (jika perlu);
+    :Submit form;
+    
+    |#LightGreen|Sistem|
+    :Validasi data user;
+    :Check email unik (jika diubah);
+    :Hash password baru (jika diubah);
+    :Update data di tabel users;
+    :Success message;
+    :Redirect ke daftar user;
+    |#LightBlue|Admin|
+    :Lihat pesan user berhasil diupdate;
+else (Hapus User)
+    :Pilih user dari daftar;
+    :Klik hapus user;
+    :Konfirmasi penghapusan;
+    
+    |#LightGreen|Sistem|
+    :Check relasi user dengan data lain;
+    if (Dapat dihapus?) then (Ya)
+        :Delete dari tabel users;
+        :Success message;
+        :Redirect ke daftar user;
+        |#LightBlue|Admin|
+        :Lihat pesan user berhasil dihapus;
+    else (Tidak)
+        :Error: user memiliki relasi data;
+        :Tampilkan pesan error;
+        |#LightBlue|Admin|
+        :Lihat pesan user memiliki relasi data;
+    endif
+else (Lihat Detail User)
+    :Pilih user dari daftar;
+    
+    |#LightGreen|Sistem|
+    :Load data user lengkap;
+    :Load data relasi (lokasi, penanaman, dll);
+    :Menampilkan detail user;
+    |#LightBlue|Admin|
+    :Lihat detail user lengkap;
+endif
+
+stop
+
+@enduml

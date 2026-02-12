@@ -1,0 +1,81 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Buat Laporan Pemeriksaan
+
+actor "Petugas Sertifikasi" as User
+participant "CertificationController" as Controller
+participant "Certification" as Certification
+participant "CertificationReport" as Report
+participant "Harvest" as Harvest
+participant "Plant" as Plant
+participant "Database" as DB
+
+User -> User: akses halaman buat laporan()
+User -> User: pilih hasil panen()
+User -> Controller: create()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Harvest: Harvest::with('plant', 'planting')->get()
+activate Harvest
+Harvest -> DB: SELECT * FROM harvests LEFT JOIN plants LEFT JOIN plantings
+DB --> Harvest: return harvests[]
+Harvest --> Controller: return harvests[]
+deactivate Harvest
+
+Controller -> Plant: Plant::get()
+activate Plant
+Plant -> DB: SELECT * FROM plants
+DB --> Plant: return plants[]
+Plant --> Controller: return plants[]
+deactivate Plant
+
+Controller --> User: return view create dengan data()
+deactivate Controller
+User -> User: tampilkan form buat laporan()
+
+User -> User: isi data laporan()
+User -> Controller: store(Request)
+activate Controller
+Controller -> Controller: validate(Request)
+Controller -> Harvest: Harvest::findOrFail(harvest_id)
+activate Harvest
+Harvest -> DB: SELECT * FROM harvests WHERE id = ?
+DB --> Harvest: return harvest data
+Harvest --> Controller: return Harvest
+deactivate Harvest
+
+Controller -> Plant: Plant::findOrFail(plant_id)
+activate Plant
+Plant -> DB: SELECT * FROM plants WHERE id = ?
+DB --> Plant: return plant data
+Plant --> Controller: return Plant
+deactivate Plant
+
+alt Data Valid
+    Controller -> Certification: Certification::create(data)
+    activate Certification
+    Certification -> DB: INSERT INTO certifications VALUES
+    DB --> Certification: return certification_id
+    Certification --> Controller: return Certification
+    deactivate Certification
+    
+    Controller -> Report: CertificationReport::create(data)
+    activate Report
+    Report -> DB: INSERT INTO certification_reports VALUES
+    DB --> Report: return report_id
+    Report --> Controller: return Report
+    deactivate Report
+    
+    Controller --> User: redirect back dengan success message()
+    User -> User: tampilkan pesan laporan berhasil dibuat()
+else Data Tidak Valid
+    Controller --> User: redirect back dengan validation errors()
+    User -> User: tampilkan form dengan pesan error()
+end
+deactivate Controller
+
+@enduml

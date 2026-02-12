@@ -1,0 +1,129 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Monitoring Perkembangan Tanaman
+
+actor "User" as User
+participant "PlantingLocationController" as Controller
+participant "Planting" as Planting
+participant "Treatment" as Treatment
+participant "Nutrient" as Nutrient
+participant "PlantingLocationNote" as Note
+participant "Expense" as Expense
+participant "Database" as DB
+
+User -> User: akses halaman monitoring perkembangan()
+User -> User: pilih penanaman yang akan dimonitor()
+User -> Controller: showPlantingReports(planting_location_id, planting_id)
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Planting: Planting::with('plant')->findOrFail(planting_id)
+activate Planting
+Planting -> DB: SELECT * FROM plantings LEFT JOIN plants WHERE plantings.id = ?
+DB --> Planting: return planting dengan data lengkap
+Planting --> Controller: return Planting
+deactivate Planting
+
+Controller -> Treatment: Treatment::where('planting_id', planting_id)->get()
+activate Treatment
+Treatment -> DB: SELECT * FROM treatments WHERE planting_id = ?
+DB --> Treatment: return treatments[]
+Treatment --> Controller: return treatments[]
+deactivate Treatment
+
+Controller -> Nutrient: Nutrient::where('planting_id', planting_id)->get()
+activate Nutrient
+Nutrient -> DB: SELECT * FROM nutrients WHERE planting_id = ?
+DB --> Nutrient: return nutrients[]
+Nutrient --> Controller: return nutrients[]
+deactivate Nutrient
+
+Controller -> Note: PlantingLocationNote::where('planting_location_id', location_id)->get()
+activate Note
+Note -> DB: SELECT * FROM planting_location_notes WHERE planting_location_id = ?
+DB --> Note: return notes[]
+Note --> Controller: return notes[]
+deactivate Note
+
+Controller --> User: return view monitoring dengan data lengkap()
+deactivate Controller
+User -> User: tampilkan halaman monitoring perkembangan()
+
+alt Tambah Laporan
+    User -> Controller: storeNote(request, planting_location_id)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> Note: PlantingLocationNote::create(data)
+    activate Note
+    Note -> DB: INSERT INTO planting_location_notes VALUES (...)
+    DB --> Note: return note_id
+    Note --> Controller: return Note
+    deactivate Note
+    Controller --> User: redirect dengan pesan sukses()
+else Tambah Nutrisi
+    User -> Controller: storeNutrient(request, planting_location_id)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> Nutrient: Nutrient::create(data)
+    activate Nutrient
+    Nutrient -> DB: INSERT INTO nutrients VALUES (...)
+    DB --> Nutrient: return nutrient_id
+    Nutrient --> Controller: return Nutrient
+    deactivate Nutrient
+    
+    alt Ada Total Cost
+        Controller -> Expense: Expense::create(expense_data)
+        activate Expense
+        Expense -> DB: INSERT INTO expenses VALUES (...)
+        DB --> Expense: return expense_id
+        Expense --> Controller: return Expense
+        deactivate Expense
+    end
+    
+    Controller --> User: redirect dengan pesan sukses()
+else Tambah Perawatan
+    User -> Controller: storeTreatment(request, planting_location_id)
+    activate Controller
+    Controller -> Controller: validate(request)
+    
+    alt Ada File Attachment
+        Controller -> Controller: handleFileUpload(attachment)
+        Controller -> Controller: storeFile(attachment)
+    end
+    
+    Controller -> Treatment: Treatment::create(data)
+    activate Treatment
+    Treatment -> DB: INSERT INTO treatments VALUES (...)
+    DB --> Treatment: return treatment_id
+    Treatment --> Controller: return Treatment
+    deactivate Treatment
+    
+    alt Ada Total Cost
+        Controller -> Expense: Expense::create(expense_data)
+        activate Expense
+        Expense -> DB: INSERT INTO expenses VALUES (...)
+        DB --> Expense: return expense_id
+        Expense --> Controller: return Expense
+        deactivate Expense
+    end
+    
+    Controller --> User: redirect dengan pesan sukses()
+else Tambah Catatan
+    User -> Controller: storeNote(request, planting_location_id)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> Note: PlantingLocationNote::create(data)
+    activate Note
+    Note -> DB: INSERT INTO planting_location_notes VALUES (...)
+    DB --> Note: return note_id
+    Note --> Controller: return Note
+    deactivate Note
+    Controller --> User: redirect dengan pesan sukses()
+end
+
+deactivate Controller
+
+@enduml

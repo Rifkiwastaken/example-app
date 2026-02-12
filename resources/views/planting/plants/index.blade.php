@@ -1,40 +1,29 @@
 @extends('layouts.app')
 
-@section('title', 'Tanaman - SIBIT')
+@section('title', 'Tanaman - SIBESTI')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h4 class="mb-0">Daftar Tanaman</h4>
     <div class="btn-group flex-wrap d-none d-md-flex">
         <a href="{{ route('plants.create') }}" class="btn btn-success"><i class="fas fa-plus me-2"></i>Tanaman Baru</a>
-        <a href="{{ route('plantings.create') }}" class="btn btn-primary"><i class="fas fa-seedling me-2"></i>Tambahkan Penanaman</a>
-        <a href="{{ route('plant-types.index') }}" class="btn btn-outline-primary"><i class="fas fa-list me-2"></i>Kelola Tipe</a>
+        <a href="{{ route('plant-types.index') }}" class="btn btn-outline-primary"><i class="fas fa-list me-2"></i>Tipe Tanaman</a>
     </div>
     <!-- Mobile buttons -->
     <div class="d-flex d-md-none w-100 gap-2">
         <a href="{{ route('plants.create') }}" class="btn btn-success btn-sm flex-fill">
             <i class="fas fa-plus me-1"></i>Tanaman Baru
         </a>
-        <div class="dropdown">
-            <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                <i class="fas fa-ellipsis-v"></i>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" href="{{ route('plantings.create') }}">
-                    <i class="fas fa-seedling me-2"></i>Tambahkan Penanaman
-                </a></li>
-                <li><a class="dropdown-item" href="{{ route('plant-types.index') }}">
-                    <i class="fas fa-list me-2"></i>Kelola Tipe
-                </a></li>
-            </ul>
-        </div>
+        <a href="{{ route('plant-types.index') }}" class="btn btn-outline-primary btn-sm flex-fill">
+            <i class="fas fa-list me-1"></i>Tipe Tanaman
+        </a>
     </div>
 </div>
 
 <div class="card mb-4">
     <div class="card-body">
-        <form class="row g-3" method="GET" action="{{ route('plants.index') }}">
-            <div class="col-md-4">
+        <form class="row g-3" method="GET" action="{{ route('plants.index') }}" id="filterForm">
+            <div class="col-md-3">
                 <label class="form-label">Tipe Tanaman</label>
                 <select name="plant_type_id" class="form-select">
                     <option value="">Semua Tipe</option>
@@ -45,18 +34,27 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label">Lokasi Penanaman</label>
                 <select name="planting_location_id" class="form-select">
                     <option value="">Semua Lokasi</option>
                     @foreach($locations as $loc)
-                        <option value="{{ $loc->id }}" {{ request('planting_location_id') == $loc->id ? 'selected' : '' }}>
+                        <option value="{{ $loc->planting_location_id }}" {{ request('planting_location_id') == $loc->planting_location_id ? 'selected' : '' }}>
                             {{ $loc->name }}
                         </option>
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-4 d-flex align-items-end gap-2">
+            <div class="col-md-4">
+                <label class="form-label">Cari Nama Tanaman</label>
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control" placeholder="Cari nama tanaman..." value="{{ request('search') }}" id="searchInput">
+                    <button type="submit" class="btn btn-outline-secondary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-2 d-flex align-items-end gap-2">
                 <button class="btn btn-primary flex-fill" type="submit"><i class="fas fa-filter me-1"></i>Filter</button>
                 <a class="btn btn-secondary flex-fill" href="{{ route('plants.index') }}"><i class="fas fa-times me-1"></i>Reset</a>
             </div>
@@ -86,15 +84,13 @@
                         <td>
                             <div class="btn-group">
                                 <a href="{{ route('plants.show', $plant) }}" class="btn btn-sm btn-outline-info" title="Lihat Detail"><i class="fas fa-eye"></i></a>
-                                <a href="{{ route('plants.edit', $plant) }}" class="btn btn-sm btn-outline-warning" title="Edit"><i class="fas fa-edit"></i></a>
-                                <form action="{{ route('plants.destroy', $plant) }}" method="POST" class="d-inline" 
-                                      onsubmit="return confirm('Apakah Anda yakin ingin menghapus tanaman ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
+                                @if(auth()->user()->role !== 'penangkar')
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            title="Hapus"
+                                            onclick="confirmDelete('{{ route('plants.destroy', $plant) }}', '{{ addslashes($plant->name) }}', 'tanaman')">
                                         <i class="fas fa-trash"></i>
                                     </button>
-                                </form>
+                                @endif
                             </div>
                         </td>
                     </tr>
@@ -150,20 +146,13 @@
                                class="btn btn-info btn-sm flex-fill">
                                 <i class="fas fa-eye me-1"></i>Detail
                             </a>
-                            <a href="{{ route('plants.edit', $plant) }}" 
-                               class="btn btn-warning btn-sm flex-fill">
-                                <i class="fas fa-edit me-1"></i>Edit
-                            </a>
-                            <form action="{{ route('plants.destroy', $plant) }}" 
-                                  method="POST" 
-                                  class="flex-fill"
-                                  onsubmit="return confirm('Apakah Anda yakin ingin menghapus tanaman ini?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-danger btn-sm w-100">
+                            @if(auth()->user()->role !== 'penangkar')
+                                <button type="button" 
+                                        class="btn btn-danger btn-sm w-100 flex-fill"
+                                        onclick="confirmDelete('{{ route('plants.destroy', $plant) }}', '{{ addslashes($plant->name) }}', 'tanaman')">
                                     <i class="fas fa-trash me-1"></i>Hapus
                                 </button>
-                            </form>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -274,6 +263,18 @@
     }
 }
 </style>
+
+@push('scripts')
+<script>
+// Search functionality - submit on Enter key
+document.getElementById('searchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('filterForm').submit();
+    }
+});
+</script>
+@endpush
 @endsection
 
 

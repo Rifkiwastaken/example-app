@@ -33,6 +33,11 @@ class RouteServiceProvider extends ServiceProvider
             return \App\Models\Warehouse::findOrFail($value);
         });
 
+        // Route model binding for seed (inventory type seed)
+        Route::bind('seed', function ($value) {
+            return \App\Models\InventoryTypeSeed::findOrFail($value);
+        });
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')

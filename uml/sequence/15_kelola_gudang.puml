@@ -1,0 +1,101 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Kelola Gudang
+
+actor "Petugas Gudang/Admin" as User
+participant "WarehouseController" as Controller
+participant "Warehouse" as Warehouse
+participant "Bin" as Bin
+participant "Database" as DB
+
+User -> User: akses halaman kelola gudang()
+User -> Controller: index()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Warehouse: Warehouse::with('bins')->get()
+activate Warehouse
+Warehouse -> DB: SELECT * FROM warehouses LEFT JOIN bins
+DB --> Warehouse: return warehouses dengan data lengkap[]
+Warehouse --> Controller: return warehouses[]
+deactivate Warehouse
+
+Controller --> User: return view index dengan data()
+deactivate Controller
+User -> User: tampilkan daftar gudang()
+
+alt Aksi Tambah Gudang
+    User -> User: klik tambah gudang()
+    User -> Controller: store(Request)
+    activate Controller
+    Controller -> Controller: validate(Request)
+    Controller -> Warehouse: Warehouse::create(data)
+    activate Warehouse
+    Warehouse -> DB: INSERT INTO warehouses VALUES
+    DB --> Warehouse: return warehouse_id
+    Warehouse --> Controller: return Warehouse
+    deactivate Warehouse
+    
+    Controller --> User: redirect back dengan success message()
+    deactivate Controller
+    User -> User: tampilkan pesan gudang berhasil ditambahkan()
+else Aksi Edit Gudang
+    User -> User: klik edit gudang()
+    User -> Controller: update(Request, warehouse_id)
+    activate Controller
+    Controller -> Controller: validate(Request)
+    Controller -> Warehouse: Warehouse::findOrFail(warehouse_id)
+    activate Warehouse
+    Warehouse -> DB: SELECT * FROM warehouses WHERE id = ?
+    DB --> Warehouse: return warehouse data
+    Warehouse --> Controller: return Warehouse
+    Warehouse -> Warehouse: Warehouse::update(data)
+    Warehouse -> DB: UPDATE warehouses SET name = ? WHERE id = ?
+    DB --> Warehouse: return updated
+    Warehouse --> Controller: return updated
+    deactivate Warehouse
+    
+    Controller --> User: redirect back dengan success message()
+    deactivate Controller
+    User -> User: tampilkan pesan gudang berhasil diupdate()
+else Aksi Hapus Gudang
+    User -> User: klik hapus gudang()
+    User -> User: konfirmasi penghapusan()
+    User -> Controller: destroy(warehouse_id)
+    activate Controller
+    Controller -> Controller: validateRole()
+    Controller -> Warehouse: Warehouse::findOrFail(warehouse_id)
+    activate Warehouse
+    Warehouse -> DB: SELECT * FROM warehouses WHERE id = ?
+    DB --> Warehouse: return warehouse data
+    Warehouse --> Controller: return Warehouse
+    deactivate Warehouse
+    
+    Controller -> Bin: Bin::where('warehouse_id', warehouse_id)->count()
+    activate Bin
+    Bin -> DB: SELECT COUNT(*) FROM bins WHERE warehouse_id = ?
+    DB --> Bin: return count
+    Bin --> Controller: return bin_count
+    deactivate Bin
+    
+    alt Gudang Kosong
+        Controller -> Warehouse: Warehouse::delete()
+        activate Warehouse
+        Warehouse -> DB: DELETE FROM warehouses WHERE id = ?
+        DB --> Warehouse: return deleted
+        Warehouse --> Controller: return deleted
+        deactivate Warehouse
+        
+        Controller --> User: redirect back dengan success message()
+        User -> User: tampilkan pesan gudang berhasil dihapus()
+    else Gudang Masih Berisi Stok
+        Controller --> User: redirect back dengan error message()
+        User -> User: tampilkan pesan gudang masih berisi stok()
+    end
+    deactivate Controller
+end
+
+@enduml

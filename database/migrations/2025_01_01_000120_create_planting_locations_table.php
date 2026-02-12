@@ -9,9 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('planting_locations', function (Blueprint $table) {
-            $table->id();
+            $table->string('planting_location_id', 36)->primary();
             $table->string('name'); // nama lahan
-            $table->foreignId('location_id')->nullable()->constrained('locations')->nullOnDelete();
+            $table->string('location_id', 36)->nullable()->nullOnDelete();
             $table->enum('location_type', ['lapangan', 'greenhouse', 'grow_room', 'padang_rumput', 'petak_ternak', 'lainnya'])->default('lapangan');
             $table->enum('planting_format', ['petak', 'cover_crop', 'row', 'lainnya'])->default('petak');
             // jika petak
@@ -30,6 +30,9 @@ return new class extends Migration
         Schema::dropIfExists('planting_locations');
     }
 };
+
+
+
 
 
 

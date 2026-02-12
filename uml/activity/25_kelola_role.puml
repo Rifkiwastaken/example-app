@@ -1,0 +1,61 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Kelola Role
+
+|#LightBlue|Admin|
+start
+:Masuk ke halaman kelola role;
+
+|#LightGreen|Sistem|
+:Validasi role admin;
+:Query data role dari sistem;
+:Query data user per role;
+:Menampilkan daftar role dan permission;
+
+|#LightBlue|Admin|
+:Lihat daftar role yang tersedia;
+:Lihat permission setiap role;
+:Lihat jumlah user per role;
+
+if (Aksi?) then (Edit Permission Role)
+    :Pilih role;
+    :Edit permission role;
+    :Pilih/unpilih permission;
+    :Submit perubahan;
+    
+    |#LightGreen|Sistem|
+    :Validasi perubahan permission;
+    :Update permission role di sistem;
+    :Simpan perubahan;
+    :Update cache permission (jika ada);
+    :Success message;
+    :Redirect ke halaman kelola role;
+    |#LightBlue|Admin|
+    :Lihat pesan permission berhasil diupdate;
+else (Lihat Detail Role)
+    :Pilih role;
+    
+    |#LightGreen|Sistem|
+    :Load data role lengkap;
+    :Load daftar permission;
+    :Load daftar user dengan role tersebut;
+    :Menampilkan detail role;
+    |#LightBlue|Admin|
+    :Lihat detail role lengkap;
+endif
+
+stop
+
+@enduml

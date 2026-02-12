@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Tambahkan Penanaman - SIBIT')
+@section('title', 'Tambahkan Penanaman - SIBESTI')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -21,7 +21,7 @@
                         <select name="plant_id" class="form-select @error('plant_id') is-invalid @enderror" required>
                             <option value="">Pilih tanaman</option>
                             @foreach($plants as $plant)
-                                <option value="{{ $plant->id }}" {{ (old('plant_id') == $plant->id || $selectedPlant?->id == $plant->id) ? 'selected' : '' }}>
+                                <option value="{{ $plant->plant_id }}" {{ (old('plant_id') == $plant->plant_id || $selectedPlant?->plant_id == $plant->plant_id) ? 'selected' : '' }}>
                                     {{ $plant->name }} - {{ $plant->variety ?: 'Tidak ada varietas' }}
                                 </option>
                             @endforeach
@@ -35,7 +35,7 @@
                         <select name="planting_location_id" class="form-select @error('planting_location_id') is-invalid @enderror" required>
                             <option value="">Pilih lokasi</option>
                             @foreach($locations as $location)
-                                <option value="{{ $location->id }}" {{ old('planting_location_id') == $location->id ? 'selected' : '' }}>
+                                <option value="{{ $location->planting_location_id }}" {{ old('planting_location_id') == $location->planting_location_id ? 'selected' : '' }}>
                                     {{ $location->name }}
                                 </option>
                             @endforeach
@@ -363,6 +363,9 @@
     </div>
 </div>
 @endsection
+
+
+
 
 
 

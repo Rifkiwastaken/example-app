@@ -1,0 +1,44 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Trading Perkembangan Tanaman
+
+|#LightBlue|Kepala Satgas/Penangkar|
+start
+:Masuk ke halaman tracking perkembangan;
+:Pilih penanaman yang akan di-track;
+
+|#LightGreen|Sistem|
+:Load data penanaman dari database;
+:Load history perkembangan;
+:Menampilkan form tracking;
+
+|#LightBlue|Kepala Satgas/Penangkar|
+:Input perkembangan tanaman\n(germination_stage, avg_height);
+:Input kondisi tanaman\n(light_profile, soil_condition);
+:Submit update;
+
+|#LightGreen|Sistem|
+:Validasi data perkembangan;
+:Update status perkembangan;
+:Simpan history perkembangan;
+:Update tabel plantings;
+:Success message;
+
+|#LightBlue|Kepala Satgas/Penangkar|
+:Lihat pesan perkembangan berhasil diupdate;
+
+stop
+
+@enduml

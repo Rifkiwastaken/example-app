@@ -1,0 +1,36 @@
+@startuml Sequence Diagram - Lihat Daftar Penjualan
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Lihat Daftar Penjualan
+
+actor "Petugas BBI/Admin" as User
+participant "SaleController" as Controller
+participant "Sale Model" as Sale
+participant "SaleItem Model" as SaleItem
+participant "Database" as DB
+
+User -> Controller: GET /sales
+activate Controller
+Controller -> Controller: validateRole
+Controller -> Sale: getPaginated
+activate Sale
+Sale -> DB: SELECT * FROM sales LEFT JOIN sale_items LIMIT 10 OFFSET ?
+DB --> Sale: sales[]
+Sale --> Controller: sales[]
+deactivate Sale
+
+Controller -> SaleItem: load items for sales
+activate SaleItem
+SaleItem -> DB: SELECT * FROM sale_items WHERE sale_id IN (...)
+DB --> SaleItem: sale_items[]
+SaleItem --> Controller: sale_items[]
+deactivate SaleItem
+
+Controller --> User: render daftar penjualan dengan summary
+deactivate Controller
+
+@enduml
+

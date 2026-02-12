@@ -1,0 +1,85 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Adjustment Stok
+
+actor "Petugas Gudang/Admin" as User
+participant "InventoryTypeController" as Controller
+participant "InventoryTypeSeed" as Seed
+participant "InventoryTransaction" as Transaction
+participant "SeedHistory" as History
+participant "Database" as DB
+
+User -> User: akses halaman adjustment stok()
+User -> User: pilih tipe benih()
+User -> Controller: adjustment(Request, inventory_type_seed_id)
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Controller: validate(Request)
+Controller -> Seed: InventoryTypeSeed::findOrFail(inventory_type_seed_id)
+activate Seed
+Seed -> DB: SELECT * FROM inventory_type_seeds WHERE id = ?
+DB --> Seed: return seed data
+Seed --> Controller: return Seed
+deactivate Seed
+
+alt Adjustment Type Penambahan
+    Controller -> Seed: Seed::update(['total_seed_quantity' => quantity + adjustment])
+    activate Seed
+    Seed -> DB: UPDATE inventory_type_seeds SET total_seed_quantity = ? WHERE id = ?
+    DB --> Seed: return updated
+    Seed --> Controller: return updated
+    deactivate Seed
+    
+    Controller -> Transaction: InventoryTransaction::create(['transaction_type' => 'adjustment', 'quantity' => adjustment])
+    activate Transaction
+    Transaction -> DB: INSERT INTO inventory_transactions VALUES
+    DB --> Transaction: return transaction_id
+    Transaction --> Controller: return created
+    deactivate Transaction
+    
+    Controller -> History: SeedHistory::create(['action' => 'adjustment'])
+    activate History
+    History -> DB: INSERT INTO seed_histories VALUES
+    DB --> History: return history_id
+    History --> Controller: return created
+    deactivate History
+    
+    Controller --> User: redirect back dengan success message()
+    User -> User: tampilkan pesan adjustment berhasil dilakukan()
+else Adjustment Type Pengurangan
+    alt Stok Cukup
+        Controller -> Seed: Seed::update(['total_seed_quantity' => quantity - adjustment])
+        activate Seed
+        Seed -> DB: UPDATE inventory_type_seeds SET total_seed_quantity = ? WHERE id = ?
+        DB --> Seed: return updated
+        Seed --> Controller: return updated
+        deactivate Seed
+        
+        Controller -> Transaction: InventoryTransaction::create(['transaction_type' => 'adjustment', 'quantity' => -adjustment])
+        activate Transaction
+        Transaction -> DB: INSERT INTO inventory_transactions VALUES
+        DB --> Transaction: return transaction_id
+        Transaction --> Controller: return created
+        deactivate Transaction
+        
+        Controller -> History: SeedHistory::create(['action' => 'adjustment'])
+        activate History
+        History -> DB: INSERT INTO seed_histories VALUES
+        DB --> History: return history_id
+        History --> Controller: return created
+        deactivate History
+        
+        Controller --> User: redirect back dengan success message()
+        User -> User: tampilkan pesan adjustment berhasil dilakukan()
+    else Stok Tidak Cukup
+        Controller --> User: redirect back dengan error message()
+        User -> User: tampilkan pesan stok tidak mencukupi()
+    end
+end
+deactivate Controller
+
+@enduml

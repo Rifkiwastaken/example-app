@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Tambah Tipe Bibit Baru - Langkah 1 - SIBIT')
+@section('title', 'Tambah Tipe Benih Baru - Langkah 1 - SIBESTI')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -16,21 +16,36 @@
             @csrf
             
             <div class="mb-3">
-                <label for="category" class="form-label">Kategori Bibit <span class="text-danger">*</span></label>
-                <input type="text" class="form-control @error('category') is-invalid @enderror" 
-                       id="category" name="category" value="{{ old('category') }}" 
-                       placeholder="Contoh: Benih Padi, Benih Jagung, Tanaman Hias" required>
-                @error('category')
+                <label for="plant_id" class="form-label">Komoditas/Tanaman <span class="text-danger">*</span></label>
+                <select class="form-select @error('plant_id') is-invalid @enderror" 
+                        id="plant_id" name="plant_id" required>
+                    <option value="">-- Pilih Komoditas/Tanaman --</option>
+                    @foreach($plants as $plant)
+                        <option value="{{ $plant->plant_id }}" {{ old('plant_id', request('plant_id')) == $plant->plant_id ? 'selected' : '' }}>
+                            {{ $plant->name }} @if($plant->variety) - {{ $plant->variety }} @endif
+                            @if($plant->type) ({{ $plant->type->name }}) @endif
+                        </option>
+                    @endforeach
+                </select>
+                <small class="text-muted">Pilih komoditas/tanaman dari data "Tanaman Saya"</small>
+                @error('plant_id')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
 
             <div class="mb-3">
-                <label for="name" class="form-label">Nama Varietas/Komoditas <span class="text-danger">*</span></label>
-                <input type="text" class="form-control @error('name') is-invalid @enderror" 
-                       id="name" name="name" value="{{ old('name') }}" 
-                       placeholder="Contoh: Padi Inpari Gemah - BP" required>
-                @error('name')
+                <label for="responsible_person_id" class="form-label">Penanggung Jawab</label>
+                <select class="form-select @error('responsible_person_id') is-invalid @enderror" 
+                        id="responsible_person_id" name="responsible_person_id">
+                    <option value="">-- Pilih Penanggung Jawab --</option>
+                    @foreach($users as $user)
+                        <option value="{{ $user->user_id }}" {{ old('responsible_person_id', auth()->id()) == $user->user_id ? 'selected' : '' }}>
+                            {{ $user->name }}
+                        </option>
+                    @endforeach
+                </select>
+                <small class="text-muted">Pilih user sebagai penanggung jawab</small>
+                @error('responsible_person_id')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
@@ -53,7 +68,6 @@
                 @error('electronic_id')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
-                <div class="form-text">Barcode atau RFID untuk tracking otomatis</div>
             </div>
 
             <div class="mb-3">
@@ -83,17 +97,6 @@
             </div>
 
             <div class="mb-3">
-                <label for="estimated_kg_per_unit" class="form-label">Estimasi kg per Unit (Opsional)</label>
-                <input type="number" step="0.01" class="form-control @error('estimated_kg_per_unit') is-invalid @enderror" 
-                       id="estimated_kg_per_unit" name="estimated_kg_per_unit" value="{{ old('estimated_kg_per_unit') }}" 
-                       placeholder="25">
-                @error('estimated_kg_per_unit')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-                <div class="form-text">Diisi jika unit di atas adalah 'kantong'</div>
-            </div>
-
-            <div class="mb-3">
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="track_individual_lots" 
                            name="track_individual_lots" value="1" {{ old('track_individual_lots') ? 'checked' : '' }}>
@@ -104,27 +107,21 @@
                 <div class="form-text">Sangat penting untuk benih agar bisa melacak masa edar/kadaluarsa per batch produksi</div>
             </div>
 
-            <div class="row">
-                <div class="col-md-8">
-                    <div class="mb-3">
-                        <label for="low_stock_threshold" class="form-label">Peringatan Stok Rendah (di bawah...)</label>
-                        <input type="number" step="0.01" class="form-control @error('low_stock_threshold') is-invalid @enderror" 
-                               id="low_stock_threshold" name="low_stock_threshold" value="{{ old('low_stock_threshold') }}" 
-                               placeholder="50">
-                        @error('low_stock_threshold')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
+            <div class="mb-3">
+                <label for="low_stock_threshold" class="form-label">Peringatan Stok Rendah (di bawah...)</label>
+                <div class="input-group">
+                    <input type="number" step="0.01" class="form-control @error('low_stock_threshold') is-invalid @enderror" 
+                           id="low_stock_threshold" name="low_stock_threshold" value="{{ old('low_stock_threshold') }}" 
+                           placeholder="50" min="0">
+                    <span class="input-group-text" id="low_stock_unit_label">kg</span>
                 </div>
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="low_stock_unit" class="form-label">Unit</label>
-                        <select class="form-select" id="low_stock_unit" name="low_stock_unit">
-                            <option value="kg" {{ old('low_stock_unit', 'kg') == 'kg' ? 'selected' : '' }}>kg</option>
-                            <option value="ton" {{ old('low_stock_unit') == 'ton' ? 'selected' : '' }}>ton</option>
-                        </select>
-                    </div>
-                </div>
+                <input type="hidden" id="low_stock_unit" name="low_stock_unit" value="{{ old('low_stock_unit', 'kg') }}">
+                @error('low_stock_threshold')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+                @error('low_stock_unit')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="mb-3">
@@ -158,5 +155,47 @@
         </form>
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const unitSelect = document.getElementById('unit');
+    const lowStockUnitLabel = document.getElementById('low_stock_unit_label');
+    const lowStockUnitInput = document.getElementById('low_stock_unit');
+    
+    if (!unitSelect || !lowStockUnitLabel || !lowStockUnitInput) {
+        return;
+    }
+    
+    function syncLowStockUnit() {
+        const selectedUnit = unitSelect.value || 'kg';
+        
+        // Format label berdasarkan satuan yang dipilih
+        const unitLabels = {
+            'kg': 'kg',
+            'ton': 'ton',
+            'gram': 'gram',
+            'butir': 'butir/biji',
+            'pcs': 'pcs',
+            'batang': 'batang',
+            'kantong': 'kantong',
+            'unit': 'unit',
+            'polybag': 'polybag'
+        };
+        
+        const labelText = unitLabels[selectedUnit] || selectedUnit;
+        lowStockUnitLabel.textContent = labelText;
+        lowStockUnitInput.value = selectedUnit;
+    }
+    
+    // Sync on change
+    unitSelect.addEventListener('change', syncLowStockUnit);
+    
+    // Sync on page load
+    syncLowStockUnit();
+});
+</script>
+@endpush
+
 @endsection
 

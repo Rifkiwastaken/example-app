@@ -12,7 +12,20 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Check low stock and send notifications (daily at 8:00 AM)
+        $schedule->command('sibesti:check-low-stock')
+                 ->dailyAt('08:00')
+                 ->timezone('Asia/Jakarta');
+        
+        // Check expired bin stock and send notifications (daily at 8:00 AM)
+        $schedule->command('sibesti:check-expired-bin-stock')
+                 ->dailyAt('08:00')
+                 ->timezone('Asia/Jakarta');
+        
+        // Check expiring seeds and send notifications to admin (daily at 8:00 AM)
+        $schedule->command('sibesti:check-expiring-seeds')
+                 ->dailyAt('08:00')
+                 ->timezone('Asia/Jakarta');
     }
 
     /**

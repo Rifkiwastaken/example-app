@@ -1,0 +1,51 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' sd Hapus Data Penanaman
+
+actor "Admin" as User
+participant "PlantingController" as Controller
+participant "Planting" as Planting
+participant "Harvest" as Harvest
+participant "Database" as DB
+
+User -> User: dari daftar penanaman()
+User -> User: klik hapus penanaman()
+User -> User: konfirmasi penghapusan()
+User -> Controller: destroy(planting_id)
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Planting: Planting::findOrFail(planting_id)
+activate Planting
+Planting -> DB: SELECT * FROM plantings WHERE id = ?
+DB --> Planting: return data penanaman
+Planting --> Controller: return Planting
+deactivate Planting
+
+Controller -> Harvest: Harvest::where('planting_id', planting_id)->count()
+activate Harvest
+Harvest -> DB: SELECT COUNT(*) FROM harvests WHERE planting_id = ?
+DB --> Harvest: return count
+Harvest --> Controller: return harvest_count
+deactivate Harvest
+
+alt Tidak Ada Relasi
+    Controller -> Planting: Planting::delete()
+    activate Planting
+    Planting -> DB: DELETE FROM plantings WHERE id = ?
+    DB --> Planting: return deleted
+    Planting --> Controller: return deleted
+    deactivate Planting
+    
+    Controller --> User: redirect back dengan success message()
+    User -> User: tampilkan pesan penanaman berhasil dihapus()
+else Ada Relasi
+    Controller --> User: redirect back dengan error message()
+    User -> User: tampilkan pesan penanaman memiliki relasi dengan panen()
+end
+deactivate Controller
+
+@enduml

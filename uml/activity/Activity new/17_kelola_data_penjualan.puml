@@ -1,0 +1,101 @@
+@startuml
+' Referensi: Use Case Overview (00_use_case_overview.puml)
+' Use case 17: Mengelola data penjualan
+' Aktor: Admin/Kepala Sek, Petugas BBI
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Mengelola data penjualan
+
+|#LightBlue|User|
+start
+:Masuk ke halaman kelola penjualan;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data penjualan dari database;
+:Load data stok benih terkait;
+:Menampilkan daftar penjualan;
+
+|#LightBlue|User|
+:Lihat daftar penjualan;
+
+if (Pilih aksi?) then (Tambah Baru)
+    |#LightBlue|User|
+    :Klik tombol tambah penjualan;
+    |#LightGreen|Sistem|
+    :Tampilkan form tambah penjualan;
+    |#LightBlue|User|
+    :Isi data pembeli;
+    :Isi data lokasi sebaran;
+    :Pilih stok benih yang akan dijual;
+    :Isi jumlah penjualan;
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data;
+    if (Data valid?) then (Ya)
+        :Check ketersediaan stok;
+        if (Stok cukup?) then (Tidak)
+            :Tampilkan pesan error;
+            stop
+        endif
+        :Simpan data penjualan ke database;
+        :Kurangi stok benih;
+        :Update stok di bin;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Tampilkan pesan error;
+    endif
+elseif (Edit) then
+    |#LightBlue|User|
+    :Klik tombol edit;
+    |#LightGreen|Sistem|
+    :Tampilkan form edit dengan data terisi;
+    |#LightBlue|User|
+    :Edit data penjualan;
+    :Submit form;
+    |#LightGreen|Sistem|
+    :Validasi data;
+    if (Data valid?) then (Ya)
+        :Update data penjualan di database;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Tampilkan pesan error;
+    endif
+elseif (Batalkan) then
+    |#LightBlue|User|
+    :Klik tombol batalkan;
+    |#LightGreen|Sistem|
+    :Tampilkan konfirmasi batalkan;
+    |#LightBlue|User|
+    if (Konfirmasi batalkan?) then (Ya)
+        |#LightGreen|Sistem|
+        :Update status penjualan;
+        :Kembalikan stok benih;
+        :Update stok di bin;
+        :Tampilkan pesan sukses;
+    else (Tidak)
+        :Batal batalkan;
+    endif
+else (Lihat Detail)
+    |#LightBlue|User|
+    :Klik tombol lihat detail;
+    |#LightGreen|Sistem|
+    :Tampilkan detail data penjualan;
+    |#LightBlue|User|
+    :Lihat detail penjualan;
+endif
+
+stop
+
+@enduml

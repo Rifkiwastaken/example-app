@@ -1,0 +1,90 @@
+@startuml Sequence Diagram - Kelola Role
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Kelola Role
+
+actor "Admin" as User
+participant "UserController" as Controller
+participant "User Model" as UserModel
+participant "Role/Permission System" as RoleSystem
+participant "Database" as DB
+
+' Lihat Daftar Role
+User -> Controller: GET /users/roles
+activate Controller
+Controller -> Controller: validateRole Admin only
+Controller -> RoleSystem: getAvailableRoles
+activate RoleSystem
+RoleSystem -> RoleSystem: getRolesFromConfig
+RoleSystem --> Controller: roles[]
+deactivate RoleSystem
+
+Controller -> UserModel: getRoleCounts
+activate UserModel
+UserModel -> DB: SELECT role, COUNT(*) as count FROM users GROUP BY role
+DB --> UserModel: role_counts[]
+UserModel --> Controller: role_counts[]
+deactivate UserModel
+
+Controller --> User: render halaman dengan info role
+deactivate Controller
+
+' Lihat Detail Role
+User -> Controller: GET /users/roles/{role}
+activate Controller
+Controller -> Controller: validateRole Admin only
+Controller -> RoleSystem: getRolePermissions
+activate RoleSystem
+RoleSystem -> RoleSystem: getPermissionsFromConfig
+RoleSystem --> Controller: permissions[]
+deactivate RoleSystem
+
+Controller -> UserModel: getByRole
+activate UserModel
+UserModel -> DB: SELECT * FROM users WHERE role = ?
+DB --> UserModel: users_with_role[]
+UserModel --> Controller: users_with_role[]
+deactivate UserModel
+
+Controller --> User: render detail role dengan permission dan users
+deactivate Controller
+
+' Edit Permission Role jika sistem mendukung
+User -> Controller: PUT /users/roles/{role}/permissions permissions
+activate Controller
+Controller -> Controller: validateRole Admin only
+Controller -> Controller: validate
+
+alt System Supports Dynamic Permissions
+    Controller -> RoleSystem: updateRolePermissions
+    activate RoleSystem
+    RoleSystem -> DB: UPDATE role_permissions SET permission = ? WHERE role = ?
+    DB --> RoleSystem: updated
+    RoleSystem --> Controller: updated
+    deactivate RoleSystem
+    
+    Controller -> RoleSystem: clearPermissionCache
+    activate RoleSystem
+    RoleSystem -> RoleSystem: clearCache
+    RoleSystem --> Controller: cache_cleared
+    deactivate RoleSystem
+    
+    Controller --> User: redirect with success message
+else System Uses Static Config
+    Controller --> User: error permission dikelola melalui konfigurasi
+endif
+deactivate Controller
+
+note right of RoleSystem
+Role management biasanya dilakukan
+melalui konfigurasi atau middleware,
+bukan melalui CRUD langsung di database.
+Permission bisa disimpan di config file
+atau tabel role_permissions.
+end note
+
+@enduml
+

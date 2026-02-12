@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('sale_items', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('sale_id')->constrained()->onDelete('cascade');
-            $table->foreignId('inventory_type_id')->constrained()->onDelete('cascade'); // Pilih Benih
-            $table->foreignId('inventory_lot_id')->nullable()->constrained()->onDelete('set null'); // Pilih Lot/Batch
+            $table->string('sale_item_id', 36)->primary();
+            $table->string('sale_id', 36)->onDelete('cascade');
+            $table->string('inventory_type_id', 36)->onDelete('cascade'); // Pilih Benih
+            $table->string('inventory_lot_id', 36)->nullable()->onDelete('set null'); // Pilih Lot/Batch
             $table->decimal('quantity', 15, 2); // Jumlah Jual
             $table->string('unit'); // Satuan (kg, ton, dll)
             $table->decimal('unit_price', 15, 2); // Harga Satuan (Rp)

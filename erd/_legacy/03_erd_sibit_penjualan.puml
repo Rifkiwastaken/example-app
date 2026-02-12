@@ -1,0 +1,139 @@
+@startuml ERD - SIBESTI Modul Penjualan
+!theme plain
+left to right direction
+scale 0.9
+skinparam linetype ortho
+skinparam roundcorner 8
+skinparam shadowing false
+
+title SIBESTI - Modul Penjualan ERD
+' Semua ID menggunakan VARCHAR(36) dengan format {nama_tabel}_id
+' Tanggal Update: Februari 2026
+
+entity "sales" as sales {
+    * **sale_id** : VARCHAR(36) <<PK>>
+    --
+    receipt_number : VARCHAR(50) <<UNIQUE>>
+    sale_date : DATE
+    buyer_name : VARCHAR(255)
+    buyer_contact : VARCHAR(255)
+    total_amount : DECIMAL(15,2)
+    payment_method : ENUM('cash','transfer_bank')
+    payment_status : ENUM('lunas','belum_lunas')
+    planting_location_id : VARCHAR(36) <<FK>> [nullable]
+    notes : TEXT
+    user_id : VARCHAR(36) <<FK>>
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "sale_items" as sale_items {
+    * **sale_item_id** : VARCHAR(36) <<PK>>
+    --
+    sale_id : VARCHAR(36) <<FK>>
+    inventory_type_id : VARCHAR(36) <<FK>>
+    inventory_lot_id : VARCHAR(36) <<FK>>
+    quantity : DECIMAL(15,2)
+    unit : VARCHAR(50)
+    unit_price : DECIMAL(15,2)
+    subtotal : DECIMAL(15,2)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "inventory_types" as inventory_types {
+    * **inventory_type_id** : VARCHAR(36) <<PK>>
+    --
+    category : VARCHAR(255)
+    name : VARCHAR(255)
+    sku : VARCHAR(100) <<UNIQUE>>
+    unit : VARCHAR(50)
+    estimated_value_per_unit : DECIMAL(15,2)
+    description : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "inventory_lots" as inventory_lots {
+    * **inventory_lot_id** : VARCHAR(36) <<PK>>
+    --
+    inventory_type_id : VARCHAR(36) <<FK>>
+    production_id : VARCHAR(255)
+    expiry_date : DATE
+    status : ENUM('tersedia','segera_kadaluarsa','kadaluarsa','habis')
+    initial_stock : DECIMAL(15,2)
+    current_stock : DECIMAL(15,2)
+    warehouse_id : VARCHAR(36) <<FK>> [nullable]
+    bin_id : VARCHAR(36) <<FK>> [nullable]
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "users" as users {
+    * **user_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    email : VARCHAR(255) <<UNIQUE>>
+    role : ENUM('admin','kepala_satuan_tugas','petugas_sertifikasi','petugas_gudang','petugas_bbi','penangkar')
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "warehouses" as warehouses {
+    * **warehouse_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    internal_id : VARCHAR(50) <<UNIQUE>>
+    tracking_type : ENUM('bin_separated','warehouse_only')
+    description : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "bins" as bins {
+    * **bin_id** : VARCHAR(36) <<PK>>
+    --
+    warehouse_id : VARCHAR(36) <<FK>>
+    name : VARCHAR(255)
+    internal_id : VARCHAR(50)
+    max_capacity : DECIMAL(15,2)
+    capacity_unit : VARCHAR(50)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "planting_locations" as planting_locations {
+    * **planting_location_id** : VARCHAR(36) <<PK>>
+    --
+    name : VARCHAR(255)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+' Relationships
+sales ||--o{ sale_items : "sale_id"
+sales }o--|| users : "user_id"
+sales }o--|| planting_locations : "planting_location_id"
+
+sale_items }o--|| inventory_types : "inventory_type_id"
+sale_items }o--|| inventory_lots : "inventory_lot_id"
+
+inventory_types ||--o{ inventory_lots : "inventory_type_id"
+
+inventory_lots }o--|| warehouses : "warehouse_id"
+inventory_lots }o--|| bins : "bin_id"
+
+warehouses ||--o{ bins : "warehouse_id"
+
+note as N1
+SIBESTI Modul Penjualan
+Alur: Sales -> Sale Items -> Inventory Types/Lots
+Mengurangi stok saat penjualan
+payment_method: cash, transfer_bank
+payment_status: lunas, belum_lunas
+inventory_lots.status: tersedia, segera_kadaluarsa, kadaluarsa, habis
+PK: VARCHAR(36) format {nama_tabel}_id
+Update: Februari 2026
+end note
+
+@enduml

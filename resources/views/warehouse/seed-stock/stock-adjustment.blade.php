@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', ($action === 'add' ? 'Tambah' : 'Kurangi') . ' Stok - ' . $inventoryType->name . ' - SIBIT')
+@section('title', ($action === 'add' ? 'Tambah' : 'Kurangi') . ' Stok - ' . $inventoryType->name . ' - SIBESTI')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">

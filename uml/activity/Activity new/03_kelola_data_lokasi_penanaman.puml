@@ -1,0 +1,63 @@
+@startuml
+' Referensi: Use Case Overview (00_use_case_overview.puml)
+' Use case 03: Mengelola data lokasi penanaman
+' Aktor: Admin/Kepala Sek, Penangkar/Kepala Satgas
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Mengelola data lokasi penanaman
+
+|#LightBlue|User|
+start
+:Masuk ke halaman kelola lokasi penanaman;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data lokasi penanaman dari database;
+:Menampilkan daftar lokasi penanaman;
+
+|#LightBlue|User|
+:Lihat daftar lokasi penanaman;
+:Klik tombol tambah lokasi;
+
+|#LightGreen|Sistem|
+:Tampilkan form tambah lokasi;
+:Load data user untuk assignment;
+
+|#LightBlue|User|
+:Isi form data lokasi\n(nama, tipe lokasi, format penanaman, deskripsi);
+:Pilih user sebagai land manager/worker;
+:Submit form;
+
+|#LightGreen|Sistem|
+:Validasi data;
+:Check user terdaftar;
+
+if (Data valid?) then (Ya)
+    :Simpan data lokasi penanaman ke database;
+    :Simpan relasi user–planting_location (land manager/worker);
+    :Generate planting_location_id (VARCHAR 36);
+    :Tampilkan pesan sukses;
+    :Redirect ke halaman detail lokasi;
+    |#LightBlue|User|
+    :Lihat pesan lokasi berhasil ditambahkan;
+else (Tidak)
+    :Tampilkan pesan error;
+    :Kembali ke form;
+    |#LightBlue|User|
+    :Lihat form dengan pesan error;
+endif
+
+stop
+
+@enduml

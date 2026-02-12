@@ -1,0 +1,130 @@
+@startuml Sequence Diagram - Kelola User
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Kelola User
+
+actor "Admin" as User
+participant "UserController" as Controller
+participant "User Model" as UserModel
+participant "Database" as DB
+
+' Lihat Daftar User
+User -> Controller: GET /users
+activate Controller
+Controller -> Controller: validateRole
+Controller -> UserModel: getPaginated
+activate UserModel
+UserModel -> DB: SELECT * FROM users LIMIT 10 OFFSET ?
+DB --> UserModel: users[]
+UserModel --> Controller: users[]
+deactivate UserModel
+
+Controller --> User: render daftar user
+deactivate Controller
+
+' Tambah User
+User -> Controller: GET /users/create
+activate Controller
+Controller -> Controller: validateRole
+Controller --> User: render form tambah user
+deactivate Controller
+
+User -> Controller: POST /users data user
+activate Controller
+Controller -> Controller: validate
+Controller -> UserModel: findByEmail
+activate UserModel
+UserModel -> DB: SELECT * FROM users WHERE email = ?
+DB --> UserModel: null
+UserModel --> Controller: null
+deactivate UserModel
+
+alt Validation Success
+    Controller -> Controller: hashPassword
+    Controller -> UserModel: create
+    activate UserModel
+    UserModel -> DB: INSERT INTO users name email password role
+    DB --> UserModel: user_id
+    UserModel --> Controller: User
+    deactivate UserModel
+    
+    Controller --> User: response success
+else Not Valid
+    Controller --> User: show form
+end
+deactivate Controller
+
+' Edit User
+User -> Controller: GET /users/{id}/edit
+activate Controller
+Controller -> Controller: validateRole
+Controller -> UserModel: findById
+activate UserModel
+UserModel -> DB: SELECT * FROM users WHERE id = ?
+DB --> UserModel: user data
+UserModel --> Controller: User
+deactivate UserModel
+
+Controller --> User: render form edit
+deactivate Controller
+
+User -> Controller: PUT /users/{id} updated data
+activate Controller
+Controller -> Controller: validate
+Controller -> UserModel: findById
+activate UserModel
+UserModel -> DB: SELECT * FROM users WHERE id = ?
+DB --> UserModel: user data
+UserModel --> Controller: User
+deactivate UserModel
+
+alt Validation Success
+    alt Password Changed
+        Controller -> Controller: hashPassword
+    end
+    
+    Controller -> UserModel: update
+    activate UserModel
+    UserModel -> DB: UPDATE users SET name = ? email = ? role = ? WHERE id = ?
+    DB --> UserModel: updated
+    UserModel --> Controller: updated
+    deactivate UserModel
+    
+    Controller --> User: response success
+else Not Valid
+    Controller --> User: show form
+end
+deactivate Controller
+
+' Hapus User
+User -> Controller: DELETE /users/{id}
+activate Controller
+Controller -> Controller: validateRole Admin only
+Controller -> UserModel: findById
+activate UserModel
+UserModel -> DB: SELECT * FROM users WHERE id = ?
+DB --> UserModel: user data
+UserModel --> Controller: User
+deactivate UserModel
+
+Controller -> Controller: checkUserRelations
+
+alt No Relations
+    Controller -> UserModel: delete
+    activate UserModel
+    UserModel -> DB: DELETE FROM users WHERE id = ?
+    DB --> UserModel: deleted
+    UserModel --> Controller: deleted
+    deactivate UserModel
+    
+    Controller --> User: response success
+else Has Relations
+    Controller --> User: user has relations
+end
+deactivate Controller
+
+@enduml
+

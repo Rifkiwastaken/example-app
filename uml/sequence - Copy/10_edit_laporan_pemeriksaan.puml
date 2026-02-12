@@ -1,0 +1,52 @@
+@startuml Sequence Diagram - Edit Laporan Pemeriksaan
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Edit Laporan Pemeriksaan
+
+actor "Petugas Sertifikasi" as User
+participant "CertificationController" as Controller
+participant "CertificationReport Model" as Report
+participant "Database" as DB
+
+User -> Controller: GET /certifications/reports/{id}/edit
+activate Controller
+Controller -> Controller: validateRole
+Controller -> Report: findById
+activate Report
+Report -> DB: SELECT * FROM certification_reports WHERE id = ?
+DB --> Report: report data
+Report --> Controller: Report
+deactivate Report
+
+Controller --> User: render form edit
+deactivate Controller
+
+User -> Controller: PUT /certifications/reports/{id} updated data
+activate Controller
+Controller -> Controller: validate
+Controller -> Report: findById
+activate Report
+Report -> DB: SELECT * FROM certification_reports WHERE id = ?
+DB --> Report: report data
+Report --> Controller: Report
+deactivate Report
+
+alt Validation Success
+    Controller -> Report: update report data
+    activate Report
+    Report -> DB: UPDATE certification_reports SET report_number_bpsb = ? WHERE id = ?
+    DB --> Report: updated
+    Report --> Controller: updated
+    deactivate Report
+    
+    Controller --> User: redirect with success message
+else Validation Failed
+    Controller --> User: redirect errors
+endif
+deactivate Controller
+
+@enduml
+

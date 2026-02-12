@@ -4,12 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasCustomId;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TaskSeries extends Model
 {
     use HasFactory;
+    use HasCustomId;
+
+    protected $primaryKey = 'task_series_id';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'name',
@@ -29,7 +35,7 @@ class TaskSeries extends Model
      */
     public function template(): BelongsTo
     {
-        return $this->belongsTo(TaskTemplate::class, 'template_id');
+        return $this->belongsTo(TaskTemplate::class, 'template_id', 'task_template_id');
     }
 
     /**
@@ -37,7 +43,7 @@ class TaskSeries extends Model
      */
     public function tasks(): HasMany
     {
-        return $this->hasMany(Task::class, 'series_id');
+        return $this->hasMany(Task::class, 'series_id', 'task_series_id');
     }
 
     /**
@@ -48,6 +54,9 @@ class TaskSeries extends Model
         return $query->where('is_active', true);
     }
 }
+
+
+
 
 
 

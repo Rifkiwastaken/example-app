@@ -1,0 +1,63 @@
+@startuml Sequence Diagram - Tambah Stok Baru
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Tambah Stok Baru
+
+actor "Petugas Gudang" as User
+participant "InventoryTypeController" as Controller
+participant "InventoryType Model" as InvType
+participant "InventoryTypeSeed Model" as Seed
+participant "SeedHistory Model" as History
+participant "Database" as DB
+
+User -> Controller: GET /seed-stock/{id}/certified-seeds
+activate Controller
+Controller -> Controller: validateRole
+Controller -> InvType: findById
+activate InvType
+InvType -> DB: SELECT * FROM inventory_types WHERE id = ?
+DB --> InvType: inventory_type data
+InvType --> Controller: InvType
+deactivate InvType
+
+Controller -> DB: SELECT * FROM certification_reports WHERE seed_class_result = LULUS
+DB --> Controller: available_certifications[]
+Controller --> User: render form tambah stok
+deactivate Controller
+
+User -> Controller: POST /seed-stock/{id}/add-certified-seed data
+activate Controller
+Controller -> Controller: validate
+Controller -> InvType: findById
+activate InvType
+InvType -> DB: SELECT * FROM inventory_types WHERE id = ?
+DB --> InvType: inventory_type data
+InvType --> Controller: InvType
+deactivate InvType
+
+alt Validation Success
+    Controller -> Seed: create seed data
+    activate Seed
+    Seed -> DB: INSERT INTO inventory_type_seeds inventory_type_id plant_id quantity
+    DB --> Seed: seed_id
+    Seed --> Controller: Seed
+    deactivate Seed
+    
+    Controller -> History: create history action create
+    activate History
+    History -> DB: INSERT INTO seed_histories inventory_type_seed_id action
+    DB --> History: history_id
+    History --> Controller: created
+    deactivate History
+    
+    Controller --> User: redirect with success message
+else Validation Failed
+    Controller --> User: redirect errors
+endif
+deactivate Controller
+
+@enduml
+

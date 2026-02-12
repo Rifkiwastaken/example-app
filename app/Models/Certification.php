@@ -4,12 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasCustomId;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Certification extends Model
 {
     use HasFactory;
+    use HasCustomId;
+
+    protected $primaryKey = 'certification_id';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'harvest_id',
@@ -25,22 +31,22 @@ class Certification extends Model
 
     public function harvest(): BelongsTo
     {
-        return $this->belongsTo(Harvest::class);
+        return $this->belongsTo(Harvest::class, 'harvest_id', 'harvest_id');
     }
 
     public function reports(): HasMany
     {
-        return $this->hasMany(CertificationReport::class);
+        return $this->hasMany(CertificationReport::class, 'certification_id', 'certification_id');
     }
 
     public function plantingLocation(): BelongsTo
     {
-        return $this->belongsTo(PlantingLocation::class);
+        return $this->belongsTo(PlantingLocation::class, 'planting_location_id', 'planting_location_id');
     }
 
     public function plant(): BelongsTo
     {
-        return $this->belongsTo(Plant::class);
+        return $this->belongsTo(Plant::class, 'plant_id', 'plant_id');
     }
 
     /**
@@ -66,6 +72,4 @@ class Certification extends Model
         return $latestReport ? $latestReport->report_date->format('d M Y') : null;
     }
 }
-
-
 

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Catatan Baru - SIBIT')
+@section('title', 'Catatan Baru - SIBESTI')
 
 @section('content')
 <!-- Breadcrumbs -->
@@ -83,6 +83,9 @@
     </div>
 </div>
 @endsection
+
+
+
 
 
 

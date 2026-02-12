@@ -1,0 +1,57 @@
+@startuml Sequence Diagram - Kelola Bin
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Kelola Bin
+
+actor "Petugas Gudang/Admin" as User
+participant "WarehouseController" as Controller
+participant "Warehouse Model" as Warehouse
+participant "Bin Model" as Bin
+participant "Database" as DB
+
+User -> Controller: GET /warehouse-locations/{id}/bins
+activate Controller
+Controller -> Controller: validateRole
+Controller -> Warehouse: findById
+activate Warehouse
+Warehouse -> DB: SELECT * FROM warehouses WHERE id = ?
+DB --> Warehouse: warehouse data
+Warehouse --> Controller: Warehouse
+deactivate Warehouse
+
+Controller -> Bin: getByWarehouseId
+activate Bin
+Bin -> DB: SELECT * FROM bins WHERE warehouse_id = ?
+DB --> Bin: bins[]
+Bin --> Controller: bins[]
+deactivate Bin
+
+Controller --> User: render daftar bin
+deactivate Controller
+
+' Tambah Bin
+User -> Controller: POST /warehouse-locations/{id}/bins data
+activate Controller
+Controller -> Controller: validate
+Controller -> Warehouse: findById
+activate Warehouse
+Warehouse -> DB: SELECT * FROM warehouses WHERE id = ?
+DB --> Warehouse: warehouse data
+Warehouse --> Controller: Warehouse
+deactivate Warehouse
+
+Controller -> Bin: create bin data
+activate Bin
+Bin -> DB: INSERT INTO bins (warehouse_id, name, internal_id, ...)
+DB --> Bin: bin_id
+Bin --> Controller: Bin
+deactivate Bin
+
+Controller --> User: redirect with success message
+deactivate Controller
+
+@enduml
+

@@ -1,0 +1,183 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Mengelola Data Panen
+
+actor "User" as User
+participant "HarvestController" as Controller
+participant "Harvest" as Harvest
+participant "Planting" as Planting
+participant "PlantingLoss" as PlantingLoss
+participant "Plant" as Plant
+participant "Database" as DB
+
+User -> User: akses halaman kelola data panen()
+User -> User: pilih penanaman yang akan dikelola()
+User -> Controller: index()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Harvest: Harvest::with(['plant', 'planting', 'location'])->get()
+activate Harvest
+Harvest -> DB: SELECT * FROM harvests LEFT JOIN plants LEFT JOIN plantings
+DB --> Harvest: return harvests[]
+Harvest --> Controller: return harvests[]
+deactivate Harvest
+Controller --> User: return view index dengan harvests[]
+deactivate Controller
+
+User -> User: tampilkan halaman kelola data panen()
+
+alt Catat Panen
+    User -> Controller: create(planting_id)
+    activate Controller
+    Controller -> Controller: validateRole()
+    Controller -> Planting: Planting::with('plant')->findOrFail(planting_id)
+    activate Planting
+    Planting -> DB: SELECT * FROM plantings LEFT JOIN plants WHERE plantings.id = ?
+    DB --> Planting: return planting dengan data lengkap
+    Planting --> Controller: return Planting
+    deactivate Planting
+    
+    Controller -> Plant: Plant::orderBy('name')->get()
+    activate Plant
+    Plant -> DB: SELECT * FROM plants ORDER BY name
+    DB --> Plant: return plants[]
+    Plant --> Controller: return plants[]
+    deactivate Plant
+    
+    Controller --> User: return view create dengan data()
+    deactivate Controller
+    User -> User: tampilkan form catat panen()
+    
+    User -> User: isi form catat panen()
+    User -> Controller: store(Request)
+    activate Controller
+    Controller -> Controller: validate(Request)
+    Controller -> Planting: Planting::findOrFail(planting_id)
+    activate Planting
+    Planting -> DB: SELECT * FROM plantings WHERE id = ?
+    DB --> Planting: return data penanaman
+    Planting --> Controller: return Planting
+    deactivate Planting
+    
+    Controller -> Plant: Plant::findOrFail(plant_id)
+    activate Plant
+    Plant -> DB: SELECT * FROM plants WHERE id = ?
+    DB --> Plant: return plant data
+    Plant --> Controller: return Plant
+    deactivate Plant
+    
+    alt Data Valid
+        Controller -> Harvest: Harvest::create(data)
+        activate Harvest
+        Harvest -> DB: INSERT INTO harvests VALUES (...)
+        DB --> Harvest: return harvest_id
+        Harvest --> Controller: return Harvest
+        deactivate Harvest
+        
+        alt Action = Save and Complete
+            Controller -> Planting: Planting::update(['is_completed' => true])
+            activate Planting
+            Planting -> DB: UPDATE plantings SET is_completed = true WHERE id = ?
+            DB --> Planting: return updated
+            Planting --> Controller: return updated
+            deactivate Planting
+        else Action = Save and Continue
+            Controller -> Planting: Planting::update(['is_completed' => false])
+            activate Planting
+            Planting -> DB: UPDATE plantings SET is_completed = false WHERE id = ?
+            DB --> Planting: return updated
+            Planting --> Controller: return updated
+            deactivate Planting
+        end
+        
+        Controller --> User: redirect dengan pesan sukses()
+        User -> User: tampilkan pesan panen berhasil dicatat()
+    else Data Tidak Valid
+        Controller --> User: redirect back dengan validation errors()
+        User -> User: tampilkan form dengan pesan error()
+    end
+    deactivate Controller
+else Catat Kehilangan
+    User -> Controller: createLoss(planting_id)
+    activate Controller
+    Controller -> Controller: validateRole()
+    Controller -> Planting: Planting::findOrFail(planting_id)
+    activate Planting
+    Planting -> DB: SELECT * FROM plantings WHERE id = ?
+    DB --> Planting: return planting data
+    Planting --> Controller: return Planting
+    deactivate Planting
+    
+    Controller --> User: return view create loss dengan planting()
+    deactivate Controller
+    User -> User: tampilkan form catat kehilangan()
+    
+    User -> User: isi form kehilangan()
+    User -> Controller: storeLoss(Request, planting_id)
+    activate Controller
+    Controller -> Controller: validate(Request)
+    
+    alt Data Valid
+        Controller -> PlantingLoss: PlantingLoss::create(data)
+        activate PlantingLoss
+        PlantingLoss -> DB: INSERT INTO planting_losses VALUES (...)
+        DB --> PlantingLoss: return loss_id
+        PlantingLoss --> Controller: return PlantingLoss
+        deactivate PlantingLoss
+        
+        Controller --> User: redirect dengan pesan sukses()
+        User -> User: tampilkan pesan kehilangan berhasil dicatat()
+    else Data Tidak Valid
+        Controller --> User: redirect back dengan validation errors()
+        User -> User: tampilkan form dengan pesan error()
+    end
+    deactivate Controller
+else Catat Gagal Panen
+    User -> Controller: createFailure(planting_id)
+    activate Controller
+    Controller -> Controller: validateRole()
+    Controller -> Planting: Planting::findOrFail(planting_id)
+    activate Planting
+    Planting -> DB: SELECT * FROM plantings WHERE id = ?
+    DB --> Planting: return planting data
+    Planting --> Controller: return Planting
+    deactivate Planting
+    
+    Controller --> User: return view create failure dengan planting()
+    deactivate Controller
+    User -> User: tampilkan form catat gagal panen()
+    
+    User -> User: isi form gagal panen()
+    User -> Controller: storeFailure(Request, planting_id)
+    activate Controller
+    Controller -> Controller: validate(Request)
+    
+    alt Data Valid
+        Controller -> PlantingLoss: PlantingLoss::create(data dengan status gagal)
+        activate PlantingLoss
+        PlantingLoss -> DB: INSERT INTO planting_losses VALUES (...)
+        DB --> PlantingLoss: return loss_id
+        PlantingLoss --> Controller: return PlantingLoss
+        deactivate PlantingLoss
+        
+        Controller -> Planting: Planting::update(['status' => 'gagal', 'is_completed' => true])
+        activate Planting
+        Planting -> DB: UPDATE plantings SET status = 'gagal', is_completed = true WHERE id = ?
+        DB --> Planting: return updated
+        Planting --> Controller: return updated
+        deactivate Planting
+        
+        Controller --> User: redirect dengan pesan sukses()
+        User -> User: tampilkan pesan gagal panen berhasil dicatat()
+    else Data Tidak Valid
+        Controller --> User: redirect back dengan validation errors()
+        User -> User: tampilkan form dengan pesan error()
+    end
+    deactivate Controller
+end
+
+@enduml

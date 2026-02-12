@@ -1,0 +1,70 @@
+@startuml
+' Referensi: Use Case Overview (00_use_case_overview.puml)
+' Use case 14: Menambahkan data stok benih
+' Aktor: Admin/Kepala Sek, Petugas BBI, Petugas Gudang
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Menambahkan data stok benih
+
+|#LightBlue|User|
+start
+:Masuk ke halaman stok benih;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data stok benih dari database;
+:Menampilkan daftar stok benih;
+
+|#LightBlue|User|
+:Klik tombol tambah data stok;
+
+|#LightGreen|Sistem|
+:Tampilkan form tambah stok benih;
+
+if (Tambah dari sertifikasi?) then (Ya)
+    |#LightBlue|User|
+    :Pilih tipe tanaman;
+    |#LightGreen|Sistem|
+    :Load sertifikasi yang lulus;
+    |#LightBlue|User|
+    :Pilih sertifikasi benih;
+    :Pilih stok benih;
+    |#LightGreen|Sistem|
+    :Pre-fill form dengan data sertifikasi;
+    |#LightBlue|User|
+    :Edit data jika perlu;
+    :Isi nomor penyimpanan;
+    :Submit form;
+else (Tambah manual)
+    |#LightBlue|User|
+    :Pilih tanaman;
+    :Pilih lokasi penanaman;
+    :Isi data stok benih;
+    :Isi nomor penyimpanan;
+    :Submit form;
+endif
+
+|#LightGreen|Sistem|
+:Validasi data;
+if (Data valid?) then (Ya)
+    :Simpan data stok benih ke database;
+    :Update status sertifikasi jika dari sertifikasi;
+    :Tampilkan pesan sukses;
+else (Tidak)
+    :Tampilkan pesan error;
+endif
+
+stop
+
+@enduml

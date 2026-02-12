@@ -1,0 +1,62 @@
+@startuml Sequence Diagram - Kelola Gudang
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - Kelola Gudang
+
+actor "Petugas Gudang/Admin" as User
+participant "WarehouseController" as Controller
+participant "Warehouse Model" as Warehouse
+participant "Database" as DB
+
+User -> Controller: GET /warehouse-locations
+activate Controller
+Controller -> Controller: validateRole
+Controller -> Warehouse: getAll
+activate Warehouse
+Warehouse -> DB: SELECT * FROM warehouses
+DB --> Warehouse: warehouses[]
+Warehouse --> Controller: warehouses[]
+deactivate Warehouse
+
+Controller --> User: render daftar gudang
+deactivate Controller
+
+' Tambah Gudang
+User -> Controller: POST /warehouse-locations data
+activate Controller
+Controller -> Controller: validate
+Controller -> Warehouse: create
+activate Warehouse
+Warehouse -> DB: INSERT INTO warehouses name address capacity
+DB --> Warehouse: warehouse_id
+Warehouse --> Controller: Warehouse
+deactivate Warehouse
+
+Controller --> User: redirect with success message
+deactivate Controller
+
+' Edit Gudang
+User -> Controller: PUT /warehouse-locations/{id} data
+activate Controller
+Controller -> Warehouse: findById
+activate Warehouse
+Warehouse -> DB: SELECT * FROM warehouses WHERE id = ?
+DB --> Warehouse: warehouse data
+Warehouse --> Controller: Warehouse
+deactivate Warehouse
+
+Controller -> Warehouse: update warehouse data
+activate Warehouse
+Warehouse -> DB: UPDATE warehouses SET name = ? WHERE id = ?
+DB --> Warehouse: updated
+Warehouse --> Controller: updated
+deactivate Warehouse
+
+Controller --> User: redirect with success message
+deactivate Controller
+
+@enduml
+

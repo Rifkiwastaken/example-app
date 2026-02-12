@@ -1,0 +1,108 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - UC17 Mengelola Data Penjualan
+
+actor "User" as User
+boundary "SaleView" as View
+control "SaleController" as Controller
+entity "Sale" as Sale
+entity "InventoryTypeSeed" as Seed
+entity "InventoryLot" as Lot
+
+User -> View: akses halaman kelola penjualan()
+View -> Controller: index()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Sale: with('items')->paginate(15)
+activate Sale
+Sale -> Sale: load('items')
+Sale --> Controller: return sales[]
+deactivate Sale
+Controller --> View: return sales[]
+deactivate Controller
+View --> User: tampilkan daftar penjualan()
+
+alt Tambah Baru
+    User -> View: klik tombol tambah penjualan()
+    View -> Controller: create()
+    activate Controller
+    Controller -> Seed: where('total_seed_quantity', '>', 0)->get()
+    activate Seed
+    Seed --> Controller: return seeds[]
+    deactivate Seed
+    Controller --> View: return seeds[]
+    deactivate Controller
+    View --> User: tampilkan form tambah penjualan()
+    
+    User -> View: isi data pembeli()
+    User -> View: isi data lokasi sebaran()
+    User -> View: pilih stok benih yang akan dijual()
+    User -> View: isi jumlah penjualan()
+    View -> Controller: store(request)
+    activate Controller
+    Controller -> Controller: validate(request)
+    Controller -> Seed: find(seed_id)
+    activate Seed
+    Seed --> Controller: return seed
+    deactivate Seed
+    
+    alt Stok tidak cukup
+        Controller --> View: return back dengan error[]
+        View --> User: tampilkan form dengan error()
+        deactivate Controller
+    else Stok cukup
+        Controller -> Sale: create(data)
+        activate Sale
+        Sale -> Sale: save()
+        Sale --> Controller: return sale
+        deactivate Sale
+        
+        Controller -> Seed: seed->update(['total_seed_quantity' => new_quantity])
+        activate Seed
+        Seed -> Seed: save()
+        Seed --> Controller: return success
+        deactivate Seed
+        
+        Controller -> Lot: where('production_id', seed.storage_number)->get()
+        activate Lot
+        Lot --> Controller: return lots[]
+        deactivate Lot
+        
+        loop Untuk setiap lot
+            Controller -> Lot: lot->update(['current_stock' => new_stock])
+            activate Lot
+            Lot -> Lot: save()
+            Lot --> Controller: return success
+            deactivate Lot
+        end
+        
+        Controller --> View: redirect dengan pesan sukses
+        View --> User: tampilkan pesan sukses()
+        deactivate Controller
+    end
+else Batalkan
+    User -> View: klik tombol batalkan penjualan()
+    View -> Controller: cancel(sale_id)
+    activate Controller
+    Controller -> Sale: findOrFail(sale_id)
+    activate Sale
+    Sale -> Sale: update(['status' => 'cancelled'])
+    Sale --> Controller: return sale
+    deactivate Sale
+    
+    Controller -> Seed: seed->update(['total_seed_quantity' => restored_quantity])
+    activate Seed
+    Seed -> Seed: save()
+    Seed --> Controller: return success
+    deactivate Seed
+    
+    Controller --> View: redirect dengan pesan sukses
+    View --> User: tampilkan pesan sukses()
+    deactivate Controller
+end
+
+@enduml

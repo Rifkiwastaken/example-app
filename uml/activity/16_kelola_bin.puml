@@ -1,0 +1,78 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Kelola Bin
+
+|#LightBlue|Petugas Gudang/Admin|
+start
+:Dari halaman kelola gudang;
+:Pilih gudang;
+:Klik kelola bin;
+
+|#LightGreen|Sistem|
+:Query data bin dari database;
+:Filter berdasarkan gudang;
+:Menampilkan daftar bin;
+
+|#LightBlue|Petugas Gudang/Admin|
+:Lihat daftar bin;
+
+if (Aksi?) then (Tambah Bin)
+    :Masuk ke form tambah bin;
+    :Input data bin\n(nama, internal_id, max_capacity);
+    :Submit form;
+    
+    |#LightGreen|Sistem|
+    :Validasi data bin;
+    :Check internal_id unik;
+    :Insert ke tabel bins;
+    :Success message;
+    :Redirect ke daftar bin;
+    |#LightBlue|Petugas Gudang/Admin|
+    :Lihat pesan bin berhasil ditambahkan;
+else (Edit Bin)
+    :Pilih bin;
+    :Edit data bin;
+    :Submit form;
+    
+    |#LightGreen|Sistem|
+    :Update data di tabel bins;
+    :Success message;
+    :Redirect ke daftar bin;
+    |#LightBlue|Petugas Gudang/Admin|
+    :Lihat pesan bin berhasil diupdate;
+else (Hapus Bin)
+    :Pilih bin;
+    :Klik hapus bin;
+    :Konfirmasi penghapusan;
+    
+    |#LightGreen|Sistem|
+    :Check stok di bin;
+    if (Bin kosong?) then (Ya)
+        :Delete dari tabel bins;
+        :Success message;
+        :Redirect ke daftar bin;
+        |#LightBlue|Petugas Gudang/Admin|
+        :Lihat pesan bin berhasil dihapus;
+    else (Tidak)
+        :Error: bin masih berisi stok;
+        :Tampilkan pesan error;
+        |#LightBlue|Petugas Gudang/Admin|
+        :Lihat pesan bin masih berisi stok;
+    endif
+endif
+
+stop
+
+@enduml

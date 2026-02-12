@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('plant_types', function (Blueprint $table) {
-            $table->id();
+            $table->string('plant_type_id', 36)->primary();
             $table->string('name');
             $table->string('category')->nullable(); // pangan, hortikultura-sayur/buah/hias, dll
             $table->timestamps();
@@ -21,6 +21,9 @@ return new class extends Migration
         Schema::dropIfExists('plant_types');
     }
 };
+
+
+
 
 
 

@@ -4,11 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasCustomId;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Task extends Model
 {
     use HasFactory;
+    use HasCustomId;
+
+    protected $primaryKey = 'task_id';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'title',
@@ -19,6 +25,7 @@ class Task extends Model
         'association',
         'new_status',
         'assigned_to',
+        'created_by',
         'new_priority',
         'start_date',
         'start_time',
@@ -32,6 +39,8 @@ class Task extends Model
         'collaborators',
         'repeats',
         'hours_spent',
+        'last_edited_at',
+        'last_edited_by',
     ];
 
     protected $casts = [
@@ -42,6 +51,7 @@ class Task extends Model
         'start_time' => 'datetime',
         'due_date' => 'date',
         'due_time' => 'datetime',
+        'last_edited_at' => 'datetime',
     ];
 
     /**
@@ -49,7 +59,23 @@ class Task extends Model
      */
     public function assignedUser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'assigned_to');
+        return $this->belongsTo(User::class, 'assigned_to', 'user_id');
+    }
+
+    /**
+     * Get the user who created this task
+     */
+    public function createdByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by', 'user_id');
+    }
+
+    /**
+     * Get the user who last edited this task
+     */
+    public function lastEditedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'last_edited_by', 'user_id');
     }
 
     /**
@@ -57,7 +83,7 @@ class Task extends Model
      */
     public function template(): BelongsTo
     {
-        return $this->belongsTo(TaskTemplate::class, 'template_id');
+        return $this->belongsTo(TaskTemplate::class, 'template_id', 'task_template_id');
     }
 
     /**
@@ -65,7 +91,7 @@ class Task extends Model
      */
     public function series(): BelongsTo
     {
-        return $this->belongsTo(TaskSeries::class, 'series_id');
+        return $this->belongsTo(TaskSeries::class, 'series_id', 'task_series_id');
     }
 
     /**
@@ -73,15 +99,15 @@ class Task extends Model
      */
     public function plantingLocation(): BelongsTo
     {
-        return $this->belongsTo(PlantingLocation::class);
+        return $this->belongsTo(PlantingLocation::class, 'planting_location_id', 'planting_location_id');
     }
 
     /**
      * Get the planting this task is associated with
      */
-    public function plant(): BelongsTo
+    public function planting(): BelongsTo
     {
-        return $this->belongsTo(Planting::class, 'planting_id');
+        return $this->belongsTo(Planting::class, 'planting_id', 'planting_id');
     }
 
     /**
@@ -90,12 +116,13 @@ class Task extends Model
     public function getStatusLabelAttribute(): string
     {
         return match($this->new_status) {
-            'dilakukan' => 'Dilakukan',
-            'dalam_progress' => 'Dalam Progress',
-            'selesai' => 'Selesai',
-            'tidak_selesai' => 'Tidak Selesai',
-            'terlewat' => 'Terlewat',
-            'ditinggalkan' => 'Ditinggalkan',
+            'selesai' => 'Telah dilakukan (Selesai)',
+            'dalam_progress' => 'Dalam progress/ akan dilakukan',
+            'tidak_selesai' => 'Tidak selesai',
+            'dilakukan' => 'Dilakukan', // Legacy support
+            'tidak_selesai' => 'Tidak Selesai', // Legacy support
+            'terlewat' => 'Terlewat', // Legacy support
+            'ditinggalkan' => 'Ditinggalkan', // Legacy support
             default => $this->new_status,
         };
     }

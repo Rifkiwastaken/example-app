@@ -1,0 +1,118 @@
+@startuml
+' SIBESTI - Sequence Diagram | UC13: Mengakses Dashboard (Use Case Overview)
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+title Sequence Diagram - UC13 Mengakses Dashboard
+
+actor "User" as User
+boundary "DashboardView" as View
+control "DashboardController" as Controller
+entity "Harvest" as Harvest
+entity "InventoryTypeSeed" as InventoryTypeSeed
+entity "Sale" as Sale
+entity "Task" as Task
+entity "PlantingLocationNote" as Note
+entity "CertificationReport" as CertificationReport
+entity "InventoryLot" as InventoryLot
+
+User -> View: akses halaman dashboard()
+View -> Controller: index()
+activate Controller
+Controller -> Controller: validateRole()
+Controller -> Controller: getWeatherData()
+
+alt Role = Admin
+    Controller -> Harvest: getProductionTrend(plantFilter)
+    activate Harvest
+    Harvest -> Harvest: whereMonth()->sum('quantity')
+    Harvest --> Controller: return productionTrend[]
+    deactivate Harvest
+    Controller -> InventoryTypeSeed: getStockComposition(filter)
+    activate InventoryTypeSeed
+    InventoryTypeSeed -> InventoryTypeSeed: groupBy('category')->sum('quantity')
+    InventoryTypeSeed --> Controller: return stockComposition[]
+    deactivate InventoryTypeSeed
+    Controller -> Sale: getRevenueTrend(filter)
+    activate Sale
+    Sale -> Sale: whereMonth()->sum('total_amount')
+    Sale --> Controller: return revenueTrend[]
+    deactivate Sale
+    Controller -> Harvest: getProductionTableData(plantFilter)
+    activate Harvest
+    Harvest -> Harvest: groupBy('plant')->sum('quantity')
+    Harvest --> Controller: return productionTable[]
+    deactivate Harvest
+    Controller -> InventoryTypeSeed: getStockTableData(filter)
+    activate InventoryTypeSeed
+    InventoryTypeSeed -> InventoryTypeSeed: groupBy('inventory_type')->sum('quantity')
+    InventoryTypeSeed --> Controller: return stockTable[]
+    deactivate InventoryTypeSeed
+    Controller -> Sale: getRevenueTableData(filter)
+    activate Sale
+    Sale -> Sale: groupBy('inventory_type')->sum('total_amount')
+    Sale --> Controller: return revenueTable[]
+    deactivate Sale
+    Controller -> CertificationReport: getExpiredCertifications()
+    activate CertificationReport
+    CertificationReport -> CertificationReport: where('expiry_date', '<', today())->get()
+    CertificationReport --> Controller: return expiredCertifications[]
+    deactivate CertificationReport
+end
+
+alt Role = Admin/Kepala Satgas/Penangkar
+    Controller -> Task: getUpcomingTasks(user)
+    activate Task
+    Task -> Task: where('due_date', '>=', today())->where('assigned_to', user_id)->get()
+    Task --> Controller: return upcomingTasks[]
+    deactivate Task
+    Controller -> Task: getTaskNotifications(user)
+    activate Task
+    Task -> Task: where('status', '!=', 'completed')->where('assigned_to', user_id)->get()
+    Task --> Controller: return taskNotifications[]
+    deactivate Task
+    Controller -> Note: getNoteNotifications(user)
+    activate Note
+    Note -> Note: where('user_id', user_id)->where('created_at', '>', last_check)->get()
+    Note --> Controller: return noteNotifications[]
+    deactivate Note
+end
+
+alt Role = Semua User
+    Controller -> InventoryTypeSeed: getExpiringSeedsForUser(user)
+    activate InventoryTypeSeed
+    InventoryTypeSeed -> InventoryTypeSeed: where('expiry_date', '<=', next_30_days)->where('responsible_person_id', user_id)->get()
+    InventoryTypeSeed --> Controller: return expiringSeeds[]
+    deactivate InventoryTypeSeed
+end
+
+alt Role = Admin/Petugas Gudang
+    Controller -> InventoryLot: getExpiredBinStocks()
+    activate InventoryLot
+    InventoryLot -> InventoryLot: where('expiry_date', '<', today())->get()
+    InventoryLot --> Controller: return expiredBinStocks[]
+    deactivate InventoryLot
+    Controller -> InventoryTypeSeed: getLowStockNotifications()
+    activate InventoryTypeSeed
+    InventoryTypeSeed -> InventoryTypeSeed: where('quantity', '<', threshold)->get()
+    InventoryTypeSeed --> Controller: return lowStockNotifications[]
+    deactivate InventoryTypeSeed
+end
+
+Controller --> View: return semua data dashboard
+deactivate Controller
+View --> User: tampilkan dashboard dengan statistik dan grafik()
+
+alt User Pilih Filter
+    User -> View: pilih filter(plant_filter, inventory_type_filter)
+    View -> Controller: index(request dengan filter)
+    activate Controller
+    Controller -> Controller: getFilteredData(plantFilter, inventoryTypeFilter)
+    Controller --> View: return data terfilter
+    deactivate Controller
+    View --> User: tampilkan dashboard dengan data terfilter()
+end
+
+@enduml

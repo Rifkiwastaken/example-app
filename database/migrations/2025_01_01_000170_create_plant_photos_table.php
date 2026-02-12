@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('plant_photos', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('plant_id')->constrained()->onDelete('cascade');
+            $table->string('plant_photo_id', 36)->primary();
+            $table->string('plant_id', 36)->onDelete('cascade');
             $table->string('file_path');
             $table->string('file_name');
             $table->bigInteger('file_size');
@@ -32,6 +32,9 @@ return new class extends Migration
         Schema::dropIfExists('plant_photos');
     }
 };
+
+
+
 
 
 

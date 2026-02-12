@@ -1,0 +1,53 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Evaluasi Hasil Pemeriksaan
+
+|#LightBlue|Petugas Sertifikasi/Admin|
+start
+:Masuk ke halaman evaluasi;
+:Pilih hasil panen untuk dievaluasi;
+
+|#LightGreen|Sistem|
+:Load data laporan pemeriksaan;
+:Load data hasil inspeksi;
+:Menampilkan form evaluasi;
+
+|#LightBlue|Petugas Sertifikasi/Admin|
+:Review hasil pemeriksaan;
+:Input kesimpulan evaluasi;
+
+if (Hasil evaluasi?) then (LULUS)
+    |#LightGreen|Sistem|
+    :Update status menjadi LULUS;
+    :Generate sertifikat;
+    :Simpan data sertifikat;
+    :Tampilkan opsi tambah ke stok;
+    :Success message;
+    :Redirect ke halaman detail;
+    |#LightBlue|Petugas Sertifikasi/Admin|
+    :Lihat pesan sertifikasi lulus;
+else (TIDAK LULUS)
+    |#LightGreen|Sistem|
+    :Update status menjadi TIDAK LULUS;
+    :Simpan alasan tidak lulus;
+    :Success message;
+    :Redirect ke halaman detail;
+    |#LightBlue|Petugas Sertifikasi/Admin|
+    :Lihat pesan sertifikasi tidak lulus;
+endif
+
+stop
+
+@enduml

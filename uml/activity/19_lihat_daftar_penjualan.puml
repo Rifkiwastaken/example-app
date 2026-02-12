@@ -1,0 +1,34 @@
+@startuml
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Lihat Daftar Penjualan
+
+|#LightBlue|Petugas BBI/Admin|
+start
+:Masuk ke halaman daftar penjualan;
+
+|#LightGreen|Sistem|
+:Validasi role pengguna;
+:Query data penjualan dari database;
+:Load data sale items;
+:Menampilkan daftar penjualan dengan summary;
+
+|#LightBlue|Petugas BBI/Admin|
+:Lihat daftar penjualan;
+:Filter berdasarkan tanggal/pelanggan;
+:Lihat detail penjualan;
+
+stop
+
+@enduml

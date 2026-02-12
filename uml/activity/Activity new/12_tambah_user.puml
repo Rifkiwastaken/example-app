@@ -1,0 +1,64 @@
+@startuml
+' Referensi: Use Case Overview (00_use_case_overview.puml)
+' Use case 12: Menambahkan User
+' Aktor: Admin/Kepala Sek
+!theme plain
+skinparam activity {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+    FontSize 11
+}
+skinparam swimlane {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+    TitleBackgroundColor #BBDEFB
+    TitleBorderColor #1976D2
+}
+
+title Activity Diagram - Menambahkan User
+
+|#LightBlue|Admin|
+start
+:Masuk ke halaman kelola user;
+
+|#LightGreen|Sistem|
+:Validasi role admin;
+:Query data user dari database;
+:Menampilkan daftar user;
+
+|#LightBlue|Admin|
+:Lihat daftar user;
+:Klik tombol tambah user;
+
+|#LightGreen|Sistem|
+:Tampilkan form tambah user;
+
+|#LightBlue|Admin|
+:Isi form data user;
+:Pilih role user;
+:Submit form;
+
+|#LightGreen|Sistem|
+:Validasi data;
+if (Data valid?) then (Tidak)
+    :Tampilkan pesan error;
+    stop
+endif
+
+:Check email/username sudah ada?;
+if (Sudah ada?) then (Ya)
+    :Tampilkan pesan error;
+    stop
+endif
+
+:Generate password default;
+:Simpan data user ke database;
+:Assign role ke user;
+:Tampilkan pesan sukses;
+
+|#LightBlue|Admin|
+:Lihat user baru ditambahkan;
+
+stop
+
+@enduml
