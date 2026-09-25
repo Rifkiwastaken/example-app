@@ -1,29 +1,57 @@
 @extends('layouts.app')
 
-@section('title', 'Laporan Per Lokasi Lahan - ' . $plantingLocation->name . ' - SIBESTI')
+@php
+    $locationTitle = collect($plantingLocations ?? [])->map->name->filter()->unique()->implode(', ')
+        ?: ($plantingLocation?->name ?? 'Laporan Produksi');
+@endphp
+@section('title', 'Laporan Produksi - ' . $locationTitle . ' - SIBESTI')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="mb-0">Laporan Per Lokasi Lahan</h4>
-        <small class="text-muted">{{ $plantingLocation->name }}</small>
+        <h4 class="mb-0">Laporan Produksi</h4>
+        <small class="text-muted">{{ $locationTitle }}</small>
     </div>
     <a href="{{ route('reports.by-location') }}" class="btn btn-secondary">
         <i class="fas fa-arrow-left me-2"></i>Kembali
     </a>
 </div>
 
-<!-- Filter Section -->
 <div class="card mb-4">
-    <div class="card-header bg-light">
-        <h6 class="mb-0">
-            <i class="fas fa-filter me-2"></i>Filter Data
-        </h6>
+    <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+            <strong>Filter aktif:</strong> {{ $locationTitle }}
+            @if(request('filter_mode') === 'variety')
+                <span class="badge bg-info ms-2">Berdasarkan varietas</span>
+            @else
+                <span class="badge bg-success ms-2">Berdasarkan lokasi lahan</span>
+            @endif
+        </div>
+        <a href="{{ route('reports.by-location') }}" class="btn btn-outline-primary btn-sm">Ubah filter</a>
     </div>
-    <div class="card-body">
+</div>
+<div class="d-none">
         <form method="GET" action="{{ route('reports.by-location') }}" id="filterForm">
-            <input type="hidden" name="planting_location_id" value="{{ $plantingLocation->planting_location_id }}">
+            <input type="hidden" name="planting_location_id" value="{{ $plantingLocation?->planting_location_id }}">
             <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Lokasi lahan</label>
+                    <select name="field_id" class="form-select">
+                        <option value="">Semua lahan</option>
+                        @foreach($fields ?? [] as $field)
+                            <option value="{{ $field->id }}" {{ request('field_id') == $field->id ? 'selected' : '' }}>{{ $field->kode_lahan }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Progress penanaman</label>
+                    <select name="planting_id" class="form-select">
+                        <option value="">Semua progress</option>
+                        @foreach($allPlantingsForLocation ?? [] as $p)
+                            <option value="{{ $p->getKey() }}" {{ request('planting_id') == $p->getKey() ? 'selected' : '' }}>{{ $p->planting_batch_number ?: $p->getKey() }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div class="col-md-3 mb-3">
                     <label class="form-label">Tahun</label>
                     <select name="year" class="form-select">
@@ -69,14 +97,33 @@
                     <button type="submit" class="btn btn-primary me-2">
                         <i class="fas fa-search me-1"></i>Filter
                     </button>
-                    <a href="{{ route('reports.by-location', ['planting_location_id' => $plantingLocation->planting_location_id]) }}" class="btn btn-secondary">
+                    <a href="{{ route('reports.by-location') }}" class="btn btn-secondary">
                         <i class="fas fa-redo me-1"></i>Reset
                     </a>
                 </div>
             </div>
         </form>
+</div>
+
+@if(!empty($timeline) && $timeline->count())
+<div class="card mb-4">
+    <div class="card-header">Timeline produksi, sertifikasi, hingga stok</div>
+    <div class="card-body p-0">
+        <ul class="list-group list-group-flush">
+            @foreach($timeline as $row)
+                <li class="list-group-item d-flex justify-content-between align-items-start">
+                    <div>
+                        <span class="badge bg-secondary me-2">{{ $row['type'] }}</span>
+                        {{ $row['title'] }}
+                        <small class="text-muted d-block">{{ $row['variety'] ?? '' }}</small>
+                    </div>
+                    <small class="text-muted">{{ optional($row['at'])->format('d M Y') ?? '-' }}</small>
+                </li>
+            @endforeach
+        </ul>
     </div>
 </div>
+@endif
 
 <!-- Summary Cards -->
 <div class="row mb-4">
@@ -132,7 +179,7 @@
 <div class="card">
     <div class="card-header">
         <h6 class="mb-0">
-            <i class="fas fa-table me-2"></i>Laporan Gabungan - {{ $plantingLocation->name }}
+                    <i class="fas fa-table me-2"></i>Laporan Gabungan - {{ $locationTitle }}
         </h6>
     </div>
     <div class="card-body">
@@ -349,7 +396,7 @@
                                         <small class="text-muted">{{ $planting->plant->variety ?: '-' }}</small>
                                     </td>
                                     <td>{{ $planting->planted_at ? $planting->planted_at->format('d M Y') : '-' }}</td>
-                                    <td>{{ $planting->quantity_planted ?? '-' }}</td>
+                                    <td>{{ $planting->planting_amount ?? '-' }}</td>
                                     <td>{{ $planting->estimated_harvest_date ? $planting->estimated_harvest_date->format('d M Y') : '-' }}</td>
                                     <td>{{ $harvest && $harvest->harvested_at ? $harvest->harvested_at->format('d M Y') : '-' }}</td>
                                     <td>

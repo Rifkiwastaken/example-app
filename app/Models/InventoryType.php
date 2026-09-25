@@ -6,8 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\HasCustomId;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use App\Models\StockHistory;
 
 class InventoryType extends Model
 {
@@ -48,8 +49,10 @@ class InventoryType extends Model
         'low_stock_unit',
         'low_stock_email',
         'description',
-        'responsible_person_id',
-        'plant_id',
+        'latest_certification_report_id',
+        'certification_source_count',
+        'certification_stock_total',
+        'certification_last_synced_at',
     ];
 
     protected $casts = [
@@ -57,6 +60,8 @@ class InventoryType extends Model
         'estimated_kg_per_unit' => 'decimal:2',
         'track_individual_lots' => 'boolean',
         'low_stock_threshold' => 'decimal:2',
+        'certification_stock_total' => 'decimal:2',
+        'certification_last_synced_at' => 'datetime',
     ];
 
     /**
@@ -68,24 +73,11 @@ class InventoryType extends Model
     }
 
     /**
-     * Get all transactions for this inventory type
+     * Get stock history records that are transaction-style (stok masuk, distribusi, pengurangan, etc.)
      */
     public function transactions(): HasMany
     {
-        return $this->hasMany(InventoryTransaction::class, 'inventory_type_id', 'inventory_type_id');
-    }
-
-    /**
-     * Get warehouses and bins where this inventory type can be stored
-     */
-    public function warehouses(): BelongsToMany
-    {
-        return $this->belongsToMany(
-            Warehouse::class,
-            'inventory_type_warehouses',
-            'inventory_type_id',
-            'warehouse_id'
-        )->withPivot('bin_id', 'warehouse_only')->withTimestamps();
+        return $this->hasMany(StockHistory::class, 'inventory_type_id', 'inventory_type_id')->whereNotNull('transaction_type');
     }
 
     /**
@@ -105,24 +97,29 @@ class InventoryType extends Model
     }
 
     /**
-     * Get certification reports (certified seeds) linked to this inventory type
+     * Laporan sertifikasi (benih bersertifikat) yang dihubungkan ke stok benih ini.
+     * Satu laporan hanya ke satu stok (FK di certification_reports.inventory_type_id).
      */
-    public function certificationReports(): BelongsToMany
+    public function certificationReports(): HasMany
     {
-        return $this->belongsToMany(
+        return $this->hasMany(CertificationReport::class, 'inventory_type_id', 'inventory_type_id');
+    }
+
+    public function latestCertificationReport(): BelongsTo
+    {
+        return $this->belongsTo(
             CertificationReport::class,
-            'inventory_type_certification_reports',
-            'inventory_type_id',
+            'latest_certification_report_id',
             'certification_report_id'
-        )->withPivot('quantity')->withTimestamps();
+        );
     }
 
     /**
-     * Get seeds (non-certified seeds) linked to this inventory type
+     * Compat relation: data "seeds" kini bersumber dari certification_reports.
      */
     public function seeds(): HasMany
     {
-        return $this->hasMany(InventoryTypeSeed::class, 'inventory_type_id', 'inventory_type_id');
+        return $this->hasMany(CertificationReport::class, 'inventory_type_id', 'inventory_type_id');
     }
 
     /**
@@ -130,11 +127,11 @@ class InventoryType extends Model
      */
     public function getTotalStockAttribute(): float
     {
-        // Calculate from lots (physical stock in warehouses)
-        $lotsStock = $this->lots()->sum('current_stock');
+        // Stok lot di gudang: hanya lot operasional (belum habis & belum lewat kadaluarsa)
+        $lotsStock = (float) $this->lots()->activeForOperationalStock()->sum('current_stock');
         
-        // Calculate from seeds (seed records)
-        $seedsStock = $this->seeds()->sum('total_seed_quantity');
+        // Calculate from certification-based records
+        $seedsStock = $this->seeds()->sum('certified_seed_quantity');
         
         // Return the sum of both
         return $lotsStock + $seedsStock;
@@ -145,7 +142,7 @@ class InventoryType extends Model
      */
     public function getTotalStockFromSeedsAttribute(): float
     {
-        return $this->seeds()->sum('total_seed_quantity');
+        return (float) $this->seeds()->sum('certified_seed_quantity');
     }
 
     /**
@@ -166,7 +163,7 @@ class InventoryType extends Model
      */
     public function getCurrentStockFromLotsAttribute(): float
     {
-        return $this->lots->sum('current_stock');
+        return (float) $this->lots->filter(fn ($lot) => $lot->isActiveForOperationalStock())->sum('current_stock');
     }
 
     /**
@@ -202,15 +199,36 @@ class InventoryType extends Model
      */
     public function plant(): BelongsTo
     {
-        return $this->belongsTo(Plant::class);
+        return $this->belongsTo(Plant::class, 'plant_id', 'seed_varieties_id');
+    }
+
+    /**
+     * Compat attribute: plant_id diturunkan dari laporan sertifikasi terbaru.
+     */
+    public function getPlantIdAttribute(): ?string
+    {
+        $report = $this->certificationReports()
+            ->with('harvest')
+            ->orderByDesc('report_date')
+            ->orderByDesc('created_at')
+            ->first();
+
+        return $report?->harvest?->plant_id;
     }
 
     /**
      * Get all sale items for this inventory type
      */
-    public function saleItems(): HasMany
+    public function saleItems(): HasManyThrough
     {
-        return $this->hasMany(SaleItem::class, 'inventory_type_id', 'inventory_type_id');
+        return $this->hasManyThrough(
+            SaleItem::class,
+            InventoryLot::class,
+            'inventory_type_id',
+            'warehouse_lot_id',
+            'inventory_type_id',
+            'warehouse_lot_id'
+        );
     }
 }
 

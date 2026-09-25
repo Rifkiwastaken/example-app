@@ -14,7 +14,7 @@ class PlantingController extends Controller
         $query = Planting::with(['plant', 'location']);
 
         if ($request->filled('plant_id')) {
-            $query->where('plant_id', $request->plant_id);
+            $query->forPlant($request->plant_id);
         }
         if ($request->filled('planting_location_id')) {
             $query->where('planting_location_id', $request->planting_location_id);
@@ -40,30 +40,17 @@ class PlantingController extends Controller
     {
         try {
             $data = $request->validate([
-                'plant_id' => 'required|exists:plants,plant_id',
+                'plant_id' => 'required|exists:plant_varieties,seed_varieties_id',
                 'planting_location_id' => 'required|exists:planting_locations,planting_location_id',
                 'bed_label' => 'nullable|string|max:255',
-                'days_to_emerge' => 'nullable|integer|min:0',
-                'spacing_between_plants' => 'nullable|numeric|min:0',
-                'spacing_between_rows' => 'nullable|numeric|min:0',
-                'sowing_depth' => 'nullable|numeric|min:0',
-                'avg_height' => 'nullable|numeric|min:0',
-                'start_method' => 'nullable|string|max:255',
-                'germination_stage' => 'nullable|string|max:255',
-                'seeds_per_hole' => 'nullable|integer|min:1',
-                'light_profile' => 'nullable|string|max:255',
-                'soil_condition' => 'nullable|string|max:255',
-                'planting_detail' => 'nullable|string',
-                'pruning_detail' => 'nullable|string',
-                'perennial' => 'boolean',
-                'days_to_flower' => 'nullable|integer|min:0',
-                'days_to_harvest' => 'nullable|integer|min:0',
-                'harvest_window_days' => 'nullable|integer|min:0',
-                'expected_loss_rate' => 'nullable|numeric|min:0|max:100',
-                'harvest_unit' => 'nullable|string|max:255',
-                'expected_yield_per_hectare' => 'nullable|numeric|min:0',
-                'quantity_planted' => 'nullable|numeric|min:0',
                 'planted_at' => 'nullable|date',
+                'planting_batch_number' => 'nullable|string|max:255',
+                'estimated_harvest_date' => 'nullable|date',
+                'area_ha' => 'nullable|numeric|min:0',
+                'planting_format' => 'nullable|string|max:255',
+                'planting_format_custom' => 'nullable|string|max:255',
+                'planting_amount' => 'nullable|numeric|min:0',
+                'progress' => 'nullable|integer|min:0|max:100',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()->back()
@@ -105,30 +92,17 @@ class PlantingController extends Controller
     public function update(Request $request, Planting $planting)
     {
         $data = $request->validate([
-            'plant_id' => 'required|exists:plants,plant_id',
+            'plant_id' => 'required|exists:plant_varieties,seed_varieties_id',
             'planting_location_id' => 'required|exists:planting_locations,planting_location_id',
             'bed_label' => 'nullable|string|max:255',
-            'days_to_emerge' => 'nullable|integer|min:0',
-            'spacing_between_plants' => 'nullable|numeric|min:0',
-            'spacing_between_rows' => 'nullable|numeric|min:0',
-            'sowing_depth' => 'nullable|numeric|min:0',
-            'avg_height' => 'nullable|numeric|min:0',
-            'start_method' => 'nullable|string|max:255',
-            'germination_stage' => 'nullable|string|max:255',
-            'seeds_per_hole' => 'nullable|integer|min:1',
-            'light_profile' => 'nullable|string|max:255',
-            'soil_condition' => 'nullable|string|max:255',
-            'planting_detail' => 'nullable|string',
-            'pruning_detail' => 'nullable|string',
-            'perennial' => 'boolean',
-            'days_to_flower' => 'nullable|integer|min:0',
-            'days_to_harvest' => 'nullable|integer|min:0',
-            'harvest_window_days' => 'nullable|integer|min:0',
-            'expected_loss_rate' => 'nullable|numeric|min:0|max:100',
-            'harvest_unit' => 'nullable|string|max:255',
-            'expected_yield_per_hectare' => 'nullable|numeric|min:0',
-            'quantity_planted' => 'nullable|numeric|min:0',
             'planted_at' => 'nullable|date',
+            'planting_batch_number' => 'nullable|string|max:255',
+            'estimated_harvest_date' => 'nullable|date',
+            'area_ha' => 'nullable|numeric|min:0',
+            'planting_format' => 'nullable|string|max:255',
+            'planting_format_custom' => 'nullable|string|max:255',
+            'planting_amount' => 'nullable|numeric|min:0',
+            'progress' => 'nullable|integer|min:0|max:100',
         ]);
 
         $planting->update($data);

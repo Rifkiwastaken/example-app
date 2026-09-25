@@ -78,7 +78,7 @@
                             <td colspan="5" class="text-center py-4">
                                 <div class="text-muted">
                                     <i class="fas fa-certificate fa-3x mb-3"></i>
-                                    <p>Belum ada komoditas/tanaman dengan sertifikasi.</p>
+                                    <p>Belum ada data tanaman.</p>
                                 </div>
                             </td>
                         </tr>

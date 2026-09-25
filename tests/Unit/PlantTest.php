@@ -53,11 +53,10 @@ class PlantTest extends TestCase
         $plant = Plant::create($plantData);
 
         // Memverifikasi bahwa plant berhasil dibuat dengan field sesuai input
-        $this->assertDatabaseHas('plants', [
-            'plant_id' => $plant->plant_id,
+        $this->assertDatabaseHas('plant_varieties', [
+            'seed_varieties_id' => $plant->plant_id,
             'name' => 'Padi Varietas A',
-            'plant_type_id' => $plantType->plant_type_id,
-            'planting_location_id' => $plantingLocation->planting_location_id,
+            'seed_commodity_id' => $plantType->seed_commodity_id,
             'variety' => 'Varietas A',
         ]);
     }
@@ -124,12 +123,12 @@ class PlantTest extends TestCase
 
         $planting1 = Planting::create([
             'plant_id' => $plant->plant_id,
-            'quantity_planted' => 100,
+            'planting_amount' => 100,
         ]);
 
         $planting2 = Planting::create([
             'plant_id' => $plant->plant_id,
-            'quantity_planted' => 200,
+            'planting_amount' => 200,
         ]);
 
         // Memverifikasi bahwa relasi berfungsi dengan benar

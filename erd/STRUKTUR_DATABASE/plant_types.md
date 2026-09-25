@@ -7,11 +7,12 @@ Tabel untuk menyimpan jenis-jenis tanaman
 
 | Nama Atribut | Tipe Data | Ukuran | Keterangan |
 |--------------|-----------|--------|------------|
-| **plant_type_id** | VARCHAR | 36 | Primary Key (format: plant_type_id) |
-| name | VARCHAR | 255 | Nama jenis tanaman (NOT NULL) |
-| category | VARCHAR | 255 | Kategori tanaman: pangan, hortikultura, dll (NULL) |
-| created_at | TIMESTAMP | - | Tanggal dibuat (NOT NULL) |
-| updated_at | TIMESTAMP | - | Tanggal diupdate (NOT NULL) |
+| **plant_type_id** | VARCHAR | 36 | Primary Key |
+| name | VARCHAR | 50 | |
+| category | VARCHAR | 50 | |
+| variety | TEXT | | |
+| created_at | TIMESTAMP | | |
+| updated_at | TIMESTAMP | | |
 
 ## Relasi
 - One-to-Many dengan: `plants` (plant_type_id)

@@ -2,244 +2,182 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\InventoryType;
-use App\Models\InventoryTypeSeed;
 use App\Models\Plant;
-use App\Models\Warehouse;
-use App\Models\CertificationReport;
-use App\Models\LandingPageSetting;
-use Illuminate\Support\Facades\DB;
+use App\Models\PlantType;
+use App\Models\Stock;
+use App\Models\WebsiteContent;
+use App\Models\WebsiteSetting;
+use Illuminate\Http\Request;
 
 class LandingPageController extends Controller
 {
     public function index(Request $request)
     {
-        // Get search query
-        $searchQuery = $request->get('search', '');
-        
-        // Get filter parameters
-        $warehouseFilter = $request->get('warehouse', 'all');
-        $seedClassFilter = $request->get('seed_class', 'all');
-        
-        // Get inventory type IDs that have seeds (using raw query to avoid Eloquent issues)
-        $inventoryTypeIdsQuery = DB::table('inventory_type_seeds')
-            ->select('inventory_type_id')
-            ->where('total_seed_quantity', '>', 0)
-            ->distinct();
-        
-        // Apply search filter if needed
-        if ($searchQuery) {
-            $inventoryTypeIdsQuery->join('inventory_types', 'inventory_type_seeds.inventory_type_id', '=', 'inventory_types.inventory_type_id')
-                ->join('plants', 'inventory_types.plant_id', '=', 'plants.plant_id')
-                ->where(function($q) use ($searchQuery) {
-                    $q->where('plants.name', 'like', '%' . $searchQuery . '%')
-                      ->orWhere('plants.variety', 'like', '%' . $searchQuery . '%');
-                });
+        $searchQuery = trim((string) $request->get('search', ''));
+        $categoryFilter = $request->get('category', 'all');
+        $plantNameFilter = $request->get('plant_name', 'all');
+        $varietyIdFilter = $request->get('variety_id', 'all');
+        $commodityFilter = $request->get('commodity_id', 'all');
+        $infoCommodityFilter = $request->get('info_commodity_id', 'all');
+        $infoVarietyFilter = $request->get('info_variety_id', 'all');
+        $infoSearch = trim((string) $request->get('info_search', ''));
+        $today = now()->toDateString();
+
+        $commodities = PlantType::orderBy('category')->orderBy('name')->get();
+        $categories = $commodities->pluck('category')->filter()
+            ->map(fn ($c) => trim((string) $c))
+            ->unique(fn ($c) => mb_strtolower($c))
+            ->sort()
+            ->values();
+        $plantNameOptions = $commodities
+            ->when($categoryFilter !== 'all', fn ($rows) => $rows->filter(
+                fn ($row) => strcasecmp((string) $row->category, $categoryFilter) === 0
+            ))
+            ->unique('name')
+            ->sortBy('name')
+            ->values();
+
+        $plantsQuery = Plant::with(['type', 'satuanStok']);
+        if ($categoryFilter !== 'all') {
+            $plantsQuery->whereHas('type', fn ($q) => $q->whereRaw('LOWER(category) = ?', [mb_strtolower($categoryFilter)]));
+        } elseif ($commodityFilter !== 'all') {
+            $plantsQuery->where('seed_commodity_id', $commodityFilter);
         }
-        
-        $inventoryTypeIds = $inventoryTypeIdsQuery->pluck('inventory_type_id')->toArray();
-        
-        // Now get the full InventoryType models with relationships
-        $inventoryTypes = InventoryType::whereIn('inventory_type_id', $inventoryTypeIds)
-            ->with([
-                'plant.type',
-                'seeds' => function($query) {
-                    $query->where('total_seed_quantity', '>', 0);
-                }
-            ])
+        if ($plantNameFilter !== 'all') {
+            $plantsQuery->whereHas('type', fn ($q) => $q->where('name', $plantNameFilter));
+        }
+        if ($varietyIdFilter !== 'all') {
+            $plantsQuery->where('seed_varieties_id', $varietyIdFilter);
+        }
+        $plants = $plantsQuery->orderBy('name')->get();
+        if ($searchQuery !== '') {
+            $needle = mb_strtolower($searchQuery);
+            $plants = $plants->filter(function ($plant) use ($needle) {
+                return str_contains(mb_strtolower((string) $plant->name), $needle)
+                    || str_contains(mb_strtolower((string) $plant->variety), $needle)
+                    || str_contains(mb_strtolower((string) ($plant->type->name ?? '')), $needle);
+            })->values();
+        }
+
+        $varietyOptions = Plant::with('type')
+            ->when($categoryFilter !== 'all', fn ($q) => $q->whereHas('type', fn ($t) => $t->whereRaw('LOWER(category) = ?', [mb_strtolower($categoryFilter)])))
+            ->when($plantNameFilter !== 'all', fn ($q) => $q->whereHas('type', fn ($t) => $t->where('name', $plantNameFilter)))
+            ->orderBy('variety')
             ->get();
-        
-        // Get warehouses for filter
-        $warehouses = Warehouse::orderBy('name')->get();
-        
-        // Process inventory types to get stock data
-        $stockData = $inventoryTypes->map(function($type) use ($warehouseFilter, $seedClassFilter) {
-            // Get total stock from seeds
-            $totalStock = $type->seeds()->sum('total_seed_quantity') ?? 0;
-            
-            // Get latest certification report for seed class
-            $certificationReport = null;
-            if ($type->plant_id) {
-                $certification = \App\Models\Certification::where('plant_id', $type->plant_id)->first();
-                if ($certification) {
-                    $certificationReport = CertificationReport::where('certification_id', $certification->certification_id)
-                        ->where('conclusion', 'LULUS')
-                        ->orderBy('report_date', 'desc')
-                        ->first();
-                }
+
+        $stocksByPlant = Stock::where('status_stok', Stock::STATUS_SIAP)
+            ->where('stok_saat_ini', '>', 0)
+            ->whereDate('tgl_kedaluwarsa', '>=', $today)
+            ->with(['certificationReport', 'packagings'])
+            ->get()
+            ->filter(fn (Stock $stock) => $stock->hasLabel())
+            ->groupBy('seed_varieties_id');
+
+        $stockData = $plants->map(function ($plant) use ($stocksByPlant) {
+            $stocks = $stocksByPlant->get($plant->seed_varieties_id, collect());
+            $totalStock = (float) $stocks->sum('stok_saat_ini');
+            if ($totalStock <= 0) {
+                return null;
             }
-            
-            // Get seed class from certification report
-            $seedClass = $certificationReport ? $certificationReport->seed_class_result : null;
-            
-            // Filter by seed class if specified
-            if ($seedClassFilter && $seedClassFilter !== 'all') {
-                if ($seedClass !== $seedClassFilter) {
-                    return null;
-                }
-            }
-            
-            // Get estimated price per kg
-            $pricePerKg = $type->estimated_value_per_unit ?? 0;
-            if ($type->estimated_kg_per_unit && $type->estimated_kg_per_unit > 0) {
-                $pricePerKg = ($type->estimated_value_per_unit ?? 0) / $type->estimated_kg_per_unit;
-            }
-            
-            // Get warehouse locations (from lots)
-            $warehouseIds = \App\Models\InventoryLot::where('inventory_type_id', $type->inventory_type_id)
-                ->where('current_stock', '>', 0)
-                ->pluck('warehouse_id')
-                ->unique()
-                ->filter()
-                ->toArray();
-            
-            $warehouseNames = !empty($warehouseIds) 
-                ? Warehouse::whereIn('warehouse_id', $warehouseIds)->pluck('name')->toArray()
-                : [];
-            
-            // Filter by warehouse if specified
-            if ($warehouseFilter && $warehouseFilter !== 'all') {
-                if (!in_array($warehouseFilter, $warehouseIds)) {
-                    return null;
-                }
-            }
-            
-            // Determine status
-            $status = $totalStock > 0 ? 'Tersedia' : 'Habis';
-            
+
             return [
-                'inventory_type_id' => $type->inventory_type_id,
-                'variety_name' => $type->plant->name ?? $type->name,
-                'variety_detail' => $type->plant->variety ?? null,
-                'seed_class' => $seedClass,
-                'warehouse_names' => $warehouseNames,
+                'plant_id' => $plant->getKey(),
+                'category' => $plant->type->category ?? '-',
+                'plant_name' => $plant->type->name ?? $plant->name,
+                'variety_name' => $plant->name,
+                'variety_detail' => $plant->variety,
                 'stock_available' => $totalStock,
-                'stock_unit' => $type->unit ?? 'kg',
-                'price_per_kg' => $pricePerKg,
-                'status' => $status,
-                'plant_id' => $type->plant_id,
+                'stock_unit' => $plant->satuanStok?->code ?? '',
+                'unit_price' => $plant->harga_jual !== null ? (float) $plant->harga_jual : null,
             ];
         })->filter()->values();
-        
-        // Get statistics
-        $totalVarieties = Plant::distinct('name')->count();
-        $totalStock = InventoryTypeSeed::sum('total_seed_quantity') ?? 0;
-        $totalWarehouses = Warehouse::count();
-        // Count planting locations that might be partners (you can adjust this logic based on your data structure)
-        $totalPartners = \App\Models\PlantingLocation::where(function($query) {
-            $query->where('location_type', 'like', '%mitra%')
-                  ->orWhere('location_type', 'like', '%partner%')
-                  ->orWhere('ownership_status', 'like', '%mitra%');
-        })->count();
-        
-        // If no partners found, use total planting locations as fallback
-        if ($totalPartners == 0) {
-            $totalPartners = \App\Models\PlantingLocation::count();
+
+        $varietyRecords = Plant::query()
+            ->when($commodityFilter !== 'all', function ($q) use ($commodityFilter) {
+                $q->where(function ($w) use ($commodityFilter) {
+                    $w->where('seed_commodity_id', $commodityFilter);
+                });
+            })
+            ->orderBy('variety')
+            ->get();
+
+        $infoVarietyRecords = Plant::query()
+            ->when($infoCommodityFilter !== 'all', fn ($q) => $q->where('seed_commodity_id', $infoCommodityFilter))
+            ->orderBy('variety')
+            ->get();
+
+        $publicQuery = Plant::with('type')->where(function ($q) {
+            $q->whereNotNull('public_description')->orWhereNotNull('public_photo_path');
+        });
+        if ($infoCommodityFilter !== 'all') {
+            $publicQuery->where('seed_commodity_id', $infoCommodityFilter);
         }
-        
-        // Get featured varieties (top 4 by stock)
-        $featuredVarieties = $inventoryTypes->sortByDesc(function($type) {
-            return $type->seeds()->sum('total_seed_quantity') ?? 0;
-        })->take(4)->map(function($type) {
-            $plant = $type->plant;
-            
-            // Get latest planting data for days_to_harvest and expected_yield
-            $latestPlanting = $type->plant_id 
-                ? \App\Models\Planting::where('plant_id', $type->plant_id)
-                    ->whereNotNull('days_to_harvest')
-                    ->orderBy('planted_at', 'desc')
-                    ->first()
-                : null;
-            
-            $certificationReport = null;
-            if ($type->plant_id) {
-                $certification = \App\Models\Certification::where('plant_id', $type->plant_id)->first();
-                if ($certification && isset($certification->certification_id)) {
-                    $certificationReport = CertificationReport::where('certification_id', $certification->certification_id)
-                        ->where('conclusion', 'LULUS')
-                        ->orderBy('report_date', 'desc')
-                        ->first();
-                }
-            }
-            
+        if ($infoVarietyFilter !== 'all') {
+            $publicQuery->whereKey($infoVarietyFilter);
+        }
+        if ($infoSearch !== '') {
+            $publicQuery->where(function ($q) use ($infoSearch) {
+                $q->where('name', 'like', '%'.$infoSearch.'%')
+                    ->orWhere('variety', 'like', '%'.$infoSearch.'%')
+                    ->orWhere('public_description', 'like', '%'.$infoSearch.'%');
+            });
+        }
+        $publicVarieties = $publicQuery->orderBy('name')->get()->map(function ($plant) {
             return [
-                'name' => $plant->name ?? $type->name,
-                'variety' => $plant->variety ?? null,
-                'plant_type' => $plant->type->name ?? null,
-                'days_to_harvest' => $latestPlanting ? $latestPlanting->days_to_harvest : null,
-                'expected_yield' => $latestPlanting ? $latestPlanting->expected_yield_per_hectare : ($certificationReport ? $certificationReport->estimated_yield : null),
-                'stock' => $type->seeds()->sum('total_seed_quantity') ?? 0,
+                'name' => $plant->variety ?: $plant->name,
+                'category' => trim(($plant->type->category ?? '').' - '.($plant->type->name ?? ''), ' -'),
+                'description' => $plant->public_description ?: $plant->description,
+                'photo' => $plant->public_photo_path
+                    ? asset('storage/'.$plant->public_photo_path)
+                    : 'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=400',
             ];
         });
-        
-        // Get landing page settings
-        $landingSettings = LandingPageSetting::getAllSettings();
-        
-        return view('landing.index', compact(
+
+        $latestPosts = WebsiteContent::published()
+            ->whereIn('jenis', ['berita', 'artikel'])
+            ->orderByDesc('published_at')
+            ->limit(3)
+            ->get();
+
+        $situs = WebsiteSetting::current();
+
+        $stockGroups = $stockData->groupBy(fn ($row) => $row['category'] ?: 'Lainnya');
+
+        return view('landing.home', compact(
             'stockData',
-            'warehouses',
+            'stockGroups',
             'searchQuery',
-            'warehouseFilter',
-            'seedClassFilter',
-            'totalVarieties',
-            'totalStock',
-            'totalWarehouses',
-            'totalPartners',
-            'featuredVarieties',
-            'landingSettings'
+            'commodities',
+            'commodityFilter',
+            'categoryFilter',
+            'plantNameFilter',
+            'varietyIdFilter',
+            'categories',
+            'plantNameOptions',
+            'varietyOptions',
+            'latestPosts',
+            'situs'
         ));
     }
 
-    /**
-     * Show the form for editing landing page settings (Admin only)
-     */
+    public function varietiesJson(Request $request)
+    {
+        $commodityId = $request->get('commodity_id');
+        $query = Plant::query()->orderBy('variety');
+        if ($commodityId && $commodityId !== 'all') {
+            $query->where('seed_commodity_id', $commodityId);
+        }
+
+        return response()->json($query->get(['seed_varieties_id', 'name', 'variety', 'seed_commodity_id']));
+    }
+
     public function edit()
     {
-        // Only admin can access
-        if (!auth()->check() || !auth()->user()->isAdmin()) {
-            abort(403, 'Hanya admin yang dapat mengakses halaman ini.');
-        }
-
-        $settings = LandingPageSetting::getAllSettings();
-        
-        return view('landing.edit', compact('settings'));
+        return redirect()->route('contents.settings');
     }
 
-    /**
-     * Update landing page settings (Admin only)
-     */
     public function update(Request $request)
     {
-        // Only admin can access
-        if (!auth()->check() || !auth()->user()->isAdmin()) {
-            abort(403, 'Hanya admin yang dapat mengakses halaman ini.');
-        }
-
-        $request->validate([
-            'hero_title' => 'required|string|max:255',
-            'hero_subtitle' => 'required|string|max:500',
-            'hero_image' => 'required|url|max:500',
-            'office_address' => 'required|string',
-            'office_phone' => 'required|string|max:100',
-            'office_whatsapp' => 'required|string|max:100',
-            'office_email' => 'required|email|max:255',
-            'facebook_url' => 'nullable|url|max:500',
-            'instagram_url' => 'nullable|url|max:500',
-            'youtube_url' => 'nullable|url|max:500',
-        ]);
-
-        // Update all settings
-        foreach ($request->only([
-            'hero_title', 'hero_subtitle', 'hero_image',
-            'office_address', 'office_phone', 'office_whatsapp', 'office_email',
-            'facebook_url', 'instagram_url', 'youtube_url'
-        ]) as $key => $value) {
-            LandingPageSetting::setValue($key, $value ?? '');
-        }
-
-        return redirect()->route('landing.edit')
-            ->with('success', 'Pengaturan landing page berhasil diperbarui.');
+        return redirect()->route('contents.settings');
     }
 }
-

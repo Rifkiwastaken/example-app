@@ -2,43 +2,37 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Pengaturan landing page (tabel landing_page_settings telah dihapus).
+ * Semua method mengembalikan default tanpa akses database.
+ */
 class LandingPageSetting extends Model
 {
-    use HasFactory;
-
-    protected $fillable = [
-        'key',
-        'value',
-    ];
+    protected $fillable = ['key', 'value'];
 
     /**
-     * Get setting value by key
+     * Get setting value by key (selalu return default).
      */
     public static function getValue(string $key, string $default = ''): string
     {
-        $setting = self::where('key', $key)->first();
-        return $setting ? $setting->value : $default;
+        return $default;
     }
 
     /**
-     * Set setting value by key
+     * Set setting value by key (no-op, tabel sudah dihapus).
      */
     public static function setValue(string $key, string $value): void
     {
-        self::updateOrCreate(
-            ['key' => $key],
-            ['value' => $value]
-        );
+        // no-op
     }
 
     /**
-     * Get all settings as array
+     * Get all settings as array (kosong; view memakai fallback ?? default).
      */
     public static function getAllSettings(): array
     {
-        return self::pluck('value', 'key')->toArray();
+        return [];
     }
 }

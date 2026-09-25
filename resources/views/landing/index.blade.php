@@ -363,7 +363,13 @@
                         <a class="nav-link" href="#varietas">Info Varietas</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#alur">Alur Pembelian</a>
+                        <a class="nav-link" href="{{ route('public.seed-requests.index') }}">Permintaan Benih</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('public.geowisata.index') }}">Booking Geowisata</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('public.magang.index') }}">Pendaftaran Magang</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#kontak">Kontak</a>
@@ -390,35 +396,6 @@
         </div>
     </section>
 
-    <!-- Statistics Section -->
-    <section class="py-5 bg-light">
-        <div class="container">
-            <div class="row g-4">
-                <div class="col-md-4 col-sm-6">
-                    <div class="stat-card">
-                        <i class="fas fa-seedling"></i>
-                        <h3>{{ number_format($totalVarieties) }}</h3>
-                        <p>Total Varietas</p>
-                    </div>
-                </div>
-                <div class="col-md-4 col-sm-6">
-                    <div class="stat-card">
-                        <i class="fas fa-boxes"></i>
-                        <h3>{{ number_format($totalStock / 1000, 1) }}</h3>
-                        <p>Total Stok Tersedia (Ton)</p>
-                    </div>
-                </div>
-                <div class="col-md-4 col-sm-6">
-                    <div class="stat-card">
-                        <i class="fas fa-warehouse"></i>
-                        <h3>{{ $totalWarehouses }}</h3>
-                        <p>Jumlah Unit Gudang</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <!-- Stock Availability Section -->
     <section id="stok" class="py-5">
         <div class="container">
@@ -430,105 +407,76 @@
             <div class="stock-table-container">
                 <!-- Filters -->
                 <div class="filter-section">
-                    <form method="GET" action="{{ route('landing') }}" class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Lokasi Gudang</label>
-                            <select name="warehouse" class="form-select" onchange="this.form.submit()">
-                                <option value="all" {{ $warehouseFilter == 'all' ? 'selected' : '' }}>Semua Lokasi</option>
-                                @foreach($warehouses as $warehouse)
-                                    <option value="{{ $warehouse->id }}" {{ $warehouseFilter == $warehouse->id ? 'selected' : '' }}>
-                                        {{ $warehouse->name }}
+                    <form method="GET" action="{{ route('landing') }}#stok" class="row g-3 align-items-end">
+                        <div class="col-lg-4 col-md-6">
+                            <label class="form-label fw-bold">Komoditas</label>
+                            <select name="commodity_id" id="landingCommodity" class="form-select">
+                                <option value="all">Semua komoditas</option>
+                                @foreach($commodities ?? [] as $commodity)
+                                    <option value="{{ $commodity->getKey() }}" {{ ($commodityFilter ?? 'all') == $commodity->getKey() ? 'selected' : '' }}>
+                                        {{ $commodity->category ? $commodity->category.' - ' : '' }}{{ $commodity->name }}
                                     </option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Kelas Benih</label>
-                            <select name="seed_class" class="form-select" onchange="this.form.submit()">
-                                <option value="all" {{ $seedClassFilter == 'all' ? 'selected' : '' }}>Semua Kelas</option>
-                                <option value="BD" {{ $seedClassFilter == 'BD' ? 'selected' : '' }}>BD (Benih Dasar)</option>
-                                <option value="BP" {{ $seedClassFilter == 'BP' ? 'selected' : '' }}>BP (Benih Pokok)</option>
-                                <option value="BR" {{ $seedClassFilter == 'BR' ? 'selected' : '' }}>BR (Benih Sebar)</option>
+                        <div class="col-lg-4 col-md-6">
+                            <label class="form-label fw-bold">Varietas</label>
+                            <select name="variety_id" id="landingVariety" class="form-select">
+                                <option value="all">Semua varietas</option>
+                                @foreach($varietyRecords ?? [] as $opt)
+                                    <option value="{{ $opt->getKey() }}" {{ ($varietyIdFilter ?? 'all') == $opt->getKey() ? 'selected' : '' }}>{{ $opt->variety ?: $opt->name }}</option>
+                                @endforeach
                             </select>
                         </div>
-                        <div class="col-md-4 d-flex align-items-end">
-                            <a href="{{ route('landing') }}" class="btn btn-outline-secondary w-100">
-                                <i class="fas fa-redo me-2"></i>Reset Filter
-                            </a>
+                        <div class="col-lg-3 col-md-6">
+                            <label class="form-label fw-bold">Cari</label>
+                            <input type="text" name="search" class="form-control" value="{{ $searchQuery }}" placeholder="Cari varietas...">
+                        </div>
+                        <div class="col-lg-1 col-md-6">
+                            <button class="btn btn-success w-100">Filter</button>
                         </div>
                     </form>
                 </div>
                 
-                <!-- Table -->
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>Nama Varietas</th>
-                                <th>Kelas Benih</th>
-                                <th>Lokasi Gudang</th>
-                                <th>Stok Tersedia</th>
-                                <th>Harga per Kg</th>
-                                <th>Status</th>
+                                <th>Nama Tanaman</th>
+                                <th>Varietas</th>
+                                <th>Jumlah stok tersedia</th>
+                                <th>Satuan</th>
+                                <th>Harga per satuan</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($stockData as $stock)
-                            <tr>
-                                <td>
-                                    <strong>{{ $stock['variety_name'] }}</strong>
-                                    @if($stock['variety_detail'])
-                                        <br><small class="text-muted">{{ $stock['variety_detail'] }}</small>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($stock['seed_class'])
-                                        <span class="badge badge-seed-class badge-{{ $stock['seed_class'] }}">
-                                            {{ $stock['seed_class'] }}
-                                        </span>
-                                    @else
-                                        <span class="text-muted">-</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if(count($stock['warehouse_names']) > 0)
-                                        {{ implode(', ', $stock['warehouse_names']) }}
-                                    @else
-                                        <span class="text-muted">-</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <strong>{{ number_format($stock['stock_available'], 2) }} {{ $stock['stock_unit'] }}</strong>
-                                </td>
-                                <td>
-                                    @if($stock['price_per_kg'] > 0)
-                                        <strong class="text-success">Rp {{ number_format($stock['price_per_kg'], 0, ',', '.') }}</strong>
-                                    @else
-                                        <span class="text-muted">Hubungi Petugas</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($stock['status'] == 'Tersedia')
-                                        <span class="status-available">
-                                            <i class="fas fa-check-circle me-1"></i>Tersedia
-                                        </span>
-                                    @else
-                                        <span class="status-habis">
-                                            <i class="fas fa-times-circle me-1"></i>Habis
-                                        </span>
-                                    @endif
-                                </td>
+                            @forelse(collect($stockData ?? [])->groupBy(fn ($row) => $row['category'] ?: 'Lainnya') as $category => $rows)
+                            <tr class="table-light">
+                                <th colspan="5">{{ $category }}</th>
                             </tr>
+                            @foreach($rows as $stock)
+                            <tr>
+                                <td>{{ $stock['plant_name'] ?: $stock['variety_name'] }}</td>
+                                <td>{{ $stock['variety_detail'] ?: $stock['variety_name'] }}</td>
+                                <td><strong>{{ number_format($stock['stock_available'], 2) }}</strong></td>
+                                <td>{{ $stock['stock_unit'] ?: '-' }}</td>
+                                <td>{{ $stock['unit_price'] !== null ? 'Rp '.number_format($stock['unit_price'], 0, ',', '.') : '-' }}</td>
+                            </tr>
+                            @endforeach
                             @empty
                             <tr>
-                                <td colspan="6" class="text-center py-5">
-                                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                    <p class="text-muted">Tidak ada data stok benih yang tersedia</p>
+                                <td colspan="5" class="text-center py-5">
+                                    <p class="text-muted mb-0">Tidak ada data stok benih yang tersedia</p>
                                 </td>
                             </tr>
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+                <div class="text-center mt-4 mb-2">
+                    <a href="{{ route('public.seed-requests.create') }}" class="btn btn-success btn-lg">
+                        <i class="fas fa-file-signature me-2"></i>Ajukan Permintaan Benih
+                    </a>
                 </div>
             </div>
         </div>
@@ -538,34 +486,48 @@
     <section id="varietas" class="py-5 bg-light">
         <div class="container">
             <div class="section-title">
-                <h2>Sekilas Info Varietas</h2>
-                <p>Varietas unggulan yang tersedia di UPTD BBI TPPH</p>
+                <h2>Informasi Varietas</h2>
+                <p>Data publik yang diisi petugas untuk setiap varietas</p>
             </div>
-            
+            <form method="GET" action="{{ route('landing') }}#varietas" class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <select name="info_commodity_id" id="infoCommodity" class="form-select">
+                        <option value="all">Semua komoditas</option>
+                        @foreach($commodities ?? [] as $commodity)
+                            <option value="{{ $commodity->getKey() }}" {{ ($infoCommodityFilter ?? 'all') == $commodity->getKey() ? 'selected' : '' }}>{{ $commodity->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="info_variety_id" id="infoVariety" class="form-select">
+                        <option value="all">Semua varietas</option>
+                        @foreach($infoVarietyRecords ?? [] as $opt)
+                            <option value="{{ $opt->getKey() }}" {{ ($infoVarietyFilter ?? 'all') == $opt->getKey() ? 'selected' : '' }}>{{ $opt->variety ?: $opt->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" name="info_search" class="form-control" value="{{ $infoSearch ?? '' }}" placeholder="Cari varietas...">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-success w-100">Cari</button>
+                </div>
+            </form>
             <div class="row g-4">
-                @forelse($featuredVarieties as $variety)
+                @forelse($publicVarieties ?? [] as $variety)
                 <div class="col-md-3 col-sm-6">
                     <div class="variety-card">
-                        <img src="https://images.unsplash.com/photo-1593113598332-cd288d649433?w=400" alt="{{ $variety['name'] }}">
+                        <img src="{{ $variety['photo'] }}" alt="{{ $variety['name'] }}">
                         <div class="variety-card-body">
                             <h5>{{ $variety['name'] }}</h5>
-                            @if($variety['variety'])
-                                <p class="text-muted small mb-2">{{ $variety['variety'] }}</p>
-                            @endif
-                            <div class="d-flex justify-content-between mb-2">
-                                <small><i class="fas fa-calendar-alt text-primary me-1"></i>Umur:</small>
-                                <small class="fw-bold">{{ $variety['days_to_harvest'] ? $variety['days_to_harvest'] . ' hari' : '-' }}</small>
-                            </div>
-                            <div class="d-flex justify-content-between">
-                                <small><i class="fas fa-chart-line text-success me-1"></i>Potensi Hasil:</small>
-                                <small class="fw-bold">{{ $variety['expected_yield'] ? number_format($variety['expected_yield'], 2) . ' ton/ha' : '-' }}</small>
-                            </div>
+                            <p class="text-muted small mb-2">{{ $variety['category'] }}</p>
+                            <p class="small">{{ $variety['description'] }}</p>
                         </div>
                     </div>
                 </div>
                 @empty
                 <div class="col-12 text-center py-5">
-                    <p class="text-muted">Belum ada varietas yang tersedia</p>
+                    <p class="text-muted">Belum ada informasi publik varietas.</p>
                 </div>
                 @endforelse
             </div>
@@ -579,38 +541,49 @@
                 <h2>Alur Pembelian</h2>
                 <p>Langkah-langkah mudah untuk mendapatkan benih bersertifikat</p>
             </div>
-            
             <div class="row g-4">
-                <div class="col-md-3 col-sm-6">
+                <div class="col-md col-sm-6">
                     <div class="step-card">
                         <div class="step-number">1</div>
                         <i class="fas fa-search"></i>
-                        <h5>Cek Ketersediaan</h5>
-                        <p class="text-muted">Cari varietas benih yang diinginkan dan cek stok tersedia</p>
+                        <h5>Cek ketersediaan benih</h5>
+                        <p class="text-muted">Lihat stok varietas yang tersedia di atas</p>
                     </div>
                 </div>
-                <div class="col-md-3 col-sm-6">
+                <div class="col-md col-sm-6">
+                    <a href="{{ route('public.seed-requests.create') }}" class="text-decoration-none text-dark">
                     <div class="step-card">
                         <div class="step-number">2</div>
-                        <i class="fas fa-phone"></i>
-                        <h5>Hubungi Petugas</h5>
-                        <p class="text-muted">Hubungi petugas UPTD BBI TPPH melalui WhatsApp</p>
+                        <i class="fas fa-file-alt"></i>
+                        <h5>Mengisi form permintaan</h5>
+                        <p class="text-muted">Ajukan jumlah benih yang diinginkan</p>
                     </div>
+                    </a>
                 </div>
-                <div class="col-md-3 col-sm-6">
+                <div class="col-md col-sm-6">
+                    <a href="{{ route('public.seed-requests.index') }}" class="text-decoration-none text-dark">
                     <div class="step-card">
                         <div class="step-number">3</div>
-                        <i class="fas fa-money-bill-wave"></i>
-                        <h5>Pembayaran</h5>
-                        <p class="text-muted">Datangi UPTD BBI TPPH Padang pada alamat yang tersedia</p>
+                        <i class="fas fa-clipboard-check"></i>
+                        <h5>Lihat status permintaan</h5>
+                        <p class="text-muted">Pantau verifikasi hingga siap diambil</p>
                     </div>
+                    </a>
                 </div>
-                <div class="col-md-3 col-sm-6">
+                <div class="col-md col-sm-6">
                     <div class="step-card">
                         <div class="step-number">4</div>
-                        <i class="fas fa-truck"></i>
-                        <h5>Ambil Benih</h5>
-                        <p class="text-muted">Ambil benih di UPTD BBI TPPH sesuai dengan alamat yang tersedia</p>
+                        <i class="fas fa-building"></i>
+                        <h5>Datang ke UPTD BBI TPHP</h5>
+                        <p class="text-muted">Jemput benih dan selesaikan transaksi</p>
+                    </div>
+                </div>
+                <div class="col-md col-sm-6">
+                    <div class="step-card">
+                        <div class="step-number">5</div>
+                        <i class="fas fa-check-circle"></i>
+                        <h5>Selesai</h5>
+                        <p class="text-muted">Benih telah diambil dan tercatat</p>
                     </div>
                 </div>
             </div>
@@ -624,7 +597,7 @@
                 <div class="col-md-4 mb-4">
                     <h5><i class="fas fa-map-marker-alt me-2"></i>Alamat Kantor Pusat</h5>
                     <p class="mb-0">
-                        {!! $landingSettings['office_address'] ?? 'UPTD Balai Benih Induk Tanaman Pangan dan Hortikultura<br>Jl. Raya Padang - Bukittinggi KM 15<br>Lubuk Minturun, Padang, Sumatera Barat<br>Kode Pos: 25163' !!}
+                        {!! $landingSettings['office_address'] ?? 'UPTD Balai Benih Induk Tanaman Pangan dan Hortikultura<br>Jl. Pertanian, Lubuk Minturun, Kec. Koto Tangah, Kota Padang, Sumatera Barat 25586' !!}
                     </p>
                 </div>
                 <div class="col-md-4 mb-4">
@@ -633,7 +606,8 @@
                         <li><a href="#beranda"><i class="fas fa-chevron-right me-2"></i>Beranda</a></li>
                         <li><a href="#stok"><i class="fas fa-chevron-right me-2"></i>Cek Stok Benih</a></li>
                         <li><a href="#varietas"><i class="fas fa-chevron-right me-2"></i>Info Varietas</a></li>
-                        <li><a href="#alur"><i class="fas fa-chevron-right me-2"></i>Alur Pembelian</a></li>
+                        <li><a href="{{ route('public.geowisata.index') }}"><i class="fas fa-chevron-right me-2"></i>Booking Geowisata</a></li>
+                        <li><a href="{{ route('public.magang.index') }}"><i class="fas fa-chevron-right me-2"></i>Pendaftaran Magang</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4 mb-4">
@@ -658,7 +632,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Smooth scroll for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -671,6 +644,39 @@
                 }
             });
         });
+
+        function bindVarietyFilter(commoditySelectId, varietySelectId, selectedVariety) {
+            const commodity = document.getElementById(commoditySelectId);
+            const variety = document.getElementById(varietySelectId);
+            if (!commodity || !variety) return;
+            const current = selectedVariety || variety.value || 'all';
+            function loadVarieties() {
+                const commodityId = commodity.value || 'all';
+                fetch('{{ route('landing.varieties') }}?commodity_id=' + encodeURIComponent(commodityId))
+                    .then(r => r.json())
+                    .then(rows => {
+                        const keep = variety.value;
+                        variety.innerHTML = '<option value="all">Semua varietas</option>';
+                        (rows || []).forEach(function (row) {
+                            const opt = document.createElement('option');
+                            opt.value = row.seed_varieties_id;
+                            opt.textContent = row.variety || row.name;
+                            variety.appendChild(opt);
+                        });
+                        const preferred = keep && keep !== 'all' ? keep : current;
+                        if (preferred && [...variety.options].some(o => o.value == preferred)) {
+                            variety.value = preferred;
+                        }
+                    })
+                    .catch(function () {});
+            }
+            commodity.addEventListener('change', function () {
+                variety.value = 'all';
+                loadVarieties();
+            });
+        }
+        bindVarietyFilter('landingCommodity', 'landingVariety', @json($varietyIdFilter ?? 'all'));
+        bindVarietyFilter('infoCommodity', 'infoVariety', @json($infoVarietyFilter ?? 'all'));
     </script>
 </body>
 </html>

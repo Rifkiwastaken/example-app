@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CertificationHarvest;
 use App\Models\Planting;
-use App\Models\Harvest;
+use App\Models\PlantingPostHarvest;
 use App\Models\Treatment;
 use App\Models\Nutrient;
-use App\Models\InventoryLot;
-use App\Models\InventoryTransaction;
-use App\Models\Sale;
 use App\Models\SaleItem;
-use App\Models\Certification;
 use App\Models\CertificationReport;
 use App\Models\Plant;
 use App\Models\PlantingLocation;
 use App\Models\Warehouse;
-use App\Models\Expense;
+use App\Models\PlantType;
+use App\Models\PlantingField;
+use App\Models\SeedSource;
+use App\Models\Stock;
 use App\Models\Task;
 use App\Models\PlantingLocationNote;
 use App\Models\Attachment;
@@ -49,57 +49,33 @@ class ReportController extends Controller
         }
 
         $query = Planting::with([
-            'plant.type', 
-            'harvest.certification'
+            'seedSource.variety.type',
+            'field.plantingLocation',
+            'plant.type',
+            'certificationHarvests',
+            'postHarvests',
         ])->whereNotNull('planted_at');
 
-        // Filters
-        if ($request->filled('year')) {
-            $query->whereYear('planted_at', $request->year);
-        }
-        
-        if ($request->filled('plant_id')) {
-            $query->where('plant_id', $request->plant_id);
-        }
-        
-        if ($request->filled('planting_location_id')) {
-            $query->where('planting_location_id', $request->planting_location_id);
-        }
-
-        if ($request->filled('date_from')) {
-            $query->whereDate('planted_at', '>=', $request->date_from);
-        }
-
-        if ($request->filled('date_to')) {
-            $query->whereDate('planted_at', '<=', $request->date_to);
-        }
+        $this->applyPlantingHarvestFilters($query, $request);
+        $this->applyVarietyScope($query, $request, 'planting');
 
         $plantings = $query->get();
 
         // Transform data for Excel format
         $plantings->transform(function ($planting) {
-            $harvest = $planting->harvest;
-            $certification = $harvest ? $harvest->certification : null;
-            
-            // Get area in hectares from planting area_ha field, fallback to location map_size
-            $area = $planting->area_ha ?? ($planting->location->map_size ?? 0);
-            
-            // Calon Benih (kg) - harvest quantity in kg
-            $candidateSeed = 0;
-            if ($harvest && $harvest->quantity > 0) {
-                $unit = strtolower($harvest->unit ?? 'kg');
-                $factors = ['kg' => 1, 'kilogram' => 1, 'gram' => 0.001, 'ton' => 1000, 'kuintal' => 100];
-                $candidateSeed = $harvest->quantity * ($factors[$unit] ?? 1);
-            }
-            
-            // Benih Bersertifikat (kg) - only if certification is lulus or selesai
-            $certifiedSeed = 0;
-            if ($certification && in_array($certification->certification_status, ['lulus', 'selesai'])) {
-                $certifiedSeed = $candidateSeed; // Same as candidate seed if certified
-            }
-            
+            $harvest = $planting->certificationHarvests->sortByDesc('tgl_panen')->first();
+            $latestTest = $planting->postHarvests->sortByDesc('uji_ke')->first();
+
+            $area = $planting->field?->luas_ha ?? $planting->area_ha ?? ($planting->field?->plantingLocation?->map_size ?? 0);
+
+            // Calon Benih (kg) - volume kotor panen dari pengawasan panen
+            $candidateSeed = (float) ($harvest?->volume_kotor_panen_kg ?? 0);
+
+            // Benih Bersertifikat (kg) - total hasil uji lab yang lulus
+            $certifiedSeed = $latestTest && $latestTest->isLulus() ? (float) $latestTest->total_hasil_uji : 0;
+
             // Kelas Benih
-            $seedClass = $certification ? $certification->seed_class_requested : null;
+            $seedClass = $planting->target_kelas;
             if ($seedClass) {
                 // Format: BS-BD, BD-BP, etc.
                 $seedClassFormatted = $seedClass;
@@ -118,6 +94,8 @@ class ReportController extends Controller
             $planting->candidate_seed_kg = round($candidateSeed, 0);
             $planting->certified_seed_kg = round($certifiedSeed, 0);
             $planting->seed_class = $seedClassFormatted;
+            $planting->seed_source_label = $planting->seedSource?->origin_lot_number ?: ($planting->seedSource?->getKey() ?: '-');
+            $planting->location_name = $planting->field?->plantingLocation?->name ?: ($planting->location?->name ?: '-');
             
             return $planting;
         });
@@ -142,6 +120,8 @@ class ReportController extends Controller
         );
 
         $plants = Plant::orderBy('name')->get();
+        $commodities = PlantType::orderBy('name')->get();
+        $seedSources = SeedSource::with('variety')->orderBy('origin_lot_number')->get();
         $locations = PlantingLocation::orderBy('name')->get();
         $years = Planting::selectRaw('YEAR(planted_at) as year')
             ->whereNotNull('planted_at')
@@ -149,7 +129,7 @@ class ReportController extends Controller
             ->orderBy('year', 'desc')
             ->pluck('year');
 
-        return view('reports.planting-harvest', compact('plantings', 'plants', 'locations', 'years'));
+        return view('reports.planting-harvest', compact('plantings', 'plants', 'commodities', 'seedSources', 'locations', 'years'));
     }
 
     /**
@@ -160,17 +140,30 @@ class ReportController extends Controller
         // Get selected location
         $selectedLocationId = $request->input('planting_location_id');
         
-        if (!$selectedLocationId) {
-            // If no location selected, show location selection page
+        $filterMode = $request->input('filter_mode', $selectedLocationId ? 'location' : '');
+        $locationRows = collect($request->input('locations', []));
+        if ($selectedLocationId && $locationRows->isEmpty()) {
+            $locationRows = collect([[
+                'planting_location_id' => $selectedLocationId,
+                'field_id' => $request->input('field_id'),
+                'planting_ids' => $request->filled('planting_id') ? [$request->input('planting_id')] : [],
+            ]]);
+        }
+        $hasLocationFilter = $locationRows->contains(fn ($row) => filled($row['planting_location_id'] ?? null));
+        $hasVarietyFilter = $request->input('view_mode') === 'specific'
+            && collect($request->input('filters', []))->contains(fn ($row) => filled($row['variety_id'] ?? null) || filled($row['commodity_id'] ?? null) || filled($row['category'] ?? null) || filled($row['seed_source_id'] ?? null));
+
+        if ($filterMode === '' || ($filterMode === 'location' && ! $hasLocationFilter) || ($filterMode === 'variety' && ! $hasVarietyFilter && ! $request->boolean('submitted'))) {
             $locations = PlantingLocation::orderBy('name')->get();
             $plants = Plant::orderBy('name')->get();
+            $commodities = PlantType::orderBy('category')->orderBy('name')->get();
             $years = Planting::selectRaw('YEAR(planted_at) as year')
                 ->whereNotNull('planted_at')
                 ->distinct()
                 ->orderBy('year', 'desc')
                 ->pluck('year');
-            
-            return view('reports.by-location-select', compact('locations', 'plants', 'years'));
+
+            return view('reports.by-location-select', compact('locations', 'plants', 'commodities', 'years'));
         }
 
         // Check if export requested
@@ -178,113 +171,106 @@ class ReportController extends Controller
             return $this->exportByLocation($request, $selectedLocationId);
         }
 
-        $plantingLocation = PlantingLocation::findOrFail($selectedLocationId);
-
-        // Build queries with filters
-        $plantingQuery = $plantingLocation->plantings()->with(['plant.type', 'harvest', 'losses']);
-        $treatmentQuery = $plantingLocation->treatments()->with(['planting.plant', 'responsiblePerson', 'editor']);
-        $nutrientQuery = $plantingLocation->nutrients()->with(['planting.plant', 'editor', 'responsiblePerson']);
-        $expenseQuery = $plantingLocation->expenses()->with(['planting.plant', 'responsiblePerson', 'treatment', 'nutrient', 'editor']);
-        $taskQuery = $plantingLocation->tasks()->with(['assignedUser', 'createdByUser']);
-        $noteQuery = $plantingLocation->notes()->with('user');
-        $attachmentQuery = $plantingLocation->attachments()->with(['creator', 'editor']);
-
-        // Apply filters
+        $plantingsQuery = Planting::with([
+            'seedSource.variety.type',
+            'field.plantingLocation',
+            'reports.officer',
+            'certificationApplications',
+            'certificationInspections',
+            'certificationFieldSamples',
+            'certificationHarvests',
+            'certificationPcbs',
+            'postHarvests.certificationReports',
+        ]);
+        if ($filterMode === 'location') {
+            $plantingsQuery->where(function ($q) use ($locationRows) {
+                foreach ($locationRows as $row) {
+                    if (empty($row['planting_location_id'])) {
+                        continue;
+                    }
+                    $q->orWhere(function ($inner) use ($row) {
+                        $inner->whereHas('field', fn ($f) => $f->where('planting_location_id', $row['planting_location_id']));
+                        if (! empty($row['field_id'])) {
+                            $inner->where('planting_field_id', $row['field_id']);
+                        }
+                        $plantingIds = collect($row['planting_ids'] ?? [])->filter()->values();
+                        if ($plantingIds->isNotEmpty()) {
+                            $inner->whereIn('planting_production_id', $plantingIds);
+                        }
+                    });
+                }
+            });
+        } else {
+            $this->applyVarietyScope($plantingsQuery, $request, 'planting');
+        }
         if ($request->filled('year')) {
-            $year = $request->year;
-            $plantingQuery->whereYear('planted_at', $year);
-            $treatmentQuery->whereYear('treatment_date', $year);
-            $nutrientQuery->whereYear('application_date', $year);
-            $expenseQuery->whereYear('expense_date', $year);
-            $taskQuery->whereYear('due_date', $year);
-            $noteQuery->whereYear('note_date', $year);
-            $attachmentQuery->whereYear('attachment_date', $year);
+            $plantingsQuery->whereYear('planted_at', $request->year);
         }
-
         if ($request->filled('date_from')) {
-            $dateFrom = $request->date_from;
-            $plantingQuery->whereDate('planted_at', '>=', $dateFrom);
-            $treatmentQuery->whereDate('treatment_date', '>=', $dateFrom);
-            $nutrientQuery->whereDate('application_date', '>=', $dateFrom);
-            $expenseQuery->whereDate('expense_date', '>=', $dateFrom);
-            $taskQuery->whereDate('due_date', '>=', $dateFrom);
-            $noteQuery->whereDate('note_date', '>=', $dateFrom);
-            $attachmentQuery->whereDate('attachment_date', '>=', $dateFrom);
+            $plantingsQuery->whereDate('planted_at', '>=', $request->date_from);
         }
-
         if ($request->filled('date_to')) {
-            $dateTo = $request->date_to;
-            $plantingQuery->whereDate('planted_at', '<=', $dateTo);
-            $treatmentQuery->whereDate('treatment_date', '<=', $dateTo);
-            $nutrientQuery->whereDate('application_date', '<=', $dateTo);
-            $expenseQuery->whereDate('expense_date', '<=', $dateTo);
-            $taskQuery->whereDate('due_date', '<=', $dateTo);
-            $noteQuery->whereDate('note_date', '<=', $dateTo);
-            $attachmentQuery->whereDate('attachment_date', '<=', $dateTo);
+            $plantingsQuery->whereDate('planted_at', '<=', $request->date_to);
         }
+        $plantings = $plantingsQuery->orderByDesc('planted_at')->get();
+        $plantingLocations = $plantings->map(fn ($p) => $p->field?->plantingLocation)->filter()->unique('planting_location_id')->values();
+        $plantingLocation = $plantingLocations->first() ?: PlantingLocation::find($selectedLocationId);
+        $fields = $plantingLocation?->fields ?? collect();
 
-        if ($request->filled('plant_id')) {
-            $plantId = $request->plant_id;
-            $plantingQuery->where('plant_id', $plantId);
-            $treatmentQuery->whereHas('planting', function($q) use ($plantId) {
-                $q->where('plant_id', $plantId);
-            });
-            $nutrientQuery->whereHas('planting', function($q) use ($plantId) {
-                $q->where('plant_id', $plantId);
-            });
-            $expenseQuery->whereHas('planting', function($q) use ($plantId) {
-                $q->where('plant_id', $plantId);
-            });
+        $timeline = collect();
+        foreach ($plantings as $planting) {
+            foreach ($planting->reports as $item) {
+                $timeline->push(['at' => $item->activity_date ?? $item->created_at, 'type' => 'Log harian', 'title' => $item->title ?: 'Laporan harian', 'variety' => $planting->seedSource?->variety?->variety]);
+            }
+            foreach ($planting->certificationTimeline() as $entry) {
+                $timeline->push([
+                    'at' => $entry['at'],
+                    'type' => 'Sertifikasi',
+                    'title' => $entry['record']->reportTitle(),
+                    'variety' => $planting->seedSource?->variety?->variety,
+                ]);
+            }
+            foreach ($planting->postHarvests as $item) {
+                $timeline->push(['at' => $item->tgl_selesai_uji ?? $item->created_at, 'type' => 'Pasca panen', 'title' => 'Hasil uji lab '.$item->nomor_lot, 'variety' => $planting->seedSource?->variety?->variety]);
+                foreach ($item->certificationReports as $label) {
+                    $timeline->push(['at' => $label->created_at, 'type' => 'Label', 'title' => 'Label '.$label->id_label_rilis, 'variety' => $planting->seedSource?->variety?->variety]);
+                }
+                foreach (Stock::where('planting_post_harvest_id', $item->getKey())->get() as $stock) {
+                    $timeline->push(['at' => $stock->created_at, 'type' => 'Stok', 'title' => ($stock->no_label_resmi ?: 'Lot').' — '.$stock->stok_saat_ini, 'variety' => $planting->seedSource?->variety?->variety]);
+                }
+            }
         }
+        $timeline = $timeline->sortByDesc('at')->values();
 
-        // Filter by specific planting
-        if ($request->filled('planting_id')) {
-            $plantingId = $request->planting_id;
-            $plantingQuery->where('id', $plantingId);
-            $treatmentQuery->where('planting_id', $plantingId);
-            $nutrientQuery->where('planting_id', $plantingId);
-            $expenseQuery->where('planting_id', $plantingId);
-            $taskQuery->where('planting_id', $plantingId);
-        }
-
-        // Get data
-        $plantings = $plantingQuery->orderBy('planted_at', 'desc')->get();
-        $treatments = $treatmentQuery->orderBy('treatment_date', 'desc')->get();
-        $nutrients = $nutrientQuery->orderBy('application_date', 'desc')->get();
-        $expenses = $expenseQuery->orderBy('expense_date', 'desc')->get();
-        $tasks = $taskQuery->orderBy('due_date', 'desc')->get();
-        $notes = $noteQuery->orderBy('note_date', 'desc')->get();
-        $attachments = $attachmentQuery->orderBy('attachment_date', 'desc')->get();
-
-        // Calculate statistics
+        $treatments = collect();
+        $nutrients = collect();
+        $expenses = collect();
+        $tasks = collect();
+        $notes = collect();
+        $attachments = $plantingLocation
+            ? $plantingLocation->attachments()->with('creator')->orderByDesc('attachment_date')->get()
+            : collect();
         $totalPlantings = $plantings->count();
-        $totalHarvests = $plantings->whereNotNull('harvest')->count();
-        $totalExpenses = $expenses->sum('amount');
-        $totalTreatments = $treatments->count();
-        $totalNutrients = $nutrients->count();
-        $totalTasks = $tasks->count();
-        $completedTasks = $tasks->where('new_status', 'selesai')->count();
-        $totalNotes = $notes->count();
+        $totalHarvests = $plantings->sum(fn ($p) => $p->certificationHarvests->count());
+        $totalExpenses = 0;
+        $totalTreatments = 0;
+        $totalNutrients = 0;
+        $totalTasks = 0;
+        $completedTasks = 0;
+        $totalNotes = 0;
         $totalAttachments = $attachments->count();
-
-        // Get filter options
         $plants = Plant::orderBy('name')->get();
+        $commodities = PlantType::orderBy('category')->orderBy('name')->get();
         $locations = PlantingLocation::orderBy('name')->get();
-        $years = Planting::selectRaw('YEAR(planted_at) as year')
-            ->whereNotNull('planted_at')
-            ->distinct()
-            ->orderBy('year', 'desc')
-            ->pluck('year');
-        
-        // Get all plantings for this location for filter dropdown
-        $allPlantingsForLocation = $plantingLocation->plantings()
-            ->with(['plant'])
-            ->orderBy('planted_at', 'desc')
-            ->get();
+        $years = Planting::selectRaw('YEAR(planted_at) as year')->whereNotNull('planted_at')->distinct()->orderBy('year', 'desc')->pluck('year');
+        $allPlantingsForLocation = $plantings;
 
         return view('reports.by-location', compact(
             'plantingLocation',
+            'plantingLocations',
             'plantings',
+            'fields',
+            'timeline',
             'treatments',
             'nutrients',
             'expenses',
@@ -301,6 +287,7 @@ class ReportController extends Controller
             'totalNotes',
             'totalAttachments',
             'plants',
+            'commodities',
             'locations',
             'years',
             'allPlantingsForLocation'
@@ -310,81 +297,9 @@ class ReportController extends Controller
     /**
      * Laporan Penggunaan Sarana Produksi (Pengeluaran)
      */
-    public function productionSupplies(Request $request)
+    public function productionSupplies()
     {
-        // Check if export requested
-        if ($request->has('export')) {
-            return $this->exportProductionSupplies($request);
-        }
-
-        $query = Expense::with([
-            'plantingLocation',
-            'planting.plant',
-            'treatment.planting.plant',
-            'nutrient.planting.plant',
-            'responsiblePerson'
-        ]);
-
-        // Filter: Tahun
-        if ($request->filled('year')) {
-            $query->whereYear('expense_date', $request->year);
-        }
-
-        // Filter: Dari Tanggal
-        if ($request->filled('date_from')) {
-            $query->whereDate('expense_date', '>=', $request->date_from);
-        }
-
-        // Filter: Sampai Tanggal
-        if ($request->filled('date_to')) {
-            $query->whereDate('expense_date', '<=', $request->date_to);
-        }
-
-        // Filter: Komoditas (melalui planting)
-        if ($request->filled('plant_id')) {
-            $query->where(function($q) use ($request) {
-                $q->whereHas('planting', function($subQ) use ($request) {
-                    $subQ->where('plant_id', $request->plant_id);
-                })->orWhereHas('treatment.planting', function($subQ) use ($request) {
-                    $subQ->where('plant_id', $request->plant_id);
-                })->orWhereHas('nutrient.planting', function($subQ) use ($request) {
-                    $subQ->where('plant_id', $request->plant_id);
-                });
-            });
-        }
-
-        // Filter: Lokasi Lahan
-        if ($request->filled('planting_location_id')) {
-            $query->where('planting_location_id', $request->planting_location_id);
-        }
-
-        // Filter: Jenis Pengeluaran
-        if ($request->filled('expense_type')) {
-            $query->where('expense_type', $request->expense_type);
-        }
-
-        $expenses = $query->orderBy('expense_date', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->paginate(50);
-
-        // Get filter options
-        $years = Expense::selectRaw('YEAR(expense_date) as year')
-            ->whereNotNull('expense_date')
-            ->distinct()
-            ->orderBy('year', 'desc')
-            ->pluck('year');
-
-        $plants = Plant::with('type')->orderBy('name')->get();
-        $locations = PlantingLocation::orderBy('name')->get();
-        
-        $expenseTypes = [
-            'perawatan' => 'Perawatan',
-            'nutrisi' => 'Nutrisi',
-            'upah_pekerja' => 'Upah Pekerja',
-            'lainnya' => 'Pengeluaran Lainnya',
-        ];
-
-        return view('reports.production-supplies', compact('expenses', 'years', 'plants', 'locations', 'expenseTypes'));
+        return redirect()->route('reports.index')->with('info', 'Laporan penggunaan sarana produksi telah dihapus.');
     }
 
     /**
@@ -392,65 +307,7 @@ class ReportController extends Controller
      */
     private function exportProductionSupplies(Request $request)
     {
-        $query = Expense::with([
-            'plantingLocation',
-            'planting.plant',
-            'treatment.planting.plant',
-            'nutrient.planting.plant',
-            'responsiblePerson'
-        ]);
-
-        // Apply same filters
-        if ($request->filled('year')) {
-            $query->whereYear('expense_date', $request->year);
-        }
-
-        if ($request->filled('date_from')) {
-            $query->whereDate('expense_date', '>=', $request->date_from);
-        }
-
-        if ($request->filled('date_to')) {
-            $query->whereDate('expense_date', '<=', $request->date_to);
-        }
-
-        if ($request->filled('plant_id')) {
-            $query->where(function($q) use ($request) {
-                $q->whereHas('planting', function($subQ) use ($request) {
-                    $subQ->where('plant_id', $request->plant_id);
-                })->orWhereHas('treatment.planting', function($subQ) use ($request) {
-                    $subQ->where('plant_id', $request->plant_id);
-                })->orWhereHas('nutrient.planting', function($subQ) use ($request) {
-                    $subQ->where('plant_id', $request->plant_id);
-                });
-            });
-        }
-
-        if ($request->filled('planting_location_id')) {
-            $query->where('planting_location_id', $request->planting_location_id);
-        }
-
-        if ($request->filled('expense_type')) {
-            $query->where('expense_type', $request->expense_type);
-        }
-
-        $expenses = $query->orderBy('expense_date', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        $expenseTypes = [
-            'perawatan' => 'Perawatan',
-            'nutrisi' => 'Nutrisi',
-            'upah_pekerja' => 'Upah Pekerja',
-            'lainnya' => 'Pengeluaran Lainnya',
-        ];
-
-        if ($request->get('export') === 'pdf') {
-            return view('reports.exports.production-supplies-pdf', compact('expenses', 'expenseTypes'));
-        } elseif ($request->get('export') === 'excel') {
-            return $this->exportProductionSuppliesExcel($expenses, $expenseTypes);
-        }
-
-        return redirect()->back();
+        return redirect()->route('reports.index');
     }
 
     /**
@@ -477,14 +334,8 @@ class ReportController extends Controller
             $rowNumber = 1;
             foreach ($expenses as $expense) {
                 // Get plant from expense
-                $plant = null;
-                if ($expense->planting && $expense->planting->plant) {
-                    $plant = $expense->planting->plant;
-                } elseif ($expense->treatment && $expense->treatment->planting && $expense->treatment->planting->plant) {
-                    $plant = $expense->treatment->planting->plant;
-                } elseif ($expense->nutrient && $expense->nutrient->planting && $expense->nutrient->planting->plant) {
-                    $plant = $expense->nutrient->planting->plant;
-                }
+                $plant = $expense->planting && $expense->planting->plant ? $expense->planting->plant : null;
+                $locationName = $expense->planting && $expense->planting->location ? $expense->planting->location->name : '-';
                 
                 fputcsv($file, [
                     $rowNumber++,
@@ -492,7 +343,7 @@ class ReportController extends Controller
                     $expense->expense_name ?? '-',
                     $expenseTypes[$expense->expense_type] ?? '-',
                     $plant ? $plant->name : '-',
-                    $expense->plantingLocation->name ?? '-',
+                    $locationName,
                     $expense->responsiblePerson->name ?? '-',
                     number_format($expense->amount, 0, ',', '.'),
                 ]);
@@ -513,44 +364,45 @@ class ReportController extends Controller
      */
     public function stockPosition(Request $request)
     {
-        $query = InventoryLot::with(['inventoryType.plant', 'warehouse', 'bin'])
-            ->where('current_stock', '>', 0);
+        $query = \App\Models\Stock::with(['plant.satuanStok', 'rack.warehouse', 'certificationReport'])
+            ->where('stok_saat_ini', '>', 0);
 
         // Filter: Gudang
         if ($request->filled('warehouse_id')) {
-            $query->where('warehouse_id', $request->warehouse_id);
-        }
-
-        // Filter: Komoditas/Tanaman
-        if ($request->filled('plant_id')) {
-            $query->whereHas('inventoryType', function($q) use ($request) {
-                $q->where('plant_id', $request->plant_id);
+            $query->whereHas('rack', function ($q) use ($request) {
+                $q->where('warehouse_id', $request->warehouse_id);
             });
         }
 
-        // Filter: Tipe Inventaris
-        if ($request->filled('inventory_type_id')) {
-            $query->where('inventory_type_id', $request->inventory_type_id);
+        // Filter: Komoditas/Varietas benih
+        if ($request->filled('plant_id')) {
+            $query->where('seed_varieties_id', $request->plant_id);
         }
 
-        $lots = $query->orderBy('warehouse_id')
-            ->orderBy('inventory_type_id')
-            ->orderBy('production_id')
+        // Filter kompatibilitas lama: tipe inventaris = varietas benih
+        if ($request->filled('inventory_type_id')) {
+            $query->where('seed_varieties_id', $request->inventory_type_id);
+        }
+
+        $this->applyVarietyScope($query, $request, 'stock');
+        $lots = $query->orderBy('rak_gudang_id')
+            ->orderBy('seed_varieties_id')
+            ->orderBy('no_label_resmi')
             ->paginate(50);
 
-        // Calculate asset value
+        // Nilai aset = stok saat ini x harga jual varietas
         $lots->getCollection()->transform(function ($lot) {
-            // Using estimated_value_per_unit from inventory_type
-            $unitPrice = $lot->inventoryType->estimated_value_per_unit ?? 0;
-            $lot->asset_value = $lot->current_stock * $unitPrice;
+            $unitPrice = (float) ($lot->plant?->harga_jual ?? 0);
+            $lot->asset_value = (float) $lot->stok_saat_ini * $unitPrice;
             return $lot;
         });
 
         $warehouses = Warehouse::orderBy('name')->get();
-        $inventoryTypes = \App\Models\InventoryType::with('plant')->orderBy('name')->get();
         $plants = Plant::with('type')->orderBy('name')->get();
+        $commodities = PlantType::orderBy('category')->orderBy('name')->get();
+        $inventoryTypes = $plants;
 
-        return view('reports.stock-position', compact('lots', 'warehouses', 'inventoryTypes', 'plants'));
+        return view('reports.stock-position', compact('lots', 'warehouses', 'inventoryTypes', 'plants', 'commodities'));
     }
 
     /**
@@ -558,8 +410,8 @@ class ReportController extends Controller
      */
     public function stockMutation(Request $request)
     {
-        $query = InventoryTransaction::with(['inventoryType.plant', 'inventoryLot', 'warehouse', 'bin', 'user'])
-            ->whereHas('inventoryType');
+        $query = \App\Models\StockHistory::with(['plant', 'stock.rack.warehouse', 'packaging.rack.warehouse', 'user'])
+            ->whereNotNull('transaction_type');
 
         // Filter: Dari Tanggal
         if ($request->filled('date_from')) {
@@ -571,40 +423,49 @@ class ReportController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        // Filter: Komoditas/Tanaman
-        if ($request->filled('plant_id')) {
-            $query->whereHas('inventoryType', function($q) use ($request) {
-                $q->where('plant_id', $request->plant_id);
-            });
+        // Filter: Komoditas
+        if ($request->filled('commodity_id')) {
+            $query->whereHas('plant', fn ($q) => $q->where('seed_commodity_id', $request->commodity_id));
         }
 
-        // Filter: Lot/Batch
-        if ($request->filled('inventory_lot_id')) {
-            $query->where('inventory_lot_id', $request->inventory_lot_id);
-        }
-
-        // Filter: Tipe Inventaris
-        if ($request->filled('inventory_type_id')) {
-            $query->where('inventory_type_id', $request->inventory_type_id);
+        // Filter: Varietas benih
+        if ($request->filled('variety_id')) {
+            $query->where('seed_varieties_id', $request->variety_id);
+        } elseif ($request->filled('plant_id')) {
+            $query->where('seed_varieties_id', $request->plant_id);
         }
 
         // Filter: Gudang
         if ($request->filled('warehouse_id')) {
-            $query->where('warehouse_id', $request->warehouse_id);
+            $query->whereHas('stock.rack', function ($q) use ($request) {
+                $q->where('warehouse_id', $request->warehouse_id);
+            });
         }
+
+        // Filter: ID rak gudang (internal id)
+        if ($request->filled('bin_id')) {
+            $query->whereHas('stock.rack', function ($q) use ($request) {
+                $q->where('warehouse_bin_id', $request->bin_id);
+            });
+        } elseif ($request->filled('bin_internal_id')) {
+            $query->whereHas('stock.rack', function ($q) use ($request) {
+                $q->where('internal_id', $request->bin_internal_id);
+            });
+        }
+        $this->applyVarietyScope($query, $request, 'history');
 
         $transactions = $query->orderBy('created_at', 'desc')->paginate(50);
 
         // Calculate running balance per lot
         $balances = [];
         $transactions->getCollection()->transform(function ($transaction) use (&$balances) {
-            $lotId = $transaction->inventory_lot_id ?? 'general';
+            $lotId = $transaction->stock_id ?? 'general';
             if (!isset($balances[$lotId])) {
                 $balances[$lotId] = 0;
             }
             
-            // Determine if transaction is addition or subtraction
-            $isAddition = in_array($transaction->transaction_type, ['stok_masuk', 'penyesuaian_tambah', 'pindah_lokasi']);
+        // Determine if transaction is addition or subtraction
+        $isAddition = in_array($transaction->transaction_type, ['mendaftarkan_stok', 'stok_masuk', 'penyesuaian_tambah', 'pindah_lokasi']);
             if ($isAddition) {
                 $balances[$lotId] += abs($transaction->quantity);
             } else {
@@ -615,12 +476,16 @@ class ReportController extends Controller
             return $transaction;
         });
 
-        $lots = InventoryLot::with('inventoryType')->orderBy('production_id')->get();
-        $inventoryTypes = \App\Models\InventoryType::with('plant')->orderBy('name')->get();
-        $plants = Plant::with('type')->orderBy('name')->get();
+        $plants = Plant::with('type')->orderBy('variety')->orderBy('name')->get();
+        $commodities = PlantType::orderBy('name')->get();
         $warehouses = Warehouse::orderBy('name')->get();
+        $bins = \App\Models\Bin::query()
+            ->when($request->filled('warehouse_id'), fn ($q) => $q->where('warehouse_id', $request->warehouse_id))
+            ->orderBy('internal_id')
+            ->orderBy('name')
+            ->get();
 
-        return view('reports.stock-mutation', compact('transactions', 'lots', 'inventoryTypes', 'plants', 'warehouses'));
+        return view('reports.stock-mutation', compact('transactions', 'plants', 'commodities', 'warehouses', 'bins'));
     }
 
     /**
@@ -637,61 +502,146 @@ class ReportController extends Controller
             return $this->exportSales($request);
         }
 
-        $query = Sale::with([
-            'user', 
-            'items.inventoryType.plant',
-            'items.inventoryLot.warehouse'
-        ]);
+        $baseQuery = SaleItem::with(['user', 'packaging.stock.plant.type', 'packaging.rack.warehouse']);
+        $baseQuery->whereNotNull('receipt_number');
 
-        // Filter: Tahun
         if ($request->filled('year')) {
-            $query->whereYear('sale_date', $request->year);
+            $baseQuery->whereYear('sale_date', $request->year);
         }
-
-        // Filter: Dari Tanggal
         if ($request->filled('date_from')) {
-            $query->whereDate('sale_date', '>=', $request->date_from);
+            $baseQuery->whereDate('sale_date', '>=', $request->date_from);
         }
-
-        // Filter: Sampai Tanggal
         if ($request->filled('date_to')) {
-            $query->whereDate('sale_date', '<=', $request->date_to);
+            $baseQuery->whereDate('sale_date', '<=', $request->date_to);
         }
-
-        // Filter: Komoditas (melalui inventory type)
-        if ($request->filled('plant_id')) {
-            $query->whereHas('items.inventoryType', function($q) use ($request) {
-                $q->where('plant_id', $request->plant_id);
+        $this->applySaleCatalogFilters($baseQuery, $request);
+        $this->applyVarietyScope($baseQuery, $request, 'sale');
+        if ($request->filled('q')) {
+            $q = trim((string) $request->q);
+            $baseQuery->where(function ($query) use ($q) {
+                $query->where('buyer_name', 'like', '%'.$q.'%')
+                    ->orWhere('buyer_contact', 'like', '%'.$q.'%')
+                    ->orWhere('receipt_number', 'like', '%'.$q.'%')
+                    ->orWhereHas('seedRequest', fn ($s) => $s->where('organization', 'like', '%'.$q.'%')->orWhere('buyer_name', 'like', '%'.$q.'%')->orWhere('buyer_contact', 'like', '%'.$q.'%'));
             });
         }
 
-        // Filter: Lokasi Lahan (melalui inventory type -> seeds -> planting location)
-        if ($request->filled('planting_location_id')) {
-            $query->whereHas('items.inventoryType', function($q) use ($request) {
-                $q->whereHas('seeds', function($q2) use ($request) {
-                    $q2->where('planting_location_id', $request->planting_location_id);
-                });
-            });
-        }
+        $receiptNumbers = (clone $baseQuery)->select('receipt_number')->distinct()->pluck('receipt_number');
+        $orderedIds = SaleItem::whereIn('receipt_number', $receiptNumbers)
+            ->selectRaw('receipt_number, MAX(sale_date) as max_date')
+            ->groupBy('receipt_number')
+            ->orderBy('max_date', 'desc')
+            ->pluck('receipt_number');
 
-        $sales = $query->orderBy('sale_date', 'desc')->paginate(50);
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = 50;
+        $saleIdsPage = $orderedIds->forPage($page, $perPage)->values();
 
-        $sales->getCollection()->transform(function ($sale) {
-            $sale->total_items = $sale->items->sum('quantity');
-            return $sale;
-        });
+        $items = SaleItem::whereIn('receipt_number', $saleIdsPage)
+            ->with(['user', 'packaging.stock.plant.type', 'packaging.rack.warehouse'])
+            ->orderBy('sale_date', 'desc')
+            ->orderBy('sale_item_id')
+            ->get();
+        $grouped = $items->groupBy('receipt_number');
+        $salesCollection = $grouped->map(function ($itemRows) {
+            $first = $itemRows->first();
+            $first->setRelation('items', $itemRows);
+            $first->total_items = $itemRows->sum('quantity');
+            $first->label_numbers = $itemRows->map(fn ($item) => $item->packaging?->no_label_seri)->filter()->values();
+            $first->sold_volume = $itemRows->groupBy(fn ($item) => $item->unit ?: '-')->map->sum('quantity');
+            return $first;
+        })->values();
+
+        $sales = new LengthAwarePaginator(
+            $salesCollection,
+            $orderedIds->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         // Get filter options
-        $years = Sale::selectRaw('YEAR(sale_date) as year')
+        $years = SaleItem::selectRaw('YEAR(sale_date) as year')
             ->whereNotNull('sale_date')
             ->distinct()
             ->orderBy('year', 'desc')
             ->pluck('year');
 
-        $plants = Plant::with('type')->orderBy('name')->get();
-        $locations = PlantingLocation::orderBy('name')->get();
+        $plants = Plant::with('type')->orderBy('variety')->orderBy('name')->get();
+        $commodities = PlantType::orderBy('name')->get();
 
-        return view('reports.sales', compact('sales', 'years', 'plants', 'locations'));
+        return view('reports.sales', compact('sales', 'years', 'plants', 'commodities'));
+    }
+
+    public function distribution(Request $request)
+    {
+        $query = SaleItem::with([
+            'packaging.stock.plant.type',
+            'seedRequest.items.plant.type',
+            'user',
+        ])->whereNotNull('planned_gps')->where('planned_gps', '!=', '');
+
+        if ($request->filled('year')) {
+            $query->whereYear('sale_date', $request->year);
+        }
+        if ($request->filled('date_from')) {
+            $query->whereDate('sale_date', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('sale_date', '<=', $request->date_to);
+        }
+        $this->applySaleCatalogFilters($query, $request);
+        $this->applyVarietyScope($query, $request, 'sale');
+
+        $items = $query->orderByDesc('sale_date')->orderBy('sale_item_id')->get();
+
+        $points = [];
+        $rows = collect();
+        foreach ($items as $item) {
+            $gps = SaleItem::parseGps($item->planned_gps);
+            if (! $gps) {
+                continue;
+            }
+
+            $points[] = [
+                'lat' => $gps['lat'],
+                'lng' => $gps['lng'],
+                'qty' => (float) $item->quantity,
+                'unit' => $item->unit ?: 'kg',
+                'buyer' => $item->buyer_name,
+                'organization' => $item->displayOrganization() ?: '-',
+                'location' => $item->planned_location_name ?: '-',
+                'plant' => $item->displayPlantName(),
+                'receipt' => $item->receipt_number,
+                'date' => $item->sale_date?->format('d M Y'),
+                'url' => route('sales.show', $item),
+            ];
+            $rows->push($item);
+        }
+
+        $years = SaleItem::query()
+            ->selectRaw('YEAR(sale_date) as year')
+            ->whereNotNull('sale_date')
+            ->whereNotNull('planned_gps')
+            ->where('planned_gps', '!=', '')
+            ->distinct()
+            ->orderBy('year', 'desc')
+            ->pluck('year');
+
+        $plants = Plant::with('type')->orderBy('variety')->orderBy('name')->get();
+        $commodities = PlantType::orderBy('name')->get();
+        $totalQty = collect($points)->sum('qty');
+        $receiptCount = collect($points)->pluck('receipt')->unique()->count();
+
+        return view('reports.distribution', compact(
+            'points',
+            'rows',
+            'years',
+            'plants',
+            'commodities',
+            'totalQty',
+            'receiptCount'
+        ));
     }
 
 
@@ -704,88 +654,42 @@ class ReportController extends Controller
      */
     public function certification(Request $request)
     {
-        // Check if export requested
-        if ($request->has('export')) {
-            return $this->exportCertification($request);
-        }
+        $query = PlantingPostHarvest::with([
+            'planting.seedSource.variety.type',
+            'planting.field.plantingLocation',
+            'certificationReports',
+            'stock',
+        ])->orderByDesc('tgl_selesai_uji');
 
-        $query = Certification::with([
-            'plant.type',
-            'harvest.plant.type',
-            'plantingLocation',
-            'reports' => function($q) {
-                $q->orderBy('report_date', 'desc');
-            }
-        ]);
-
-        // Filter: Tahun
         if ($request->filled('year')) {
-            $query->whereHas('reports', function($q) use ($request) {
-                $q->whereYear('report_date', $request->year);
-            })->orWhereYear('created_at', $request->year);
+            $query->whereYear('tgl_selesai_uji', $request->year);
         }
-
-        // Filter: Dari Tanggal
         if ($request->filled('date_from')) {
-            $query->where(function($q) use ($request) {
-                $q->whereHas('reports', function($subQ) use ($request) {
-                    $subQ->whereDate('report_date', '>=', $request->date_from);
-                })->orWhereDate('created_at', '>=', $request->date_from);
-            });
+            $query->whereDate('tgl_selesai_uji', '>=', $request->date_from);
         }
-
-        // Filter: Sampai Tanggal
         if ($request->filled('date_to')) {
-            $query->where(function($q) use ($request) {
-                $q->whereHas('reports', function($subQ) use ($request) {
-                    $subQ->whereDate('report_date', '<=', $request->date_to);
-                })->orWhereDate('created_at', '<=', $request->date_to);
-            });
+            $query->whereDate('tgl_selesai_uji', '<=', $request->date_to);
         }
-
-        // Filter: Komoditas
-        if ($request->filled('plant_id')) {
-            $query->where('plant_id', $request->plant_id);
+        if ($request->filled('commodity_id')) {
+            $commodityId = $request->commodity_id;
+            $query->whereHas('planting.seedSource.variety', fn ($p) => $p->where('seed_commodity_id', $commodityId));
         }
+        if ($request->filled('variety_id')) {
+            $varietyId = $request->variety_id;
+            $query->whereHas('planting.seedSource', fn ($s) => $s->where('seed_varieties_id', $varietyId));
+        }
+        $this->applyVarietyScope($query, $request, 'post_harvest');
 
-        $certifications = $query->orderBy('created_at', 'desc')->paginate(50);
-
-        // Transform certifications to add certification_status
-        $certifications->getCollection()->transform(function ($certification) {
-            $latestReport = $certification->reports->first();
-            if ($latestReport) {
-                if ($latestReport->conclusion === 'LULUS') {
-                    $certification->certification_status = 'lulus';
-                } elseif ($latestReport->conclusion === 'TIDAK LULUS') {
-                    $certification->certification_status = 'tidak_lulus';
-                } else {
-                    $certification->certification_status = $certification->certification_status ?? 'dalam_proses';
-                }
-            } else {
-                $certification->certification_status = $certification->certification_status ?? 'dalam_proses';
-            }
-            return $certification;
-        });
-
-        // Get filter options
-        $years = Certification::selectRaw('YEAR(created_at) as year')
+        $reports = $query->paginate(50);
+        $commodities = PlantType::orderBy('name')->get();
+        $plants = Plant::orderBy('name')->get();
+        $years = PlantingPostHarvest::selectRaw('YEAR(tgl_selesai_uji) as year')
+            ->whereNotNull('tgl_selesai_uji')
             ->distinct()
             ->orderBy('year', 'desc')
-            ->pluck('year')
-            ->merge(
-                CertificationReport::selectRaw('YEAR(report_date) as year')
-                    ->whereNotNull('report_date')
-                    ->distinct()
-                    ->orderBy('year', 'desc')
-                    ->pluck('year')
-            )
-            ->unique()
-            ->sortDesc()
-            ->values();
+            ->pluck('year');
 
-        $plants = Plant::with('type')->orderBy('name')->get();
-
-        return view('reports.certification', compact('certifications', 'years', 'plants'));
+        return view('reports.certification', compact('reports', 'commodities', 'plants', 'years'));
     }
 
     /**
@@ -794,54 +698,28 @@ class ReportController extends Controller
     private function exportPlantingHarvest(Request $request)
     {
         $query = Planting::with([
-            'plant.type', 
-            'harvest.certification'
+            'seedSource.variety.type',
+            'field.plantingLocation',
+            'plant.type',
+            'certificationHarvests',
+            'postHarvests',
         ])->whereNotNull('planted_at');
 
-        // Apply same filters as main method
-        if ($request->filled('year')) {
-            $query->whereYear('planted_at', $request->year);
-        }
-        
-        if ($request->filled('plant_id')) {
-            $query->where('plant_id', $request->plant_id);
-        }
-        
-        if ($request->filled('planting_location_id')) {
-            $query->where('planting_location_id', $request->planting_location_id);
-        }
-
-        if ($request->filled('date_from')) {
-            $query->whereDate('planted_at', '>=', $request->date_from);
-        }
-
-        if ($request->filled('date_to')) {
-            $query->whereDate('planted_at', '<=', $request->date_to);
-        }
+        $this->applyPlantingHarvestFilters($query, $request);
 
         $plantings = $query->orderBy('planted_at', 'desc')->get();
 
         // Transform data
         $plantings->transform(function ($planting) {
-            $harvest = $planting->harvest;
-            $certification = $harvest ? $harvest->certification : null;
-            
-            // Get area in hectares from planting area_ha field, fallback to location map_size
-            $area = $planting->area_ha ?? ($planting->location->map_size ?? 0);
-            
-            $candidateSeed = 0;
-            if ($harvest && $harvest->quantity > 0) {
-                $unit = strtolower($harvest->unit ?? 'kg');
-                $factors = ['kg' => 1, 'kilogram' => 1, 'gram' => 0.001, 'ton' => 1000, 'kuintal' => 100];
-                $candidateSeed = $harvest->quantity * ($factors[$unit] ?? 1);
-            }
-            
-            $certifiedSeed = 0;
-            if ($certification && in_array($certification->certification_status, ['lulus', 'selesai'])) {
-                $certifiedSeed = $candidateSeed;
-            }
-            
-            $seedClass = $certification ? $certification->seed_class_requested : null;
+            $harvest = $planting->certificationHarvests->sortByDesc('tgl_panen')->first();
+            $latestTest = $planting->postHarvests->sortByDesc('uji_ke')->first();
+
+            $area = $planting->field?->luas_ha ?? $planting->area_ha ?? ($planting->field?->plantingLocation?->map_size ?? 0);
+
+            $candidateSeed = (float) ($harvest?->volume_kotor_panen_kg ?? 0);
+            $certifiedSeed = $latestTest && $latestTest->isLulus() ? (float) $latestTest->total_hasil_uji : 0;
+
+            $seedClass = $planting->target_kelas;
             if ($seedClass) {
                 $seedClassFormatted = $seedClass;
                 if ($seedClass === 'BS') {
@@ -903,7 +781,7 @@ class ReportController extends Controller
                     $planting->area_ha > 0 ? number_format($planting->area_ha, 2, ',', '.') : '-',
                     $planting->location->name ?? '-',
                     $planting->planted_at ? $planting->planted_at->format('d-m-Y') : '-',
-                    $planting->harvest && $planting->harvest->harvested_at ? $planting->harvest->harvested_at->format('d-m-Y') : '-',
+                    optional($planting->certificationHarvests->sortByDesc('tgl_panen')->first()?->tgl_panen)->format('d-m-Y') ?: '-',
                     $planting->candidate_seed_kg > 0 ? number_format($planting->candidate_seed_kg, 0, ',', '.') : '-',
                     $planting->certified_seed_kg > 0 ? number_format($planting->certified_seed_kg, 0, ',', '.') : '-',
                 ]);
@@ -921,102 +799,46 @@ class ReportController extends Controller
     private function exportByLocation(Request $request, $selectedLocationId)
     {
         $plantingLocation = PlantingLocation::findOrFail($selectedLocationId);
-
-        // Build queries with filters (same as main method)
-        $plantingQuery = $plantingLocation->plantings()->with(['plant.type', 'harvest']);
-        $treatmentQuery = $plantingLocation->treatments()->with(['planting.plant', 'responsiblePerson', 'editor']);
-        $nutrientQuery = $plantingLocation->nutrients()->with(['planting.plant', 'editor']);
-        $expenseQuery = $plantingLocation->expenses()->with(['planting.plant', 'responsiblePerson', 'treatment', 'nutrient', 'editor']);
-        $taskQuery = $plantingLocation->tasks()->with(['assignedUser', 'createdByUser']);
-        $noteQuery = $plantingLocation->notes()->with('user');
-        $attachmentQuery = $plantingLocation->attachments()->with(['creator', 'editor']);
-
-        // Apply filters
-        if ($request->filled('year')) {
-            $year = $request->year;
-            $plantingQuery->whereYear('planted_at', $year);
-            $treatmentQuery->whereYear('treatment_date', $year);
-            $nutrientQuery->whereYear('application_date', $year);
-            $expenseQuery->whereYear('expense_date', $year);
-            $taskQuery->whereYear('due_date', $year);
-            $noteQuery->whereYear('note_date', $year);
-            $attachmentQuery->whereYear('attachment_date', $year);
+        $plantingsQuery = Planting::with(['seedSource.variety', 'field', 'certificationHarvests', 'reports', 'postHarvests'])
+            ->whereHas('field', fn ($q) => $q->where('planting_location_id', $plantingLocation->getKey()));
+        if ($request->filled('field_id')) {
+            $plantingsQuery->where('planting_field_id', $request->field_id);
         }
-
-        if ($request->filled('date_from')) {
-            $dateFrom = $request->date_from;
-            $plantingQuery->whereDate('planted_at', '>=', $dateFrom);
-            $treatmentQuery->whereDate('treatment_date', '>=', $dateFrom);
-            $nutrientQuery->whereDate('application_date', '>=', $dateFrom);
-            $expenseQuery->whereDate('expense_date', '>=', $dateFrom);
-            $taskQuery->whereDate('due_date', '>=', $dateFrom);
-            $noteQuery->whereDate('note_date', '>=', $dateFrom);
-            $attachmentQuery->whereDate('attachment_date', '>=', $dateFrom);
+        if ($request->filled('planting_id')) {
+            $plantingsQuery->whereKey($request->planting_id);
         }
+        $plantings = $plantingsQuery->orderByDesc('planted_at')->get();
+        $attachments = $plantingLocation->attachments()->with('creator')->get();
 
-        if ($request->filled('date_to')) {
-            $dateTo = $request->date_to;
-            $plantingQuery->whereDate('planted_at', '<=', $dateTo);
-            $treatmentQuery->whereDate('treatment_date', '<=', $dateTo);
-            $nutrientQuery->whereDate('application_date', '<=', $dateTo);
-            $expenseQuery->whereDate('expense_date', '<=', $dateTo);
-            $taskQuery->whereDate('due_date', '<=', $dateTo);
-            $noteQuery->whereDate('note_date', '<=', $dateTo);
-            $attachmentQuery->whereDate('attachment_date', '<=', $dateTo);
-        }
+        $filename = 'Laporan_Produksi_' . str_replace(' ', '_', $plantingLocation->name) . '_' . date('Y-m-d') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
 
-        if ($request->filled('plant_id')) {
-            $plantId = $request->plant_id;
-            $plantingQuery->where('plant_id', $plantId);
-            $treatmentQuery->whereHas('planting', function($q) use ($plantId) {
-                $q->where('plant_id', $plantId);
-            });
-            $nutrientQuery->whereHas('planting', function($q) use ($plantId) {
-                $q->where('plant_id', $plantId);
-            });
-            $expenseQuery->whereHas('planting', function($q) use ($plantId) {
-                $q->where('plant_id', $plantId);
-            });
-        }
+        $callback = function () use ($plantingLocation, $plantings, $attachments) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, ['Lokasi Penanaman', $plantingLocation->name]);
+            fputcsv($file, ['No', 'Jenis', 'Tanggal', 'Varietas', 'Judul']);
+            $row = 1;
+            foreach ($plantings as $planting) {
+                $variety = $planting->seedSource?->variety?->variety ?: ($planting->plant?->name ?: '-');
+                fputcsv($file, [$row++, 'Produksi', optional($planting->planted_at)->format('d-m-Y'), $variety, $planting->planting_batch_number ?: $planting->getKey()]);
+                foreach ($planting->certificationHarvests as $harvest) {
+                    fputcsv($file, [$row++, 'Panen', optional($harvest->tgl_panen)->format('d-m-Y'), $variety, $harvest->no_segel_sementara ?: 'Pengawasan panen']);
+                }
+                foreach ($planting->postHarvests as $test) {
+                    fputcsv($file, [$row++, 'Hasil uji lab', optional($test->tgl_selesai_uji)->format('d-m-Y'), $variety, $test->nomor_lot]);
+                }
+            }
+            foreach ($attachments as $attachment) {
+                fputcsv($file, [$row++, 'Lampiran', optional($attachment->attachment_date)->format('d-m-Y'), '-', $attachment->title]);
+            }
+            fclose($file);
+        };
 
-        // Get data
-        $plantings = $plantingQuery->orderBy('planted_at', 'desc')->get();
-        $treatments = $treatmentQuery->orderBy('treatment_date', 'desc')->get();
-        $nutrients = $nutrientQuery->orderBy('application_date', 'desc')->get();
-        $expenses = $expenseQuery->orderBy('expense_date', 'desc')->get();
-        $tasks = $taskQuery->orderBy('due_date', 'desc')->get();
-        $notes = $noteQuery->orderBy('note_date', 'desc')->get();
-        $attachments = $attachmentQuery->orderBy('attachment_date', 'desc')->get();
-
-        $totalExpenses = $expenses->sum('amount');
-
-        if ($request->get('export') === 'pdf') {
-            return view('reports.exports.by-location-pdf', compact(
-                'plantingLocation',
-                'plantings',
-                'treatments',
-                'nutrients',
-                'expenses',
-                'tasks',
-                'notes',
-                'attachments',
-                'totalExpenses'
-            ));
-        } elseif ($request->get('export') === 'excel') {
-            return $this->exportByLocationExcel(
-                $plantingLocation,
-                $plantings,
-                $treatments,
-                $nutrients,
-                $expenses,
-                $tasks,
-                $notes,
-                $attachments,
-                $totalExpenses
-            );
-        }
-
-        return redirect()->back();
+        return response()->stream($callback, 200, $headers);
     }
 
     /**
@@ -1044,7 +866,6 @@ class ReportController extends Controller
             
             // Plantings
             foreach ($plantings as $planting) {
-                $harvest = $planting->harvest;
                 fputcsv($file, [
                     $rowNumber++,
                     'Penanaman',
@@ -1052,7 +873,7 @@ class ReportController extends Controller
                     $planting->plant->name ?? '-',
                     'Varietas: ' . ($planting->plant->variety ?? '-') . ($planting->bed_label ? ' | Bed: ' . $planting->bed_label : ''),
                     '-',
-                    $harvest && $harvest->quantity > 0 ? 'Berhasil' : ($harvest ? 'Gagal' : 'Belum Panen'),
+                    $planting->statusLabel(),
                     '-'
                 ]);
             }
@@ -1141,45 +962,27 @@ class ReportController extends Controller
      */
     private function exportSales(Request $request)
     {
-        $query = Sale::with([
-            'user', 
-            'items.inventoryType.plant',
-            'items.inventoryLot.warehouse'
-        ]);
+        $query = SaleItem::with(['user', 'packaging.stock.plant.type', 'packaging.rack.warehouse']);
+        $query->whereNotNull('receipt_number');
 
-        // Apply same filters as main method
         if ($request->filled('year')) {
             $query->whereYear('sale_date', $request->year);
         }
-
         if ($request->filled('date_from')) {
             $query->whereDate('sale_date', '>=', $request->date_from);
         }
-
         if ($request->filled('date_to')) {
             $query->whereDate('sale_date', '<=', $request->date_to);
         }
+        $this->applySaleCatalogFilters($query, $request);
 
-        if ($request->filled('plant_id')) {
-            $query->whereHas('items.inventoryType', function($q) use ($request) {
-                $q->where('plant_id', $request->plant_id);
-            });
-        }
-
-        if ($request->filled('planting_location_id')) {
-            $query->whereHas('items.inventoryType', function($q) use ($request) {
-                $q->whereHas('seeds', function($q2) use ($request) {
-                    $q2->where('planting_location_id', $request->planting_location_id);
-                });
-            });
-        }
-
-        $sales = $query->orderBy('sale_date', 'desc')->get();
-
-        $sales->transform(function ($sale) {
-            $sale->total_items = $sale->items->sum('quantity');
-            return $sale;
-        });
+        $items = $query->orderBy('sale_date', 'desc')->orderBy('sale_item_id')->get();
+        $sales = $items->groupBy('receipt_number')->map(function ($itemRows) {
+            $first = $itemRows->first();
+            $first->setRelation('items', $itemRows);
+            $first->total_items = $itemRows->sum('quantity');
+            return $first;
+        })->values();
 
         if ($request->get('export') === 'pdf') {
             return view('reports.exports.sales-pdf', compact('sales'));
@@ -1227,7 +1030,7 @@ class ReportController extends Controller
             $no = 1;
             foreach ($sales as $sale) {
                 $uniquePlants = $sale->items->map(function($item) {
-                    return $item->inventoryType->plant->name ?? ($item->inventoryType->name ?? 'N/A');
+                    return $item->packaging?->stock?->plant?->name ?? 'N/A';
                 })->unique()->values()->implode(', ');
                 
                 fputcsv($file, [
@@ -1256,132 +1059,6 @@ class ReportController extends Controller
     }
 
     /**
-     * Export Certification Report
-     */
-    private function exportCertification(Request $request)
-    {
-        $query = Certification::with([
-            'plant.type',
-            'harvest.plant.type',
-            'plantingLocation',
-            'reports' => function($q) {
-                $q->orderBy('report_date', 'desc');
-            }
-        ]);
-
-        // Apply same filters as main method
-        if ($request->filled('year')) {
-            $query->whereHas('reports', function($q) use ($request) {
-                $q->whereYear('report_date', $request->year);
-            })->orWhereYear('created_at', $request->year);
-        }
-
-        if ($request->filled('date_from')) {
-            $query->where(function($q) use ($request) {
-                $q->whereHas('reports', function($subQ) use ($request) {
-                    $subQ->whereDate('report_date', '>=', $request->date_from);
-                })->orWhereDate('created_at', '>=', $request->date_from);
-            });
-        }
-
-        if ($request->filled('date_to')) {
-            $query->where(function($q) use ($request) {
-                $q->whereHas('reports', function($subQ) use ($request) {
-                    $subQ->whereDate('report_date', '<=', $request->date_to);
-                })->orWhereDate('created_at', '<=', $request->date_to);
-            });
-        }
-
-        if ($request->filled('plant_id')) {
-            $query->where('plant_id', $request->plant_id);
-        }
-
-        $certifications = $query->orderBy('created_at', 'desc')->get();
-
-        // Transform certifications to add certification_status
-        $certifications->transform(function ($certification) {
-            $latestReport = $certification->reports->first();
-            if ($latestReport) {
-                if ($latestReport->conclusion === 'LULUS') {
-                    $certification->certification_status = 'lulus';
-                } elseif ($latestReport->conclusion === 'TIDAK LULUS') {
-                    $certification->certification_status = 'tidak_lulus';
-                } else {
-                    $certification->certification_status = $certification->certification_status ?? 'dalam_proses';
-                }
-            } else {
-                $certification->certification_status = $certification->certification_status ?? 'dalam_proses';
-            }
-            return $certification;
-        });
-
-        if ($request->get('export') === 'pdf') {
-            return view('reports.exports.certification-pdf', compact('certifications'));
-        } elseif ($request->get('export') === 'excel') {
-            return $this->exportCertificationExcel($certifications);
-        }
-
-        return redirect()->back();
-    }
-
-    /**
-     * Export Certification to Excel (CSV format)
-     */
-    private function exportCertificationExcel($certifications)
-    {
-        $filename = 'Laporan_Rekap_Status_Sertifikasi_' . date('Y-m-d') . '.csv';
-        
-        $headers = [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ];
-
-        $callback = function() use ($certifications) {
-            $file = fopen('php://output', 'w');
-            
-            // Add BOM for UTF-8
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            
-            // Header
-            fputcsv($file, [
-                'No',
-                'Komoditas/Tanaman',
-                'Varietas',
-                'Lokasi Lahan',
-                'Kelas Benih Diminta',
-                'Status Sertifikasi',
-                'Tanggal Laporan Terakhir',
-                'Kesimpulan Terakhir',
-                'Jumlah Laporan'
-            ]);
-            
-            // Data
-            $no = 1;
-            foreach ($certifications as $certification) {
-                $latestReport = $certification->reports->first();
-                $plant = $certification->plant ?? ($certification->harvest->plant ?? null);
-                
-                fputcsv($file, [
-                    $no++,
-                    $plant ? $plant->name : '-',
-                    $plant && $plant->variety ? $plant->variety : '-',
-                    $certification->plantingLocation ? $certification->plantingLocation->name : 
-                        ($certification->harvest && $certification->harvest->location ? $certification->harvest->location->name : '-'),
-                    $certification->seed_class_requested ?? '-',
-                    $certification->status_label ?? '-',
-                    $latestReport && $latestReport->report_date ? $latestReport->report_date->format('d-m-Y') : '-',
-                    $latestReport && $latestReport->conclusion ? $latestReport->conclusion : '-',
-                    $certification->reports->count()
-                ]);
-            }
-            
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
-    }
-
-    /**
      * Helper method to convert quantity to ton
      */
     private function convertToTon($quantity, $unit)
@@ -1398,6 +1075,235 @@ class ReportController extends Controller
         ];
 
         return $quantity * ($factors[$unit] ?? 1);
+    }
+
+    public function varietiesJson(Request $request)
+    {
+        $query = Plant::query()->orderBy('variety');
+        if ($request->filled('commodity_id')) {
+            $id = $request->commodity_id;
+            $query->where(function ($q) use ($id) {
+                $q->where('seed_commodity_id', $id);
+            });
+        }
+
+        return response()->json($query->get(['seed_varieties_id', 'name', 'variety']));
+    }
+
+    public function fieldsJson(Request $request)
+    {
+        $fields = PlantingField::query()
+            ->when($request->filled('planting_location_id'), fn ($q) => $q->where('planting_location_id', $request->planting_location_id))
+            ->orderBy('kode_lahan')
+            ->get(['id', 'kode_lahan', 'planting_location_id']);
+
+        return response()->json($fields);
+    }
+
+    public function plantingsJson(Request $request)
+    {
+        $query = Planting::with(['seedSource.variety'])
+            ->when($request->filled('field_id'), fn ($q) => $q->where('planting_field_id', $request->field_id))
+            ->when($request->filled('planting_location_id'), fn ($q) => $q->whereHas('field', fn ($f) => $f->where('planting_location_id', $request->planting_location_id)))
+            ->orderByDesc('planted_at');
+
+        return response()->json($query->get()->map(fn ($p) => [
+            'id' => $p->getKey(),
+            'label' => ($p->planting_batch_number ?: $p->getKey()).'-'.($p->seedSource?->variety?->variety ?: $p->plant?->name ?: 'Produksi'),
+        ]));
+    }
+
+    public function catalogJson(Request $request)
+    {
+        $commodities = PlantType::query()
+            ->when($request->filled('category'), fn ($q) => $q->where('category', $request->category))
+            ->orderBy('name')
+            ->get(['seed_commodity_id', 'name', 'category']);
+        $plants = Plant::query()
+            ->when($request->filled('commodity_id'), fn ($q) => $q->where('seed_commodity_id', $request->commodity_id))
+            ->when($request->filled('category'), fn ($q) => $q->whereHas('type', fn ($t) => $t->where('category', $request->category)))
+            ->orderBy('variety')
+            ->get(['seed_varieties_id', 'name', 'variety', 'seed_commodity_id']);
+        $sources = SeedSource::query()
+            ->when($request->filled('variety_id'), fn ($q) => $q->where('seed_varieties_id', $request->variety_id))
+            ->orderBy('origin_lot_number')
+            ->get(['seed_source_id', 'origin_lot_number', 'seed_varieties_id']);
+
+        return response()->json([
+            'commodities' => $commodities,
+            'plants' => $plants,
+            'sources' => $sources,
+        ]);
+    }
+
+    private function applyVarietyScope($query, Request $request, string $type)
+    {
+        if ($request->input('view_mode', 'all') !== 'specific') {
+            return $query;
+        }
+
+        $rows = collect($request->input('filters', []))->filter(function ($row) {
+            return filled($row['category'] ?? null)
+                || filled($row['commodity_id'] ?? null)
+                || filled($row['variety_id'] ?? null)
+                || filled($row['seed_source_id'] ?? null);
+        });
+        if ($rows->isEmpty()) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($rows, $type) {
+            foreach ($rows as $row) {
+                $q->orWhere(function ($inner) use ($row, $type) {
+                    $this->applyCatalogRow($inner, $row, $type);
+                });
+            }
+        });
+    }
+
+    private function applyCatalogRow($query, array $row, string $type): void
+    {
+        if ($type === 'planting' || $type === 'post_harvest') {
+            $plantQuery = $type === 'planting' ? $query : $query->whereHas('planting', function ($p) use ($row) {
+                $this->constrainPlanting($p, $row);
+            });
+            if ($type === 'planting') {
+                $this->constrainPlanting($query, $row);
+            }
+
+            return;
+        }
+
+        if ($type === 'sale') {
+            $query->where(function ($outer) use ($row) {
+                $outer->whereHas('packaging.stock', function ($stock) use ($row) {
+                    $this->constrainStock($stock, $row);
+                })->orWhereHas('seedRequest.items.plant', function ($plant) use ($row) {
+                    if (! empty($row['variety_id'])) {
+                        $plant->where('seed_varieties_id', $row['variety_id']);
+                    } elseif (! empty($row['commodity_id'])) {
+                        $plant->where('seed_commodity_id', $row['commodity_id']);
+                    } elseif (! empty($row['category'])) {
+                        $plant->whereHas('type', fn ($t) => $t->where('category', $row['category']));
+                    }
+                });
+            });
+
+            return;
+        }
+
+        if ($type === 'history') {
+            if (! empty($row['variety_id'])) {
+                $query->where('seed_varieties_id', $row['variety_id']);
+            } elseif (! empty($row['commodity_id'])) {
+                $query->whereHas('plant', fn ($p) => $p->where('seed_commodity_id', $row['commodity_id']));
+            } elseif (! empty($row['category'])) {
+                $query->whereHas('plant.type', fn ($p) => $p->where('category', $row['category']));
+            }
+            if (! empty($row['seed_source_id'])) {
+                $query->whereHas('stock.postHarvest.planting', fn ($p) => $p->where('seed_source_id', $row['seed_source_id']));
+            }
+
+            return;
+        }
+
+        $this->constrainStock($query, $row);
+    }
+
+    private function constrainPlanting($query, array $row): void
+    {
+        if (! empty($row['seed_source_id'])) {
+            $query->where('seed_source_id', $row['seed_source_id']);
+        }
+        if (! empty($row['variety_id'])) {
+            $query->whereHas('seedSource', fn ($s) => $s->where('seed_varieties_id', $row['variety_id']));
+        } elseif (! empty($row['commodity_id'])) {
+            $query->whereHas('seedSource.variety', fn ($s) => $s->where('seed_commodity_id', $row['commodity_id']));
+        } elseif (! empty($row['category'])) {
+            $query->whereHas('seedSource.variety.type', fn ($s) => $s->where('category', $row['category']));
+        }
+    }
+
+    private function constrainStock($query, array $row): void
+    {
+        if (! empty($row['variety_id'])) {
+            $query->where('seed_varieties_id', $row['variety_id']);
+        } elseif (! empty($row['commodity_id'])) {
+            $query->whereHas('plant', fn ($p) => $p->where('seed_commodity_id', $row['commodity_id']));
+        } elseif (! empty($row['category'])) {
+            $query->whereHas('plant.type', fn ($p) => $p->where('category', $row['category']));
+        }
+        if (! empty($row['seed_source_id'])) {
+            $query->whereHas('postHarvest.planting', fn ($p) => $p->where('seed_source_id', $row['seed_source_id']));
+        }
+    }
+
+    private function applyPlantingHarvestFilters($query, Request $request)
+    {
+        if ($request->filled('year')) {
+            $query->whereYear('planted_at', $request->year);
+        }
+        if ($request->filled('date_from')) {
+            $query->whereDate('planted_at', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('planted_at', '<=', $request->date_to);
+        }
+        if ($request->filled('commodity_id')) {
+            $query->whereHas('seedSource.variety', fn ($q) => $q->where('seed_commodity_id', $request->commodity_id));
+        }
+        if ($request->filled('variety_id')) {
+            $query->forPlant($request->variety_id);
+        } elseif ($request->filled('plant_id')) {
+            $query->forPlant($request->plant_id);
+        }
+        if ($request->filled('seed_source_id')) {
+            $query->where('seed_source_id', $request->seed_source_id);
+        }
+        if ($request->filled('planting_location_id')) {
+            $query->whereHas('field', fn ($q) => $q->where('planting_location_id', $request->planting_location_id));
+        }
+
+        return $query;
+    }
+
+    private function applySaleCatalogFilters($query, Request $request)
+    {
+        $commodityIds = collect((array) $request->input('commodity_ids', []))
+            ->when($request->filled('commodity_id'), fn ($c) => $c->push($request->commodity_id))
+            ->filter()
+            ->unique()
+            ->values();
+        $varietyIds = collect((array) $request->input('variety_ids', []))
+            ->when($request->filled('variety_id'), fn ($c) => $c->push($request->variety_id))
+            ->when($request->filled('plant_id'), fn ($c) => $c->push($request->plant_id))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($commodityIds->isEmpty() && $varietyIds->isEmpty()) {
+            return $query;
+        }
+
+        $matchPlant = function ($q) use ($commodityIds, $varietyIds) {
+            $q->where(function ($inner) use ($commodityIds, $varietyIds) {
+                if ($varietyIds->isNotEmpty()) {
+                    $inner->whereIn('seed_varieties_id', $varietyIds);
+                }
+                if ($commodityIds->isNotEmpty()) {
+                    if ($varietyIds->isNotEmpty()) {
+                        $inner->orWhereIn('seed_commodity_id', $commodityIds);
+                    } else {
+                        $inner->whereIn('seed_commodity_id', $commodityIds);
+                    }
+                }
+            });
+        };
+
+        return $query->where(function ($outer) use ($matchPlant) {
+            $outer->whereHas('packaging.stock.plant', $matchPlant)
+                ->orWhereHas('seedRequest.items.plant', $matchPlant);
+        });
     }
 }
 

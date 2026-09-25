@@ -17,3 +17,15 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Local restore dumps (bukan source code)
+/backup data-*/
+
+# Accidental tinker dump files
+/all())
+/count()])
+/get())
+/sales(request()))
+/toArray())
+/toSql())
+/inventory_type_seed_id)

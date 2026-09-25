@@ -99,12 +99,12 @@ class PlantingLocationTest extends TestCase
 
         $planting1 = Planting::create([
             'planting_location_id' => $plantingLocation->id,
-            'quantity_planted' => 100,
+            'planting_amount' => 100,
         ]);
 
         $planting2 = Planting::create([
             'planting_location_id' => $plantingLocation->id,
-            'quantity_planted' => 200,
+            'planting_amount' => 200,
         ]);
 
         // Memverifikasi bahwa relasi berfungsi dengan benar

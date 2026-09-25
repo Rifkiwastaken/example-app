@@ -12,12 +12,13 @@ class Treatment extends Model
     use HasFactory;
     use HasCustomId;
 
-    protected $primaryKey = 'treatment_id';
+    protected $table = 'planting_treatments';
+
+    protected $primaryKey = 'planting_treatment_id';
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
-        'planting_location_id',
         'planting_id',
         'treatment_name',
         'treatment_type',
@@ -50,14 +51,9 @@ class Treatment extends Model
         'edited_at' => 'datetime',
     ];
 
-    public function plantingLocation(): BelongsTo
-    {
-        return $this->belongsTo(PlantingLocation::class);
-    }
-
     public function planting(): BelongsTo
     {
-        return $this->belongsTo(Planting::class, 'planting_id', 'planting_id');
+        return $this->belongsTo(Planting::class, 'planting_id', 'planting_production_id');
     }
 
     public function responsiblePerson(): BelongsTo

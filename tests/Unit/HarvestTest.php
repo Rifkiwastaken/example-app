@@ -41,7 +41,7 @@ class HarvestTest extends TestCase
         $planting = Planting::create([
             'plant_id' => $plant->id,
             'planting_location_id' => $plantingLocation->id,
-            'quantity_planted' => 100,
+            'planting_amount' => 100,
         ]);
 
         // Menyiapkan data harvest untuk diuji
@@ -99,7 +99,7 @@ class HarvestTest extends TestCase
     {
         // Membuat planting dan harvest
         $planting = Planting::create([
-            'quantity_planted' => 100,
+            'planting_amount' => 100,
         ]);
 
         $harvest = Harvest::create([

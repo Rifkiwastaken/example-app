@@ -56,6 +56,23 @@
         .btn-login:hover {
             background-color: #218838;
         }
+        .btn-back-landing {
+            display: block;
+            width: 100%;
+            margin-top: 0.75rem;
+            background-color: transparent;
+            border: 1px solid #28a745;
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-weight: 500;
+            color: #28a745;
+            text-align: center;
+            text-decoration: none;
+        }
+        .btn-back-landing:hover {
+            background-color: #28a745;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -92,6 +109,7 @@
                         
                         <button type="submit" class="btn btn-primary btn-login">Sign In</button>
                     </form>
+                    <a href="{{ route('landing') }}" class="btn-back-landing">Kembali ke Beranda</a>
                 </div>
             </div>
         </div>

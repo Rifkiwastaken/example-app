@@ -95,15 +95,22 @@
                 
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label for="location_placement" class="form-label">Lokasi Penempatan</label>
-                        <input type="text" class="form-control @error('location_placement') is-invalid @enderror" 
-                               id="location_placement" name="location_placement" value="{{ old('location_placement') }}" 
-                               placeholder="Contoh: Sukarami, Koto Baru, dll">
-                        @error('location_placement')
+                        <label for="placement_location_id" class="form-label">Lokasi Penempatan</label>
+                        <select class="form-select @error('placement_location_id') is-invalid @enderror"
+                                id="placement_location_id" name="placement_location_id">
+                            <option value="">Pilih lokasi</option>
+                            @foreach($plantingLocations ?? [] as $loc)
+                                <option value="{{ $loc->planting_location_id }}" {{ old('placement_location_id') == $loc->planting_location_id ? 'selected' : '' }}>
+                                    {{ $loc->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <input type="text" class="form-control mt-2 d-none" id="location_placement_fixed" value="UPTD BBI TPHP" readonly>
+                        @error('placement_location_id')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
-                        <div class="form-text">
-                            Tuliskan lokasi tempat user akan ditugaskan
+                        <div class="form-text" id="placementHelp">
+                            Kepala satuan tugas dan penangkar memilih lokasi penanaman. Petugas gudang dan petugas BBI otomatis ditempatkan di UPTD BBI TPHP.
                         </div>
                     </div>
                 </div>
@@ -329,6 +336,21 @@
             reader.readAsDataURL(input.files[0]);
         }
     }
+
+    function syncPlacementField() {
+        const role = document.getElementById('role')?.value;
+        const select = document.getElementById('placement_location_id');
+        const fixed = document.getElementById('location_placement_fixed');
+        if (!select || !fixed) return;
+        const needLocation = role === 'kepala_satuan_tugas' || role === 'penangkar';
+        const autoUpt = role === 'petugas_gudang' || role === 'petugas_bbi';
+        select.classList.toggle('d-none', autoUpt);
+        select.disabled = autoUpt;
+        select.required = needLocation;
+        fixed.classList.toggle('d-none', !autoUpt);
+    }
+    document.getElementById('role')?.addEventListener('change', syncPlacementField);
+    syncPlacementField();
 
 </script>
 @endpush

@@ -13,8 +13,8 @@
 </div>
 
 @php
-    $selectedLandManagers = collect(old('land_manager_user_ids', $plantingLocation->landManagerUsers ? $plantingLocation->landManagerUsers->pluck('user_id')->all() : []));
     $selectedLandWorkers = collect(old('land_worker_user_ids', $plantingLocation->landWorkerUsers ? $plantingLocation->landWorkerUsers->pluck('user_id')->all() : []));
+    $selectedLandWorkerRoles = collect(old('land_worker_roles', $plantingLocation->landWorkerUsers ? $plantingLocation->landWorkerUsers->map(fn($u) => $u->role ?? 'petugas_lapangan')->all() : []));
     $landStatusValue = old('land_status', $plantingLocation->land_status);
     $ownershipStatusValue = old('ownership_status', $plantingLocation->ownership_status);
     $waterSourceValue = old('water_source', $plantingLocation->water_source);
@@ -40,17 +40,17 @@
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label">Nama Lahan</label>
+                        <label class="form-label">Nama Lokasi Penanaman <span class="text-danger">*</span></label>
                         <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" 
-                               value="{{ old('name', $plantingLocation->name) }}" placeholder="Contoh: Lahan Produksi Utama" required>
+                               value="{{ old('name', $plantingLocation->name) }}" placeholder="Contoh: Lokasi Produksi Utama" required>
                         @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label">Tipe Lahan</label>
+                        <label class="form-label">Tipe Lokasi Penanaman</label>
                         <select name="location_type" id="location_type" class="form-select @error('location_type') is-invalid @enderror" required onchange="toggleLocationTypeCustom()">
-                            <option value="">Pilih tipe lahan</option>
+                            <option value="">Pilih tipe lokasi penanaman</option>
                             <option value="lapangan" {{ old('location_type', $plantingLocation->location_type) == 'lapangan' ? 'selected' : '' }}>Lapangan</option>
                             <option value="sawah" {{ old('location_type', $plantingLocation->location_type) == 'sawah' ? 'selected' : '' }}>Sawah</option>
                             <option value="greenhouse" {{ old('location_type', $plantingLocation->location_type) == 'greenhouse' ? 'selected' : '' }}>Greenhouse</option>
@@ -64,7 +64,7 @@
                             <input type="text" name="location_type_custom" id="location_type_custom" 
                                    class="form-control @error('location_type_custom') is-invalid @enderror" 
                                    value="{{ old('location_type_custom', $plantingLocation->location_type_custom) }}" 
-                                   placeholder="Masukkan tipe lahan lainnya">
+                                   placeholder="Masukkan tipe lokasi penanaman lainnya">
                             @error('location_type_custom')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                     </div>
@@ -74,10 +74,10 @@
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label">Luas Lahan (Ha)</label>
+                        <label class="form-label">Luas Lokasi Penanaman (Ha) <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <input type="number" name="map_size" class="form-control @error('map_size') is-invalid @enderror" 
-                                   value="{{ old('map_size', $plantingLocation->map_size) }}" step="0.01" min="0">
+                                   value="{{ old('map_size', $plantingLocation->map_size) }}" step="0.01" min="0" required>
                             <span class="input-group-text">Ha</span>
                             <span class="input-group-text"><i class="fas fa-info-circle"></i></span>
                         </div>
@@ -89,143 +89,63 @@
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label">Lokasi</label>
+                        <label class="form-label">Alamat <span class="text-danger">*</span></label>
                         <input type="text" name="location_summary" class="form-control @error('location_summary') is-invalid @enderror"
-                               value="{{ old('location_summary', $plantingLocation->location_summary) }}" placeholder="Contoh: Blok A, Sektor Timur">
+                               value="{{ old('location_summary', $plantingLocation->location_summary) }}" placeholder="kota/ kabupaten" required>
                         @error('location_summary')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
             </div>
 
+            @include('planting.planting-locations._location-gps-field')
+
             <div class="mb-3">
-                <label class="form-label">Alamat Administratif (Desa, Kecamatan, ...)</label>
-                <textarea name="administrative_address" class="form-control @error('administrative_address') is-invalid @enderror"
-                          rows="2" placeholder="Contoh: Desa Sukamaju, Kec. Seluma, Kab. Seluma, Prov. Bengkulu">{{ old('administrative_address', $plantingLocation->administrative_address) }}</textarea>
-                @error('administrative_address')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <label class="form-label">Alamat Administratif</label>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <input type="text" name="province" maxlength="100" class="form-control @error('province') is-invalid @enderror"
+                               value="{{ old('province', $plantingLocation->province) }}" placeholder="Provinsi" required>
+                        <small class="text-muted">Provinsi <span class="text-danger">*</span></small>
+                        @error('province')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="district" maxlength="100" class="form-control @error('district') is-invalid @enderror"
+                               value="{{ old('district', $plantingLocation->district) }}" placeholder="Kecamatan" required>
+                        <small class="text-muted">Kecamatan <span class="text-danger">*</span></small>
+                        @error('district')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="village" maxlength="100" class="form-control @error('village') is-invalid @enderror"
+                               value="{{ old('village', $plantingLocation->village) }}" placeholder="Desa/Kelurahan" required>
+                        <small class="text-muted">Desa/Kelurahan <span class="text-danger">*</span></small>
+                        @error('village')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
             </div>
 
             <div class="mb-4">
-                <label class="form-label">Foto Lahan</label>
+                <label class="form-label">Foto Lokasi Penanaman</label>
                 <input type="file" name="primary_photo" class="form-control @error('primary_photo') is-invalid @enderror" accept="image/*">
                 @error('primary_photo')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 <small class="text-muted d-block mb-2">Format JPG/PNG, ukuran maksimal 5 MB.</small>
                 @if($plantingLocation->primary_photo_path)
                     <div class="d-inline-flex align-items-center gap-3">
-                        <img src="{{ Storage::disk('public')->url($plantingLocation->primary_photo_path) }}" alt="Foto Lahan" class="rounded" style="height: 80px; object-fit: cover;">
+                        <img src="{{ Storage::disk('public')->url($plantingLocation->primary_photo_path) }}" alt="Foto Lokasi Penanaman" class="rounded" style="height: 80px; object-fit: cover;">
                         <span class="text-muted">Foto saat ini</span>
                     </div>
                 @endif
             </div>
 
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-12">
                     <div class="mb-3">
-                        <label class="form-label">Status Lahan</label>
-                        <select name="land_status" class="form-select @error('land_status') is-invalid @enderror" data-custom-target="#landStatusCustom">
-                            <option value="">Pilih status</option>
-                            @foreach($landStatusPreset as $status)
-                                <option value="{{ $status }}" {{ $landStatusValue === $status ? 'selected' : '' }}>{{ $status }}</option>
-                            @endforeach
-                            <option value="_custom" {{ $landStatusValue && !in_array($landStatusValue, $landStatusPreset) ? 'selected' : '' }}>Lainnya (isi manual)</option>
-                        </select>
-                        @error('land_status')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        <input type="text" id="landStatusCustom" name="land_status_custom"
-                               class="form-control mt-2 {{ $landStatusValue && !in_array($landStatusValue, $landStatusPreset) ? '' : 'd-none' }}"
-                               value="{{ $landStatusValue && !in_array($landStatusValue, $landStatusPreset) ? $landStatusValue : old('land_status_custom') }}"
-                               placeholder="Tuliskan status lahan">
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label class="form-label">Penanggung Jawab Lahan</label>
-                        <div class="d-flex gap-2 mb-2">
-                            <select id="landManagerUserSelect" class="form-select @error('land_manager_user_ids') is-invalid @enderror">
-                                <option value="">Pilih user...</option>
-                                @foreach($users as $user)
-                                    <option value="{{ $user->user_id }}" data-name="{{ $user->name }}" data-email="{{ $user->email ?? '' }}" data-role="{{ $user->role_label ?? '' }}">
-                                        {{ $user->name }}@if($user->role) - {{ $user->role_label }}@endif
-                                    </option>
-                                @endforeach
-                            </select>
-                            <button type="button" class="btn btn-primary" id="addLandManagerUserBtn">
-                                <i class="fas fa-plus"></i> Tambah
-                            </button>
-                        </div>
-                        <div id="selectedLandManagerUsers" class="mb-2">
-                            @php
-                                $oldLandManagerUserIds = collect(old('land_manager_user_ids', $plantingLocation->landManagerUsers ? $plantingLocation->landManagerUsers->pluck('user_id')->all() : []))->filter();
-                            @endphp
-                            @foreach($oldLandManagerUserIds as $userId)
-                                @php
-                                    $user = $users->firstWhere('user_id', $userId);
-                                @endphp
-                                @if($user)
-                                    <div class="selected-user-item mb-2 p-2 border rounded d-flex justify-content-between align-items-center" data-user-id="{{ $user->user_id }}">
-                                        <span>
-                                            <strong>{{ $user->name }}</strong>
-                                            @if($user->role)
-                                                <small class="text-muted"> - {{ $user->role_label }}</small>
-                                            @endif
-                                        </span>
-                                        <button type="button" class="btn btn-sm btn-outline-danger remove-user" title="Hapus">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                        <input type="hidden" name="land_manager_user_ids[]" value="{{ $user->user_id }}">
-                                    </div>
-                                @endif
-                            @endforeach
-                        </div>
-                        @error('land_manager_user_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                        @error('land_manager_user_ids.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                        <small class="text-muted">Pilih user dari dropdown dan klik "Tambah" untuk menambahkan penanggung jawab lahan.</small>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label class="form-label">Pekerja Lahan</label>
-                        <div class="d-flex gap-2 mb-2">
-                            <select id="landWorkerUserSelect" class="form-select @error('land_worker_user_ids') is-invalid @enderror">
-                                <option value="">Pilih user...</option>
-                                @foreach($users as $user)
-                                    <option value="{{ $user->user_id }}" data-name="{{ $user->name }}" data-email="{{ $user->email ?? '' }}" data-role="{{ $user->role_label ?? '' }}">
-                                        {{ $user->name }}@if($user->role) - {{ $user->role_label }}@endif
-                                    </option>
-                                @endforeach
-                            </select>
-                            <button type="button" class="btn btn-primary" id="addLandWorkerUserBtn">
-                                <i class="fas fa-plus"></i> Tambah
-                            </button>
-                        </div>
-                        <div id="selectedLandWorkerUsers" class="mb-2">
-                            @php
-                                $oldLandWorkerUserIds = collect(old('land_worker_user_ids', $plantingLocation->landWorkerUsers ? $plantingLocation->landWorkerUsers->pluck('user_id')->all() : []))->filter();
-                            @endphp
-                            @foreach($oldLandWorkerUserIds as $userId)
-                                @php
-                                    $user = $users->firstWhere('user_id', $userId);
-                                @endphp
-                                @if($user)
-                                    <div class="selected-user-item mb-2 p-2 border rounded d-flex justify-content-between align-items-center" data-user-id="{{ $user->user_id }}">
-                                        <span>
-                                            <strong>{{ $user->name }}</strong>
-                                            @if($user->role)
-                                                <small class="text-muted"> - {{ $user->role_label }}</small>
-                                            @endif
-                                        </span>
-                                        <button type="button" class="btn btn-sm btn-outline-danger remove-user" title="Hapus">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                        <input type="hidden" name="land_worker_user_ids[]" value="{{ $user->user_id }}">
-                                    </div>
-                                @endif
-                            @endforeach
-                        </div>
-                        @error('land_worker_user_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                        @error('land_worker_user_ids.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                        <small class="text-muted">Pilih user dari dropdown dan klik "Tambah" untuk menambahkan pekerja lahan.</small>
+                        <label class="form-label">Penempatan pekerja</label>
+                        <p class="text-muted small mb-2">Penugasan lokasi diatur dari form akun user (lokasi penempatan).</p>
+                        @forelse($plantingLocation->assignedUsers as $user)
+                            <span class="badge bg-secondary me-1 mb-1">{{ $user->name }} ({{ $user->role_label ?? $user->role }})</span>
+                        @empty
+                            <span class="text-muted small">Belum ada user yang ditempatkan di lokasi ini.</span>
+                        @endforelse
                     </div>
                 </div>
             </div>
@@ -299,117 +219,22 @@
             </div>
 
             <!-- Planting Format Section -->
-            <div class="mb-4">
-                <label class="form-label">Format Penanaman</label>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card mb-3 planting-format-card" data-format="ditanam_dalam_petak">
-                            <div class="card-body">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="planting_format" value="ditanam_dalam_petak" 
-                                           id="format_beds" {{ old('planting_format', $plantingLocation->planting_format) == 'ditanam_dalam_petak' ? 'checked' : '' }}>
-                                    <label class="form-check-label fw-bold" for="format_beds">
-                                        Ditanam dalam Petak/ Beds
-                                    </label>
-                                </div>
-                                <p class="text-muted small mt-2">
-                                    Penanaman dengan petak atau beds yang berbeda untuk tanaman yang berbeda.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card mb-3 planting-format-card" data-format="cover_crop">
-                            <div class="card-body">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="planting_format" value="cover_crop" 
-                                           id="format_cover" {{ old('planting_format', $plantingLocation->planting_format) == 'cover_crop' ? 'checked' : '' }}>
-                                    <label class="form-check-label fw-bold" for="format_cover">
-                                        Tanaman Penutup / Cover Crop
-                                    </label>
-                                </div>
-                                <p class="text-muted small mt-2">
-                                    Penanaman dengan tanaman penutup atau cover crop.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card mb-3 planting-format-card" data-format="row_crop">
-                            <div class="card-body">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="planting_format" value="row_crop" 
-                                           id="format_row" {{ old('planting_format', $plantingLocation->planting_format) == 'row_crop' ? 'checked' : '' }}>
-                                    <label class="form-check-label fw-bold" for="format_row">
-                                        Tanaman Baris / Row Crop
-                                    </label>
-                                </div>
-                                <p class="text-muted small mt-2">
-                                    Tanaman yang ditanam berbaris.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card mb-3 planting-format-card" data-format="lainnya">
-                            <div class="card-body">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="planting_format" value="lainnya" 
-                                           id="format_other" {{ old('planting_format', $plantingLocation->planting_format) == 'lainnya' ? 'checked' : '' }}>
-                                    <label class="form-check-label fw-bold" for="format_other">
-                                        Lainnya
-                                    </label>
-                                </div>
-                                <p class="text-muted small mt-2">
-                                    Penanaman dengan metode lain seperti rak, aquaponik, tray, dll.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                @error('planting_format')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                <div id="plantingFormatCustomWrapper" class="mt-3 {{ old('planting_format', $plantingLocation->planting_format) === 'lainnya' ? '' : 'd-none' }}">
-                    <label class="form-label">Format Penanaman (Lainnya)</label>
-                    <input type="text" name="planting_format_custom" class="form-control @error('planting_format_custom') is-invalid @enderror"
-                           value="{{ old('planting_format', $plantingLocation->planting_format) === 'lainnya' ? old('planting_format_custom', $plantingLocation->planting_format_custom) : '' }}" placeholder="Tuliskan format penanaman">
-                    @error('planting_format_custom')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-            </div>
-
-            <!-- Bed Details -->
-            <div id="bedDetails" class="mb-4" style="display: none;">
-                <h6>Detail Petak</h6>
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            <label class="form-label">Jumlah Petak</label>
-                            <input type="number" name="num_beds" class="form-control @error('num_beds') is-invalid @enderror" 
-                                   value="{{ old('num_beds', $plantingLocation->num_beds) }}" min="1">
-                            @error('num_beds')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            <label class="form-label">Panjang Petak</label>
-                            <div class="input-group">
-                                <input type="number" name="bed_length_m" class="form-control @error('bed_length_m') is-invalid @enderror" 
-                                       value="{{ old('bed_length_m', $plantingLocation->bed_length_m) }}" step="0.1" min="0">
-                                <span class="input-group-text">m</span>
-                            </div>
-                            @error('bed_length_m')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            <label class="form-label">Lebar Petak</label>
-                            <div class="input-group">
-                                <input type="number" name="bed_width_m" class="form-control @error('bed_width_m') is-invalid @enderror" 
-                                       value="{{ old('bed_width_m', $plantingLocation->bed_width_m) }}" step="0.1" min="0">
-                                <span class="input-group-text">m</span>
-                            </div>
-                            @error('bed_width_m')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-4">
+                        <label class="form-label">Format Penanaman</label>
+                        @php($formatValue = old('planting_format', $plantingLocation->planting_format))
+                        <select name="planting_format" id="plantingFormatSelect" class="form-select @error('planting_format') is-invalid @enderror">
+                            <option value="">Pilih format penanaman</option>
+                            @foreach(\App\Models\PlantingLocation::FORMAT_PENANAMAN as $value => $label)
+                                <option value="{{ $value }}" {{ $formatValue === $value ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('planting_format')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <div id="plantingFormatCustomWrapper" class="mt-2 {{ $formatValue === 'lainnya' ? '' : 'd-none' }}">
+                            <input type="text" name="planting_format_custom" class="form-control @error('planting_format_custom') is-invalid @enderror"
+                                   value="{{ $formatValue === 'lainnya' ? old('planting_format_custom', $plantingLocation->planting_format_custom) : '' }}" placeholder="Tuliskan format penanaman lainnya">
+                            @error('planting_format_custom')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                     </div>
                 </div>
@@ -445,6 +270,8 @@
                 @error('description')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
 
+            @include('planting.planting-locations._lahan-repeater')
+
             <div class="d-flex justify-content-end gap-2">
                 <a class="btn btn-secondary" href="{{ route('planting-locations.show', $plantingLocation) }}">Batal</a>
                 <button class="btn btn-success" type="submit">Simpan Perubahan</button>
@@ -453,35 +280,20 @@
     </div>
 </div>
 
+@include('planting.planting-locations._location-maps-scripts')
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const formatCards = document.querySelectorAll('.planting-format-card');
-    const bedDetails = document.getElementById('bedDetails');
+    const plantingFormatSelect = document.getElementById('plantingFormatSelect');
     const plantingFormatCustomWrapper = document.getElementById('plantingFormatCustomWrapper');
-    
-    formatCards.forEach(card => {
-        card.addEventListener('click', function() {
-            const radio = this.querySelector('input[type="radio"]');
-            radio.checked = true;
-            
-            formatCards.forEach(c => c.classList.remove('border-primary'));
-            this.classList.add('border-primary');
-            
-            bedDetails.style.display = radio.value === 'ditanam_dalam_petak' ? 'block' : 'none';
-            if (plantingFormatCustomWrapper) {
-                plantingFormatCustomWrapper.classList.toggle('d-none', radio.value !== 'lainnya');
-            }
-        });
-    });
-    
-    const checkedFormat = document.querySelector('input[name="planting_format"]:checked');
-    if (checkedFormat) {
-        checkedFormat.closest('.planting-format-card').classList.add('border-primary');
-        bedDetails.style.display = checkedFormat.value === 'ditanam_dalam_petak' ? 'block' : 'none';
-        if (plantingFormatCustomWrapper) {
-            plantingFormatCustomWrapper.classList.toggle('d-none', checkedFormat.value !== 'lainnya');
-        }
+
+    if (plantingFormatSelect && plantingFormatCustomWrapper) {
+        const toggleFormatCustom = () => {
+            plantingFormatCustomWrapper.classList.toggle('d-none', plantingFormatSelect.value !== 'lainnya');
+        };
+        plantingFormatSelect.addEventListener('change', toggleFormatCustom);
+        toggleFormatCustom();
     }
 
     document.querySelectorAll('select[data-custom-target]').forEach(select => {
@@ -505,99 +317,15 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleCustom();
     });
 
-    // Handle land manager user selection
-    const landManagerUserSelect = document.getElementById('landManagerUserSelect');
-    const addLandManagerUserBtn = document.getElementById('addLandManagerUserBtn');
-    const selectedLandManagerUsers = document.getElementById('selectedLandManagerUsers');
-
-    function getSelectedLandManagerUserIds() {
-        return Array.from(selectedLandManagerUsers.querySelectorAll('input[type="hidden"]'))
-            .map(input => input.value);
-    }
-
-    function updateLandManagerUserDropdown() {
-        const selectedIds = getSelectedLandManagerUserIds();
-        Array.from(landManagerUserSelect.options).forEach(option => {
-            if (option.value && selectedIds.includes(option.value)) {
-                option.style.display = 'none';
-            } else {
-                option.style.display = '';
-            }
-        });
-    }
-
-    function addLandManagerUser() {
-        const selectedOption = landManagerUserSelect.options[landManagerUserSelect.selectedIndex];
-        if (!selectedOption || !selectedOption.value) {
-            alert('Silakan pilih user terlebih dahulu.');
-            return;
-        }
-
-        const userId = selectedOption.value;
-        const userName = selectedOption.dataset.name;
-        const userRole = selectedOption.dataset.role || '';
-
-        if (getSelectedLandManagerUserIds().includes(userId)) {
-            alert('User ini sudah ditambahkan.');
-            return;
-        }
-
-        const userItem = document.createElement('div');
-        userItem.className = 'selected-user-item mb-2 p-2 border rounded d-flex justify-content-between align-items-center';
-        userItem.setAttribute('data-user-id', userId);
-        userItem.innerHTML = `
-            <span>
-                <strong>${userName}</strong>
-                ${userRole ? `<small class="text-muted"> - ${userRole}</small>` : ''}
-            </span>
-            <button type="button" class="btn btn-sm btn-outline-danger remove-user" title="Hapus">
-                <i class="fas fa-times"></i>
-            </button>
-            <input type="hidden" name="land_manager_user_ids[]" value="${userId}">
-        `;
-
-        userItem.querySelector('.remove-user').addEventListener('click', function() {
-            userItem.remove();
-            updateLandManagerUserDropdown();
-        });
-
-        selectedLandManagerUsers.appendChild(userItem);
-        landManagerUserSelect.value = '';
-        updateLandManagerUserDropdown();
-    }
-
-    if (addLandManagerUserBtn) {
-        addLandManagerUserBtn.addEventListener('click', addLandManagerUser);
-    }
-
-    if (landManagerUserSelect) {
-        landManagerUserSelect.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addLandManagerUser();
-            }
-        });
-    }
-
-    selectedLandManagerUsers.querySelectorAll('.remove-user').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const userItem = this.closest('.selected-user-item');
-            if (userItem) {
-                userItem.remove();
-                updateLandManagerUserDropdown();
-            }
-        });
-    });
-
-    updateLandManagerUserDropdown();
-
     // Handle land worker user selection
     const landWorkerUserSelect = document.getElementById('landWorkerUserSelect');
     const addLandWorkerUserBtn = document.getElementById('addLandWorkerUserBtn');
     const selectedLandWorkerUsers = document.getElementById('selectedLandWorkerUsers');
 
+    if (landWorkerUserSelect && selectedLandWorkerUsers) {
+
     function getSelectedLandWorkerUserIds() {
-        return Array.from(selectedLandWorkerUsers.querySelectorAll('input[type="hidden"]'))
+        return Array.from(selectedLandWorkerUsers.querySelectorAll('input[name="land_worker_user_ids[]"]'))
             .map(input => input.value);
     }
 
@@ -612,6 +340,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    const landWorkerRoleSelect = document.getElementById('landWorkerRoleSelect');
+    const roleLabels = { petugas_lapangan: 'Petugas Lapangan', penangkar: 'Penangkar' };
+
     function addLandWorkerUser() {
         const selectedOption = landWorkerUserSelect.options[landWorkerUserSelect.selectedIndex];
         if (!selectedOption || !selectedOption.value) {
@@ -621,7 +352,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const userId = selectedOption.value;
         const userName = selectedOption.dataset.name;
-        const userRole = selectedOption.dataset.role || '';
+        const role = landWorkerRoleSelect ? landWorkerRoleSelect.value : 'petugas_lapangan';
+        const roleLabel = roleLabels[role] || roleLabels.petugas_lapangan;
 
         if (getSelectedLandWorkerUserIds().includes(userId)) {
             alert('User ini sudah ditambahkan.');
@@ -631,15 +363,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const userItem = document.createElement('div');
         userItem.className = 'selected-user-item mb-2 p-2 border rounded d-flex justify-content-between align-items-center';
         userItem.setAttribute('data-user-id', userId);
+        userItem.setAttribute('data-role', role);
         userItem.innerHTML = `
             <span>
                 <strong>${userName}</strong>
-                ${userRole ? `<small class="text-muted"> - ${userRole}</small>` : ''}
+                <small class="text-muted"> – ${roleLabel}</small>
             </span>
             <button type="button" class="btn btn-sm btn-outline-danger remove-user" title="Hapus">
                 <i class="fas fa-times"></i>
             </button>
             <input type="hidden" name="land_worker_user_ids[]" value="${userId}">
+            <input type="hidden" name="land_worker_roles[]" value="${role}">
         `;
 
         userItem.querySelector('.remove-user').addEventListener('click', function() {
@@ -676,6 +410,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     updateLandWorkerUserDropdown();
+    }
 });
 
 function toggleLocationTypeCustom() {

@@ -91,7 +91,7 @@ class ExpenseTest extends TestCase
 
         $planting = Planting::create([
             'plant_id' => $plant->id,
-            'quantity_planted' => 100,
+            'planting_amount' => 100,
         ]);
 
         $treatment = Treatment::create([

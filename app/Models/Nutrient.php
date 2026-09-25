@@ -12,12 +12,13 @@ class Nutrient extends Model
     use HasFactory;
     use HasCustomId;
 
-    protected $primaryKey = 'nutrient_id';
+    protected $table = 'planting_nutrients';
+
+    protected $primaryKey = 'planting_nutrient_id';
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
-        'planting_location_id',
         'planting_id',
         'nutrient_name',
         'product_applied',
@@ -42,14 +43,9 @@ class Nutrient extends Model
         'edited_at' => 'datetime',
     ];
 
-    public function plantingLocation(): BelongsTo
-    {
-        return $this->belongsTo(PlantingLocation::class);
-    }
-
     public function planting(): BelongsTo
     {
-        return $this->belongsTo(Planting::class, 'planting_id', 'planting_id');
+        return $this->belongsTo(Planting::class, 'planting_id', 'planting_production_id');
     }
 
     public function editor(): BelongsTo

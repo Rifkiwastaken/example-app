@@ -3,43 +3,44 @@
 ' Use case 15: Mengelola data stok benih (include dari Menambahkan data stok benih)
 ' Aktor: Petugas Gudang
 !theme plain
+skinparam backgroundColor white
 skinparam activity {
     BackgroundColor #E1F5FE
     BorderColor #01579B
     FontSize 11
 }
 skinparam swimlane {
-    BackgroundColor #F5F5F5
-    BorderColor #424242
-    TitleBackgroundColor #BBDEFB
-    TitleBorderColor #1976D2
+    BackgroundColor White
+    BorderColor #CCCCCC
+    TitleBackgroundColor White
+    TitleBorderColor #999999
 }
 
 title Activity Diagram - Mengelola data stok benih
 
-|#LightBlue|User|
+|#White|User|
 start
 :Masuk ke halaman kelola stok benih;
 
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Validasi role pengguna;
 :Query data stok benih dari database;
 :Load data tanaman dan lokasi terkait;
 :Menampilkan daftar stok benih;
 
-|#LightBlue|User|
+|#White|User|
 :Lihat daftar stok benih;
 
 if (Pilih aksi?) then (Edit)
-    |#LightBlue|User|
+    |#White|User|
     :Klik tombol edit;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Tampilkan form edit dengan data terisi;
-    |#LightBlue|User|
+    |#White|User|
     :Edit data stok benih;
     :Submit form;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Validasi data;
     if (Data valid?) then (Ya)
         :Update data stok benih di database;
@@ -48,15 +49,15 @@ if (Pilih aksi?) then (Edit)
         :Tampilkan pesan error;
     endif
 elseif (Kurangi Stok) then
-    |#LightBlue|User|
+    |#White|User|
     :Klik tombol kurangi stok;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Tampilkan form kurangi stok;
-    |#LightBlue|User|
+    |#White|User|
     :Masukkan jumlah yang dikurangi;
     :Masukkan alasan;
     :Submit form;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Validasi data;
     if (Data valid?) then (Ya)
         :Kurangi stok benih di database;
@@ -67,19 +68,19 @@ elseif (Kurangi Stok) then
         :Tampilkan pesan error;
     endif
 elseif (Tambahkan ke Gudang) then
-    |#LightBlue|User|
+    |#White|User|
     :Klik tombol gudang;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Redirect ke halaman daftar stok di bin;
     :Buka modal daftar stok;
-    |#LightBlue|User|
+    |#White|User|
     :Lihat daftar stok di bin;
 else (Lihat Detail)
-    |#LightBlue|User|
+    |#White|User|
     :Klik tombol lihat detail;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Tampilkan detail data stok benih;
-    |#LightBlue|User|
+    |#White|User|
     :Lihat detail stok benih;
 endif
 

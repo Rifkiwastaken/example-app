@@ -25,7 +25,6 @@
     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#nutrisi"><i class="fas fa-flask me-1"></i>Nutrisi</a></li>
     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tugas"><i class="fas fa-tasks me-1"></i>Tugas</a></li>
     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#catatan"><i class="fas fa-sticky-note me-1"></i>Catatan</a></li>
-    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#foto"><i class="fas fa-camera me-1"></i>Foto</a></li>
     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#file"><i class="fas fa-file me-1"></i>File</a></li>
 </ul>
 
@@ -160,7 +159,7 @@
                                 <tr>
                                     <td>{{ $planting->bed_label ?: '-' }}</td>
                                     <td><strong>{{ $planting->plant->name }}</strong><br><small class="text-muted">{{ $planting->plant->variety ?: 'Tidak ada varietas' }}</small></td>
-                                    <td>{{ number_format($planting->quantity_planted ?? 0, 0) }}</td>
+                                    <td>{{ number_format($planting->planting_amount ?? 0, 0) }}</td>
                                     <td>{{ $planting->planted_at ? $planting->planted_at->format('d M Y') : '-' }}</td>
                                     <td>{{ $estHarvest ? $estHarvest->format('d M Y') : '-' }}</td>
                                     <td>
@@ -179,7 +178,7 @@
                                                 <i class="fas fa-cut"></i>
                                             </button>
                                             <button type="button" class="btn btn-outline-warning" 
-                                                    onclick="openLossModal({{ $planting->id }}, '{{ addslashes($planting->plant->name) }}', '{{ addslashes($planting->bed_label ?? '') }}', {{ $planting->quantity_planted - $planting->losses->sum('loss_amount') }})"
+                                                    onclick="openLossModal({{ $planting->id }}, '{{ addslashes($planting->plant->name) }}', '{{ addslashes($planting->bed_label ?? '') }}', {{ ($planting->planting_amount ?? 0) - $planting->losses->sum('loss_amount') }})"
                                                     title="Catat Kehilangan">
                                                 <i class="fas fa-exclamation-triangle"></i>
                                             </button>
@@ -223,7 +222,7 @@
                                 <tr>
                                     <td>{{ $planting->bed_label ?: '-' }}</td>
                                     <td><strong>{{ $planting->plant->name }}</strong><br><small class="text-muted">{{ $planting->plant->variety ?: 'Tidak ada varietas' }}</small></td>
-                                    <td>{{ number_format($planting->quantity_planted ?? 0, 0) }}</td>
+                                    <td>{{ number_format($planting->planting_amount ?? 0, 0) }}</td>
                                     <td>{{ $planting->planted_at ? $planting->planted_at->format('d M Y') : '-' }}</td>
                                     <td>{{ $planting->harvest && $planting->harvest->harvested_at ? $planting->harvest->harvested_at->format('d M Y') : '-' }}</td>
                                     <td>{{ $planting->harvest ? number_format($planting->harvest->quantity ?? 0, 2) . ' ' . ($planting->harvest->unit ?? 'kg') : '-' }}</td>
@@ -261,12 +260,12 @@
                             @forelse($lossPlantings as $planting)
                                 @php
                                     $totalLoss = $planting->losses->sum('loss_amount');
-                                    $remaining = $planting->quantity_planted - $totalLoss;
+                                    $remaining = ($planting->planting_amount ?? 0) - $totalLoss;
                                 @endphp
                                 <tr>
                                     <td>{{ $planting->bed_label ?: '-' }}</td>
                                     <td><strong>{{ $planting->plant->name }}</strong><br><small class="text-muted">{{ $planting->plant->variety ?: 'Tidak ada varietas' }}</small></td>
-                                    <td>{{ number_format($planting->quantity_planted ?? 0, 0) }}</td>
+                                    <td>{{ number_format($planting->planting_amount ?? 0, 0) }}</td>
                                     <td><span class="badge bg-warning">{{ number_format($totalLoss, 0) }}</span></td>
                                     <td>{{ number_format($remaining, 0) }}</td>
                                     <td>
@@ -311,7 +310,7 @@
                                 <tr>
                                     <td>{{ $planting->bed_label ?: '-' }}</td>
                                     <td><strong>{{ $planting->plant->name }}</strong><br><small class="text-muted">{{ $planting->plant->variety ?: 'Tidak ada varietas' }}</small></td>
-                                    <td>{{ number_format($planting->quantity_planted ?? 0, 0) }}</td>
+                                    <td>{{ number_format($planting->planting_amount ?? 0, 0) }}</td>
                                     <td>{{ $planting->planted_at ? $planting->planted_at->format('d M Y') : '-' }}</td>
                                     <td>{{ $planting->harvest && $planting->harvest->harvested_at ? $planting->harvest->harvested_at->format('d M Y') : '-' }}</td>
                                     <td><span class="badge bg-danger">Gagal Panen</span></td>
@@ -361,7 +360,7 @@
                         <tr>
                             <td>{{ $planting->bed_label ?: '-' }}</td>
                             <td><strong>{{ $planting->plant->name }}</strong></td>
-                            <td>{{ number_format($planting->quantity_planted ?? 0, 0) }}</td>
+                            <td>{{ number_format($planting->planting_amount ?? 0, 0) }}</td>
                             <td>{{ $planting->planted_at ? $planting->planted_at->format('d M Y') : '-' }}</td>
                             <td>
                                 @if($planting->harvest)
@@ -451,7 +450,7 @@
                 <tbody>
                     @forelse($tasks as $task)
                         <tr>
-                            <td><input type="checkbox" class="task-checkbox" value="{{ $task->task_id }}"></td>
+                            <td><input type="checkbox" class="task-checkbox" value="{{ $task->planting_task_id }}"></td>
                             <td>
                                 <strong>{{ $task->title }}</strong>
                                 @if($task->description)
@@ -561,36 +560,6 @@
         </div>
     </div>
 
-    <!-- Tab: Foto -->
-    <div class="tab-pane fade" id="foto">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="mb-0">Galeri Foto - {{ $plantingLocation->name }}</h6>
-            <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalUnggahFoto">
-                <i class="fas fa-plus me-1"></i>Unggah Foto
-            </button>
-        </div>
-
-        <div class="row g-3">
-            @forelse($photos as $photo)
-                <div class="col-md-3">
-                    <div class="card">
-                        <img src="{{ Storage::url($photo->file_path) }}" class="card-img-top" alt="Foto" style="height: 200px; object-fit: cover;">
-                        <div class="card-body p-2">
-                            <small class="text-muted d-block">{{ $photo->taken_at ? $photo->taken_at->format('d M Y') : $photo->created_at->format('d M Y') }}</small>
-                            @if($photo->description)
-                                <small class="text-muted">{{ Str::limit($photo->description, 30) }}</small>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            @empty
-                <div class="col-12">
-                    <p class="text-muted text-center">Belum ada foto.</p>
-                </div>
-            @endforelse
-        </div>
-    </div>
-
     <!-- Tab: File -->
     <div class="tab-pane fade" id="file">
         <p class="text-muted">File (akan ditambahkan).</p>
@@ -624,7 +593,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Jumlah Tanam <span class="text-danger">*</span></label>
-                            <input type="number" name="quantity_planted" class="form-control" step="0.01" min="0" required>
+                            <input type="number" name="planting_amount" class="form-control" step="0.01" min="0" required>
                         </div>
                     </div>
                     <div class="mb-3">
@@ -636,10 +605,6 @@
                         @else
                             <input type="text" name="bed_label" class="form-control" placeholder="Masukkan lokasi tanam">
                         @endif
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Catatan</label>
-                        <textarea name="notes" class="form-control" rows="3"></textarea>
                     </div>
                     <div class="alert alert-info">
                         <small><i class="fas fa-info-circle me-1"></i>Detail lain seperti jarak tanam, hari panen, dll. akan otomatis diambil dari Katalog.</small>
@@ -807,10 +772,15 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Ditugaskan Kepada</label>
+                                @php
+                                    $locationUsers = $plantingLocation->landWorkerUsers
+                                        ->unique('user_id')
+                                        ->sortBy('name');
+                                @endphp
                                 <select name="assigned_to" class="form-select">
                                     <option value="">-- Pilih Pengguna --</option>
-                                    @foreach($users as $user)
-                                        <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                    @foreach($locationUsers as $user)
+                                        <option value="{{ $user->user_id }}">{{ $user->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -888,40 +858,6 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-success">Simpan</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Modal: Unggah Foto -->
-<div class="modal fade" id="modalUnggahFoto" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form action="{{ route('planting-locations.photos.store', $plantingLocation) }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <div class="modal-header">
-                    <h5 class="modal-title">Unggah Foto</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Pilih Foto <span class="text-danger">*</span></label>
-                        <input type="file" name="photos[]" class="form-control" multiple accept="image/*" required>
-                        <small class="text-muted">Bisa memilih beberapa foto sekaligus. Maksimal 5MB per foto.</small>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Deskripsi Foto (Opsional)</label>
-                        <textarea name="description" class="form-control" rows="3"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Tanggal Pengambilan (Opsional)</label>
-                        <input type="date" name="taken_at" class="form-control">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-success">Unggah</button>
                 </div>
             </form>
         </div>

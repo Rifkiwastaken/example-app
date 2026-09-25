@@ -21,26 +21,7 @@
 
 <!-- Navigation Tabs -->
 <ul class="nav nav-tabs" role="tablist">
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('planting-locations.show', $plantingLocation) }}">
-            <i class="fas fa-info-circle me-1"></i>Detail & Lokasi Penanaman
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('planting-locations.plantings.index', $plantingLocation) }}">
-            <i class="fas fa-seedling me-1"></i>Penanaman
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('planting-locations.planting-history', $plantingLocation) }}">
-            <i class="fas fa-history me-1"></i>Riwayat Penanaman
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link active" href="{{ route('planting-locations.expenses.index', $plantingLocation) }}">
-            <i class="fas fa-money-bill-wave me-1"></i>Pengeluaran
-        </a>
-    </li>
+    @include('planting.planting-locations._tabs', ['plantingLocation' => $plantingLocation, 'activeTab' => 'expenses'])
 </ul>
 
 <div class="tab-content p-3 bg-white border border-top-0 rounded-bottom">
@@ -177,13 +158,10 @@
                                             </span>
                                         </div>
                                     @endif
-                                    @if($expense->treatment)
-                                        <div class="small">Perawatan: {{ $expense->treatment->treatment_name ?? '-' }}</div>
-                                    @elseif($expense->nutrient)
-                                        <div class="small">Nutrisi: {{ $expense->nutrient->product_applied ?? '-' }}</div>
-                                    @else
-                                        <span class="text-muted">-</span>
-                                    @endif
+                                    @php
+                                        $typeLabels = ['perawatan' => 'Perawatan', 'nutrisi' => 'Nutrisi', 'upah_pekerja' => 'Upah Pekerja', 'lainnya' => 'Lainnya'];
+                                    @endphp
+                                    <span class="text-muted">{{ $typeLabels[$expense->expense_type] ?? $expense->expense_type }}</span>
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">

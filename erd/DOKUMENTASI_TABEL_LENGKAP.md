@@ -32,7 +32,7 @@
 - **Collation:** utf8mb4_unicode_ci
 
 ### Karakteristik Utama
-- **Total Tabel:** 35 tabel
+- **Total Tabel:** 34 tabel (tabel `locations` telah dihapus)
 - **Format Primary Key:** Custom String ID dengan format `{nama_tabel}_id`
 - **Tipe Data ID:** VARCHAR(36) - Short Unique ID
 - **Timestamps:** Semua tabel memiliki kolom `created_at` dan `updated_at`
@@ -62,7 +62,6 @@ Foreign key menggunakan nama yang sama dengan primary key tabel yang direferensi
 | Tabel | Prefix ID |
 |-------|-----------|
 | users | USR |
-| locations | LOC |
 | plant_types | PTY |
 | plants | PLT |
 | planting_locations | PLO |
@@ -93,7 +92,7 @@ Foreign key menggunakan nama yang sama dengan primary key tabel yang direferensi
 
 | No | Modul | Jumlah Tabel | Tabel |
 |----|-------|--------------|-------|
-| 1 | Sistem & Autentikasi | 4 | users, locations, password_reset_tokens, personal_access_tokens |
+| 1 | Sistem & Autentikasi | 3 | users, password_reset_tokens, personal_access_tokens |
 | 2 | Manajemen Tugas | 3 | task_templates, task_series, tasks |
 | 3 | Modul Penanaman | 10 | plant_types, plants, planting_locations, plantings, harvests, planting_losses, plant_notes, plant_photos, planting_location_notes, planting_location_photos |
 | 4 | Treatment & Nutrient | 4 | treatments, nutrients, expenses, attachments |
@@ -102,7 +101,7 @@ Foreign key menggunakan nama yang sama dengan primary key tabel yang direferensi
 | 7 | Penjualan | 2 | sales, sale_items |
 | 8 | Relasi User-Lokasi | 2 | user_planting_location_land_manager, user_planting_location_land_worker |
 | 9 | Landing Page | 1 | landing_page_settings |
-| **Total** | | **35** | |
+| **Total** | | **34** | |
 
 ---
 
@@ -116,56 +115,37 @@ Foreign key menggunakan nama yang sama dengan primary key tabel yang direferensi
 | Kolom | Tipe Data | Keterangan |
 |-------|-----------|------------|
 | user_id | VARCHAR(36) | Primary Key |
-| name | VARCHAR(255) | Nama pengguna |
+| name | VARCHAR(50) | Nama pengguna |
 | email | VARCHAR(255) | Email (UNIQUE) |
 | email_verified_at | TIMESTAMP | Waktu verifikasi email |
 | password | VARCHAR(255) | Password terenkripsi |
-| role | ENUM | 'admin', 'pimpinan', 'petugas_lapangan', 'penangkar' |
-| location_id | VARCHAR(36) | FK → locations |
-| location_placement | VARCHAR(255) | Penempatan di lokasi |
-| photo_path | VARCHAR(255) | Path foto profil |
-| full_name | VARCHAR(255) | Nama lengkap |
+| remember_token | VARCHAR(100) | Token remember me |
+| role | ENUM | 'admin', 'kepala_satuan_tugas', 'petugas_sertifikasi', 'petugas_gudang', 'petugas_bbi', 'penangkar' |
+| location_placement | VARCHAR(50) | Penempatan lokasi (tanpa FK; tabel locations dihapus) |
+| photo_path | VARCHAR(50) | Path foto profil |
+| full_name | VARCHAR(50) | Nama lengkap |
 | status | ENUM | 'active', 'inactive' |
-| contact_type | ENUM | 'internal', 'external' |
-| organization | VARCHAR(255) | Organisasi |
-| position | VARCHAR(255) | Jabatan |
+| contact_type | ENUM | 'pegawai_uptd_bbi_tpph', 'pegawai_gudang', 'petugas_sertifikasi', 'petani', 'penyuluh', 'penangkar', 'lainnya' |
+| organization | VARCHAR(50) | Organisasi |
+| position | VARCHAR(50) | Jabatan |
 | nip | VARCHAR(50) | NIP |
 | primary_phone | VARCHAR(20) | Telepon utama |
+| primary_phone_is_whatsapp | TINYINT(1) | Nomor utama adalah WhatsApp |
 | secondary_phone | VARCHAR(20) | Telepon sekunder |
 | address | TEXT | Alamat |
-| province | VARCHAR(100) | Provinsi |
-| city | VARCHAR(100) | Kota |
-| district | VARCHAR(100) | Kecamatan |
-| village | VARCHAR(100) | Desa/Kelurahan |
+| province | VARCHAR(50) | Provinsi |
+| city | VARCHAR(50) | Kota |
+| district | VARCHAR(50) | Kecamatan |
+| village | VARCHAR(50) | Desa/Kelurahan |
 | notes | TEXT | Catatan |
-| remember_token | VARCHAR(100) | Token remember me |
 | created_at | TIMESTAMP | Waktu dibuat |
 | updated_at | TIMESTAMP | Waktu diupdate |
 
-**Relasi:**
-- `location_id` → `locations.location_id` (Many-to-One)
+**Relasi:** One-to-Many ke berbagai tabel (warehouses, inventory_types, tasks, dll). Tidak ada FK ke tabel locations (tabel locations telah dihapus).
 
 ---
 
-#### 1.2 Tabel: `locations`
-**Deskripsi:** Data lokasi fisik/kantor
-
-| Kolom | Tipe Data | Keterangan |
-|-------|-----------|------------|
-| location_id | VARCHAR(36) | Primary Key |
-| name | VARCHAR(255) | Nama lokasi |
-| city | VARCHAR(255) | Kota |
-| district | VARCHAR(255) | Kecamatan |
-| type | ENUM | 'kantor', 'lapangan', 'gudang', 'lainnya' |
-| description | TEXT | Deskripsi |
-| google_maps_link | VARCHAR(500) | Link Google Maps |
-| photo | VARCHAR(255) | Path foto |
-| created_at | TIMESTAMP | Waktu dibuat |
-| updated_at | TIMESTAMP | Waktu diupdate |
-
----
-
-#### 1.3 Tabel: `password_reset_tokens`
+#### 1.2 Tabel: `password_reset_tokens`
 **Deskripsi:** Token untuk reset password
 
 | Kolom | Tipe Data | Keterangan |
@@ -176,7 +156,7 @@ Foreign key menggunakan nama yang sama dengan primary key tabel yang direferensi
 
 ---
 
-#### 1.4 Tabel: `personal_access_tokens`
+#### 1.3 Tabel: `personal_access_tokens`
 **Deskripsi:** Token akses API (Laravel Sanctum)
 
 | Kolom | Tipe Data | Keterangan |

@@ -7,20 +7,20 @@ Tabel pivot untuk relasi many-to-many antara user dan planting_location (sebagai
 
 | Nama Atribut | Tipe Data | Ukuran | Keterangan |
 |--------------|-----------|--------|------------|
-| **id** | BIGINT | - | Primary Key, Auto Increment |
-| planting_location_id | BIGINT | - | Foreign Key → planting_locations.id (NOT NULL) |
-| user_id | BIGINT | - | Foreign Key → users.id (NOT NULL) |
-| created_at | TIMESTAMP | - | Tanggal dibuat (NOT NULL) |
-| updated_at | TIMESTAMP | - | Tanggal diupdate (NOT NULL) |
+| **user_planting_location_land_manager_id** | VARCHAR | 36 | Primary Key |
+| planting_location_id | VARCHAR | 36 | Foreign Key → planting_locations.planting_location_id |
+| user_id | VARCHAR | 36 | Foreign Key → users.user_id |
+| created_at | TIMESTAMP | | |
+| updated_at | TIMESTAMP | | |
 
 ## Relasi
-- Many-to-One dengan: `planting_locations` (planting_location_id, CASCADE DELETE), `users` (user_id, CASCADE DELETE)
+- Many-to-One dengan: `planting_locations` (planting_location_id), `users` (user_id)
 
 ## Index
-- PRIMARY KEY: `id`
+- PRIMARY KEY: `user_planting_location_land_manager_id`
 - UNIQUE: (`planting_location_id`, `user_id`)
-- FOREIGN KEY: `planting_location_id` → `planting_locations.id` (CASCADE DELETE)
-- FOREIGN KEY: `user_id` → `users.id` (CASCADE DELETE)
+- FOREIGN KEY: `planting_location_id` → `planting_locations.planting_location_id`
+- FOREIGN KEY: `user_id` → `users.user_id`
 
 
 

@@ -7,14 +7,14 @@ Tabel untuk menyimpan data sertifikasi benih
 
 | Nama Atribut | Tipe Data | Ukuran | Keterangan |
 |--------------|-----------|--------|------------|
-| **certification_id** | VARCHAR | 36 | Primary Key (format: certification_id) |
-| harvest_id | VARCHAR | 36 | Foreign Key → harvests.harvest_id (NOT NULL, CASCADE DELETE) |
-| certification_status | VARCHAR | 255 | Status sertifikasi: 'dalam_proses', 'lulus', 'tidak_lulus', 'selesai' (NULL) |
-| seed_class_requested | VARCHAR | 255 | Kelas benih yang diminta: 'BS', 'BP', 'BR' (NULL) |
-| plant_id | VARCHAR | 36 | Foreign Key → plants.plant_id (NULL) |
-| planting_location_id | VARCHAR | 36 | Foreign Key → planting_locations.planting_location_id (NULL) |
-| created_at | TIMESTAMP | - | Tanggal dibuat (NOT NULL) |
-| updated_at | TIMESTAMP | - | Tanggal diupdate (NOT NULL) |
+| **certification_id** | VARCHAR | 36 | Primary Key |
+| harvest_id | VARCHAR | 36 | Foreign Key → harvests.harvest_id |
+| plant_id | VARCHAR | 36 | Foreign Key → plants.plant_id |
+| planting_location_id | VARCHAR | 36 | Foreign Key → planting_locations.planting_location_id |
+| certification_status | VARCHAR | 50 | |
+| seed_class_requested | VARCHAR | 50 | |
+| created_at | TIMESTAMP | | |
+| updated_at | TIMESTAMP | | |
 
 ## Relasi
 - Many-to-One dengan: `harvests` (harvest_id, CASCADE DELETE), `plants` (plant_id), `planting_locations` (planting_location_id)

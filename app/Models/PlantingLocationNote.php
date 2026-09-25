@@ -6,18 +6,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\HasCustomId;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class PlantingLocationNote extends Model
 {
     use HasFactory;
     use HasCustomId;
 
-    protected $primaryKey = 'planting_location_note_id';
+    protected $table = 'planting_notes';
+
+    protected $primaryKey = 'planting_note_id';
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
-        'planting_location_id',
         'planting_id',
         'title',
         'description',
@@ -35,14 +37,15 @@ class PlantingLocationNote extends Model
         'read_by' => 'array',
     ];
 
-    public function plantingLocation(): BelongsTo
-    {
-        return $this->belongsTo(PlantingLocation::class, 'planting_location_id', 'planting_location_id');
-    }
-
     public function planting(): BelongsTo
     {
-        return $this->belongsTo(Planting::class, 'planting_id', 'planting_id');
+        return $this->belongsTo(Planting::class, 'planting_id', 'planting_production_id');
+    }
+
+    /** Lokasi penanaman melalui planting (setelah kolom planting_location_id dihapus). */
+    public function plantingLocation(): HasOneThrough
+    {
+        return $this->hasOneThrough(PlantingLocation::class, Planting::class, 'planting_production_id', 'planting_location_id', 'planting_id', 'planting_location_id');
     }
 
     public function user(): BelongsTo
@@ -58,7 +61,7 @@ class PlantingLocationNote extends Model
         if (!$this->assigned_to) {
             return collect();
         }
-        return User::whereIn('id', $this->assigned_to)->get();
+        return User::whereIn('user_id', $this->assigned_to)->get();
     }
 
     /**

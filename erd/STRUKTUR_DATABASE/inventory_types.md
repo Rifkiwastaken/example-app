@@ -7,23 +7,23 @@ Tabel untuk menyimpan tipe inventory (jenis benih/stok)
 
 | Nama Atribut | Tipe Data | Ukuran | Keterangan |
 |--------------|-----------|--------|------------|
-| **inventory_type_id** | VARCHAR | 36 | Primary Key (format: inventory_type_id) |
-| category | VARCHAR | 255 | Kategori inventory (NOT NULL) |
-| name | VARCHAR | 255 | Nama varietas/komoditas (NOT NULL) |
-| sku | VARCHAR | 100 | SKU / ID Internal (UNIQUE, NOT NULL) |
-| electronic_id | VARCHAR | 255 | Barcode/RFID (NULL) |
-| unit | VARCHAR | 50 | Satuan: 'kg', 'ton', 'kantong', 'unit', 'polybag', 'pcs' (NOT NULL) |
-| estimated_value_per_unit | DECIMAL | 15,2 | Estimasi nilai per unit dalam Rp (NULL) |
-| estimated_kg_per_unit | DECIMAL | 10,2 | Estimasi kg per unit (NULL) |
-| track_individual_lots | BOOLEAN | - | Lacak lot individual (NOT NULL) |
-| low_stock_threshold | DECIMAL | 10,2 | Peringatan stok rendah (NULL) |
-| low_stock_unit | VARCHAR | 50 | Unit untuk peringatan stok (NULL) |
-| low_stock_email | VARCHAR | 255 | Email untuk peringatan stok (NULL) |
-| description | TEXT | - | Deskripsi (NULL) |
-| plant_id | VARCHAR | 36 | Foreign Key → plants.plant_id (NULL, SET NULL ON DELETE) |
-| responsible_person_id | VARCHAR | 36 | Foreign Key → users.user_id (NULL, SET NULL ON DELETE) |
-| created_at | TIMESTAMP | - | Tanggal dibuat (NOT NULL) |
-| updated_at | TIMESTAMP | - | Tanggal diupdate (NOT NULL) |
+| **inventory_type_id** | VARCHAR | 36 | Primary Key |
+| plant_id | VARCHAR | 36 | Foreign Key → plants.plant_id |
+| responsible_person_id | VARCHAR | 36 | Foreign Key → users.user_id |
+| category | VARCHAR | 50 | |
+| name | VARCHAR | 50 | |
+| sku | VARCHAR | 100 | |
+| electronic_id | VARCHAR | 50 | |
+| unit | VARCHAR | 50 | |
+| estimated_value_per_unit | DECIMAL | 15,2 | |
+| estimated_kg_per_unit | DECIMAL | 10,2 | |
+| track_individual_lots | TINYINT(1) | | |
+| low_stock_threshold | DECIMAL | 10,2 | |
+| low_stock_unit | VARCHAR | 50 | |
+| low_stock_email | VARCHAR | 50 | |
+| description | TEXT | | |
+| created_at | TIMESTAMP | | |
+| updated_at | TIMESTAMP | | |
 
 ## Relasi
 - Many-to-One dengan: `plants` (plant_id), `users` (responsible_person_id)

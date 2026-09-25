@@ -88,7 +88,7 @@
         </div>
         <div class="info-row">
             <div class="info-label">Jumlah Tanam:</div>
-            <div class="info-value">{{ number_format($planting->quantity_planted ?? 0, 0) }} tanaman</div>
+            <div class="info-value">{{ number_format($planting->planting_amount ?? 0, 0) }} tanaman</div>
         </div>
         <div class="info-row">
             <div class="info-label">Tanggal Tanam:</div>
@@ -139,6 +139,7 @@
                             <th>Status</th>
                             <th>Prioritas</th>
                             <th>Ditugaskan</th>
+                            <th>Pengisi Laporan</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -161,7 +162,8 @@
                                     {{ ucfirst($task->new_priority ?? 'medium') }}
                                 </span>
                             </td>
-                            <td>{{ $task->assignedUser ? $task->assignedUser->name : '-' }}</td>
+                            <td>{{ $task->assigned_label ?? '-' }}</td>
+                            <td>{{ $task->reporter_name ?? '-' }}</td>
                         </tr>
                         @endforeach
                     </tbody>

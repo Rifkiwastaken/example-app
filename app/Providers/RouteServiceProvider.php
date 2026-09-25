@@ -33,9 +33,28 @@ class RouteServiceProvider extends ServiceProvider
             return \App\Models\Warehouse::findOrFail($value);
         });
 
-        // Route model binding for seed (inventory type seed)
+        // Sales: resolve by receipt_number (group header in sale_items)
+        Route::bind('sale', function ($value) {
+            $item = \App\Models\SaleItem::where('receipt_number', $value)->first();
+            if (!$item) {
+                $item = \App\Models\SaleItem::find($value);
+            }
+            if (!$item) {
+                throw new \Illuminate\Database\Eloquent\ModelNotFoundException('Sale not found.');
+            }
+            return $item;
+        });
+
+        // Stok benih per-baris = certification_reports (bukan tabel inventory_type_seeds yang sudah dihapus).
         Route::bind('seed', function ($value) {
-            return \App\Models\InventoryTypeSeed::findOrFail($value);
+            return \App\Models\CertificationReport::where('certification_report_id', $value)->firstOrFail();
+        });
+
+        Route::bind('booking', function ($value) {
+            return \App\Models\BookingGeowisata::findOrFail($value);
+        });
+        Route::bind('pendaftaran', function ($value) {
+            return \App\Models\PendaftaranMagang::findOrFail($value);
         });
 
         $this->routes(function () {

@@ -337,9 +337,9 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">Jumlah yang Ditanam</label>
-                                <input type="number" name="quantity_planted" class="form-control @error('quantity_planted') is-invalid @enderror" 
-                                       value="{{ old('quantity_planted') }}" step="0.1" min="0">
-                                @error('quantity_planted')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                <input type="number" name="planting_amount" class="form-control @error('planting_amount') is-invalid @enderror" 
+                                       value="{{ old('planting_amount') }}" step="0.1" min="0">
+                                @error('planting_amount')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
                         <div class="col-md-6">

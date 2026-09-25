@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Crypt;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -46,10 +47,12 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'email_verified_at',
         'password',
         'role',
         'location_id',
         'location_placement',
+        'placement_location_id',
         'photo_path',
         'full_name',
         'status',
@@ -66,6 +69,7 @@ class User extends Authenticatable
         'district',
         'village',
         'notes',
+        'password_encrypted',
     ];
 
     /**
@@ -75,6 +79,7 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
+        'password_encrypted',
         'remember_token',
     ];
 
@@ -127,6 +132,29 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
+    public function rememberRevealablePassword(?string $plain): void
+    {
+        $plain = trim((string) $plain);
+        $this->password_encrypted = $plain !== ''
+            ? Crypt::encryptString($plain)
+            : null;
+    }
+
+    public function revealablePassword(): ?string
+    {
+        if (! filled($this->password_encrypted)) {
+            return null;
+        }
+
+        try {
+            $plain = Crypt::decryptString($this->password_encrypted);
+
+            return filled($plain) ? $plain : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     /**
      * Check if user has access to specific module
      */
@@ -141,52 +169,53 @@ class User extends Authenticatable
             'sertifikasi' => $this->role === 'petugas_sertifikasi',
             'gudang' => $this->role === 'petugas_gudang',
             'penjualan' => $this->role === 'petugas_bbi',
+            'pelayanan_publik' => $this->role === 'petugas_bbi' || $this->role === 'kepala_satuan_tugas',
             default => false,
         };
     }
 
     /**
-     * Get planting locations where user is assigned as manager
-     * Kolom pivot: user_id, planting_location_id (parent key user_id, related key planting_location_id)
+     * Lokasi penanaman tempat user ditugaskan (disimpan saat admin membuat akun).
      */
-    public function managedPlantingLocations(): BelongsToMany
+    public function placementLocation(): BelongsTo
     {
-        return $this->belongsToMany(
-            PlantingLocation::class,
-            'user_planting_location_land_manager',
-            'user_id',
-            'planting_location_id',
-            'user_id',
-            'planting_location_id'
-        )->withTimestamps();
+        return $this->belongsTo(PlantingLocation::class, 'placement_location_id', 'planting_location_id');
+    }
+
+    /**
+     * Lokasi penanaman yang ditugaskan sebagai pengelola.
+     */
+    public function managedPlantingLocations()
+    {
+        if ($this->isAdmin()) {
+            return PlantingLocation::query();
+        }
+
+        if (in_array($this->role, ['kepala_satuan_tugas', 'penangkar'], true) && $this->placement_location_id) {
+            return PlantingLocation::where('planting_location_id', $this->placement_location_id);
+        }
+
+        return PlantingLocation::query()->whereRaw('1 = 0');
     }
 
     /**
      * Get planting locations where user is assigned as worker
      */
-    public function workedPlantingLocations(): BelongsToMany
+    public function workedPlantingLocations()
     {
-        return $this->belongsToMany(
-            PlantingLocation::class,
-            'user_planting_location_land_worker',
-            'user_id',
-            'planting_location_id',
-            'user_id',
-            'planting_location_id'
-        )->withTimestamps();
+        return $this->managedPlantingLocations();
     }
 
     /**
-     * Get all planting locations assigned to this user (as manager or worker)
+     * Get all planting locations assigned to this user
      */
     public function assignedPlantingLocations()
     {
-        return $this->managedPlantingLocations()->get()->merge($this->workedPlantingLocations()->get())->unique('planting_location_id');
+        return $this->managedPlantingLocations()->get();
     }
 
     /**
-     * Check if user is assigned to a planting location (as manager or worker).
-     * Siapa pun yang ditugaskan admin (land manager atau land worker) boleh mengakses lokasi.
+     * Check if user is assigned to a planting location.
      */
     public function isAssignedToPlantingLocation(PlantingLocation $plantingLocation): bool
     {
@@ -194,8 +223,7 @@ class User extends Authenticatable
             return true;
         }
 
-        return $plantingLocation->landManagerUsers->contains($this->getKey()) ||
-               $plantingLocation->landWorkerUsers->contains($this->getKey());
+        return $this->placement_location_id === $plantingLocation->getKey();
     }
 
     /**

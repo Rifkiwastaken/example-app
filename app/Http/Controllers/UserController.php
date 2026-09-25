@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\PlantingLocation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -14,9 +15,28 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::paginate(10);
-        
-        return view('users.index', compact('users'));
+        $users = User::orderBy('name')->paginate(10);
+        $roleCounts = User::query()
+            ->selectRaw('role, COUNT(*) as total')
+            ->groupBy('role')
+            ->pluck('total', 'role');
+
+        $stats = [
+            'admin' => (int) ($roleCounts['admin'] ?? 0),
+            'kepala_satuan_tugas' => (int) ($roleCounts['kepala_satuan_tugas'] ?? 0),
+            'petugas' => (int) (
+                ($roleCounts['petugas_sertifikasi'] ?? 0)
+                + ($roleCounts['petugas_gudang'] ?? 0)
+                + ($roleCounts['petugas_bbi'] ?? 0)
+            ),
+            'total' => (int) $roleCounts->sum(),
+            'penanaman' => (int) (($roleCounts['kepala_satuan_tugas'] ?? 0) + ($roleCounts['penangkar'] ?? 0)),
+            'sertifikasi' => (int) ($roleCounts['petugas_sertifikasi'] ?? 0),
+            'gudang' => (int) ($roleCounts['petugas_gudang'] ?? 0),
+            'penjualan' => (int) ($roleCounts['petugas_bbi'] ?? 0),
+        ];
+
+        return view('users.index', compact('users', 'stats'));
     }
 
     /**
@@ -46,7 +66,9 @@ class UserController extends Controller
             'lainnya' => 'Lainnya',
         ];
         
-        return view('users.create', compact('roles', 'statuses', 'contactTypes'));
+        $plantingLocations = PlantingLocation::orderBy('name')->get();
+        
+        return view('users.create', compact('roles', 'statuses', 'contactTypes', 'plantingLocations'));
     }
 
     /**
@@ -64,6 +86,7 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'role' => 'required|in:' . implode(',', array_keys(User::getRoles())),
+            'placement_location_id' => 'nullable|exists:planting_locations,planting_location_id',
             'location_placement' => 'nullable|string|max:255',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'full_name' => 'nullable|string|max:255',
@@ -103,9 +126,14 @@ class UserController extends Controller
         $data['primary_phone_is_whatsapp'] = $request->has('primary_phone_is_whatsapp') ? 1 : 0;
         
         // Remove photo from data array (already handled)
-        unset($data['photo']);
+        unset($data['photo'], $data['password_confirmation'], $data['password_encrypted']);
+        $placement = $this->resolvePlacement($request);
+        $data['placement_location_id'] = $placement['placement_location_id'];
+        $data['location_placement'] = $placement['location_placement'];
 
-        User::create($data);
+        $user = User::create($data);
+        $user->rememberRevealablePassword($request->password);
+        $user->save();
 
         return redirect()->route('users.index')
             ->with('success', 'Akun berhasil ditambahkan.');
@@ -116,7 +144,9 @@ class UserController extends Controller
      */
     public function show(User $user)
     {
-        return view('users.show', compact('user'));
+        $plainPassword = auth()->user()?->isAdmin() ? $user->revealablePassword() : null;
+
+        return view('users.show', compact('user', 'plainPassword'));
     }
 
     /**
@@ -146,7 +176,9 @@ class UserController extends Controller
             'lainnya' => 'Lainnya',
         ];
         
-        return view('users.edit', compact('user', 'roles', 'statuses', 'contactTypes'));
+        $plantingLocations = PlantingLocation::orderBy('name')->get();
+        
+        return view('users.edit', compact('user', 'roles', 'statuses', 'contactTypes', 'plantingLocations'));
     }
 
     /**
@@ -164,6 +196,7 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->user_id . ',user_id',
             'password' => 'nullable|string|min:8|confirmed',
             'role' => 'required|in:' . implode(',', array_keys(User::getRoles())),
+            'placement_location_id' => 'nullable|exists:planting_locations,planting_location_id',
             'location_placement' => 'nullable|string|max:255',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'full_name' => 'nullable|string|max:255',
@@ -186,7 +219,8 @@ class UserController extends Controller
         $data = $request->all();
         
         if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->password);
+            $data['password'] = $request->password;
+            $user->rememberRevealablePassword($request->password);
         } else {
             unset($data['password']);
         }
@@ -208,10 +242,13 @@ class UserController extends Controller
         $data['primary_phone_is_whatsapp'] = $request->has('primary_phone_is_whatsapp') ? 1 : 0;
         
         // Remove photo from data array (already handled)
-        unset($data['photo']);
-        unset($data['password_confirmation']);
+        unset($data['photo'], $data['password_confirmation'], $data['password_encrypted']);
+        $placement = $this->resolvePlacement($request);
+        $data['placement_location_id'] = $placement['placement_location_id'];
+        $data['location_placement'] = $placement['location_placement'];
 
-        $user->update($data);
+        $user->fill($data);
+        $user->save();
 
         return redirect()->route('users.index')
             ->with('success', 'Akun berhasil diperbarui.');
@@ -237,6 +274,39 @@ class UserController extends Controller
 
         return redirect()->route('users.index')
             ->with('success', 'Akun berhasil dihapus.');
+    }
+
+    protected function resolvePlacement(Request $request): array
+    {
+        $role = (string) $request->input('role');
+        $uptLabel = 'UPTD BBI TPHP';
+
+        if (in_array($role, ['petugas_gudang', 'petugas_bbi'], true)) {
+            return [
+                'placement_location_id' => null,
+                'location_placement' => $uptLabel,
+            ];
+        }
+
+        if (in_array($role, ['kepala_satuan_tugas', 'penangkar'], true)) {
+            $location = $request->filled('placement_location_id')
+                ? PlantingLocation::find($request->placement_location_id)
+                : null;
+
+            return [
+                'placement_location_id' => $location?->getKey(),
+                'location_placement' => $location?->name,
+            ];
+        }
+
+        $location = $request->filled('placement_location_id')
+            ? PlantingLocation::find($request->placement_location_id)
+            : null;
+
+        return [
+            'placement_location_id' => $location?->getKey(),
+            'location_placement' => $location?->name ?: $request->input('location_placement'),
+        ];
     }
 }
 

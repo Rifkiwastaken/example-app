@@ -49,22 +49,7 @@
                 @enderror
             </div>
 
-            <div class="mb-3">
-                <label for="responsible_person_id" class="form-label">Penanggung Jawab</label>
-                <select class="form-select @error('responsible_person_id') is-invalid @enderror" 
-                        id="responsible_person_id" name="responsible_person_id">
-                    <option value="">-- Pilih Penanggung Jawab --</option>
-                    @foreach($users as $user)
-                        <option value="{{ $user->id }}" {{ old('responsible_person_id', $inventoryType->responsible_person_id) == $user->id ? 'selected' : '' }}>
-                            {{ $user->name }}
-                        </option>
-                    @endforeach
-                </select>
-                <small class="text-muted">Pilih user sebagai penanggung jawab</small>
-                @error('responsible_person_id')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
+            <!-- Field Penanggung Jawab dihapus: tipe stok benih tidak lagi menyimpan penanggung jawab khusus -->
 
             <div class="mb-3">
                 <label for="sku" class="form-label">ID Internal / SKU (Stock Keeping Unit) <span class="text-danger">*</span></label>

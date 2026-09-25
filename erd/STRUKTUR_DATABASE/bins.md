@@ -7,15 +7,15 @@ Tabel untuk menyimpan data bin (rak/kompartemen) di gudang
 
 | Nama Atribut | Tipe Data | Ukuran | Keterangan |
 |--------------|-----------|--------|------------|
-| **bin_id** | VARCHAR | 36 | Primary Key (format: bin_id) |
-| warehouse_id | VARCHAR | 36 | Foreign Key → warehouses.warehouse_id (NOT NULL, CASCADE DELETE) |
-| name | VARCHAR | 255 | Nama bin (NOT NULL) |
-| internal_id | VARCHAR | 50 | ID internal bin (NULL) |
-| max_capacity | DECIMAL | 15,2 | Kapasitas maksimal (NULL) |
-| capacity_unit | VARCHAR | 50 | Satuan kapasitas (NULL) |
-| description | TEXT | - | Deskripsi bin (NULL) |
-| created_at | TIMESTAMP | - | Tanggal dibuat (NOT NULL) |
-| updated_at | TIMESTAMP | - | Tanggal diupdate (NOT NULL) |
+| **bin_id** | VARCHAR | 36 | Primary Key |
+| warehouse_id | VARCHAR | 36 | Foreign Key → warehouses.warehouse_id |
+| name | VARCHAR | 50 | |
+| internal_id | VARCHAR | 50 | |
+| max_capacity | DECIMAL | 15,2 | |
+| capacity_unit | VARCHAR | 50 | |
+| description | TEXT | | |
+| created_at | TIMESTAMP | | |
+| updated_at | TIMESTAMP | | |
 
 ## Relasi
 - Many-to-One dengan: `warehouses` (warehouse_id, CASCADE DELETE)

@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Tipe Tanaman - SIBESTI')
+@section('title', 'Kategori Tanaman - SIBESTI')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="mb-0">Tipe Tanaman</h4>
+        <h4 class="mb-0">Kategori Tanaman</h4>
         <button type="button" class="btn btn-success mt-2" data-bs-toggle="modal" data-bs-target="#addPlantTypeModal">
-            <i class="fas fa-plus me-2"></i>Tambah Tipe
+            <i class="fas fa-plus me-2"></i>Tambah Kategori
         </button>
     </div>
     <a href="{{ route('plants.index') }}" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Kembali</a>
@@ -27,7 +27,6 @@
                 <thead>
                     <tr>
                         <th>Nama</th>
-                        <th>Varietas</th>
                         <th>Kategori</th>
                         <th width="120">Aksi</th>
                     </tr>
@@ -36,13 +35,6 @@
                     @forelse($types as $type)
                         <tr>
                             <td>{{ $type->name }}</td>
-                            <td>
-                                @if($type->variety)
-                                    <small>{{ Str::limit($type->variety, 50) }}</small>
-                                @else
-                                    <span class="text-muted">-</span>
-                                @endif
-                            </td>
                             <td>
                                 @if($type->category)
                                     <span class="badge bg-secondary">{{ $type->category }}</span>
@@ -55,14 +47,13 @@
                                     <button type="button" class="btn btn-sm btn-outline-warning" 
                                             data-bs-toggle="modal" 
                                             data-bs-target="#editPlantTypeModal"
-                                            data-id="{{ $type->id }}"
+                                            data-id="{{ $type->plant_type_id }}"
                                             data-name="{{ $type->name }}"
-                                            data-variety="{{ $type->variety }}"
                                             data-category="{{ $type->category }}">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <button type="button" class="btn btn-sm btn-outline-danger"
-                                            onclick="confirmDelete('{{ route('plant-types.destroy', $type) }}', '{{ addslashes($type->name) }}', 'tipe tanaman')">
+                                            onclick="confirmDelete('{{ route('plant-types.destroy', $type) }}', '{{ addslashes($type->name) }}', 'kategori tanaman')">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
@@ -70,9 +61,9 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-4">
+                            <td colspan="3" class="text-center text-muted py-4">
                                 <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
-                                Belum ada tipe tanaman.
+                                Belum ada kategori tanaman.
                             </td>
                         </tr>
                     @endforelse
@@ -93,7 +84,7 @@
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title" id="addPlantTypeModalLabel">
-                        <i class="fas fa-plus me-2"></i>Tambah Tipe Tanaman
+                        <i class="fas fa-plus me-2"></i>Tambah Kategori Tanaman
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -102,12 +93,6 @@
                         <label class="form-label">Nama Tanaman <span class="text-danger">*</span></label>
                         <input type="text" name="name" id="addPlantTypeName" class="form-control" required>
                         <div class="invalid-feedback" id="addNameError"></div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Nama Varietas <span class="text-danger">*</span></label>
-                        <textarea name="variety" id="addPlantTypeVariety" class="form-control" rows="3" required placeholder="Masukkan varietas (pisahkan dengan enter untuk multiple varietas)"></textarea>
-                        <small class="text-muted">Contoh: Varietas A, Varietas B, Varietas C atau pisahkan dengan enter</small>
-                        <div class="invalid-feedback" id="addVarietyError"></div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Kategori (opsional)</label>
@@ -148,7 +133,7 @@
                 @method('PUT')
                 <div class="modal-header">
                     <h5 class="modal-title" id="editPlantTypeModalLabel">
-                        <i class="fas fa-edit me-2"></i>Edit Tipe Tanaman
+                        <i class="fas fa-edit me-2"></i>Edit Kategori Tanaman
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -158,12 +143,6 @@
                         <label class="form-label">Nama Tanaman <span class="text-danger">*</span></label>
                         <input type="text" name="name" id="editPlantTypeName" class="form-control" required>
                         <div class="invalid-feedback" id="editNameError"></div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Nama Varietas <span class="text-danger">*</span></label>
-                        <textarea name="variety" id="editPlantTypeVariety" class="form-control" rows="3" required placeholder="Masukkan varietas (pisahkan dengan enter untuk multiple varietas)"></textarea>
-                        <small class="text-muted">Contoh: Varietas A, Varietas B, Varietas C atau pisahkan dengan enter</small>
-                        <div class="invalid-feedback" id="editVarietyError"></div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Kategori (opsional)</label>
@@ -223,10 +202,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (document.getElementById('add_category_custom_container')) {
                 document.getElementById('add_category_custom_container').style.display = 'none';
             }
-            // Reset variety field
-            if (document.getElementById('addPlantTypeVariety')) {
-                document.getElementById('addPlantTypeVariety').value = '';
-            }
         });
     }
     
@@ -248,12 +223,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
                 }
             })
             .then(response => {
                 if (!response.ok) {
-                    return response.json().then(err => Promise.reject(err));
+                    return response.text().then(text => {
+                        let err;
+                        try { err = JSON.parse(text); } catch (_) { err = { message: 'Terjadi kesalahan saat menyimpan data.' }; }
+                        return Promise.reject(err);
+                    });
                 }
                 return response.json();
             })
@@ -282,12 +262,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const button = event.relatedTarget;
             const id = button.getAttribute('data-id');
             const name = button.getAttribute('data-name');
-            const variety = button.getAttribute('data-variety');
             const category = button.getAttribute('data-category');
             
             document.getElementById('editPlantTypeId').value = id;
             document.getElementById('editPlantTypeName').value = name || '';
-            document.getElementById('editPlantTypeVariety').value = variety || '';
             
             // Handle category: if category is not in dropdown options, set to "lainnya" and show custom field
             const validCategories = ['pangan', 'hortikultura', 'sayur', 'buah', 'hias'];
@@ -333,12 +311,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
                 }
             })
             .then(response => {
                 if (!response.ok) {
-                    return response.json().then(err => Promise.reject(err));
+                    return response.text().then(text => {
+                        let err;
+                        try { err = JSON.parse(text); } catch (_) { err = { message: 'Terjadi kesalahan saat menyimpan data.' }; }
+                        return Promise.reject(err);
+                    });
                 }
                 return response.json();
             })
@@ -361,10 +344,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function clearErrors(type) {
         const prefix = type === 'add' ? 'add' : 'edit';
         document.getElementById(`${prefix}PlantTypeName`).classList.remove('is-invalid');
-        document.getElementById(`${prefix}PlantTypeVariety`).classList.remove('is-invalid');
         document.getElementById(`${prefix}PlantTypeCategory`).classList.remove('is-invalid');
         document.getElementById(`${prefix}NameError`).textContent = '';
-        document.getElementById(`${prefix}VarietyError`).textContent = '';
         document.getElementById(`${prefix}CategoryError`).textContent = '';
     }
     
@@ -375,17 +356,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById(`${prefix}PlantTypeName`).classList.add('is-invalid');
                 document.getElementById(`${prefix}NameError`).textContent = error.errors.name[0];
             }
-            if (error.errors.variety) {
-                document.getElementById(`${prefix}PlantTypeVariety`).classList.add('is-invalid');
-                document.getElementById(`${prefix}VarietyError`).textContent = error.errors.variety[0];
-            }
             if (error.errors.category) {
                 document.getElementById(`${prefix}PlantTypeCategory`).classList.add('is-invalid');
                 document.getElementById(`${prefix}CategoryError`).textContent = error.errors.category[0];
             }
         } else {
             console.error('Error:', error);
-            alert('Terjadi kesalahan saat menyimpan data.');
+            alert(error.message || 'Terjadi kesalahan saat menyimpan data.');
         }
     }
 });

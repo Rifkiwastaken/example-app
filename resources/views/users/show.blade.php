@@ -36,11 +36,27 @@
                 <div class="row mb-3">
                     <div class="col-sm-3"><strong>Password:</strong></div>
                     <div class="col-sm-9">
-                        @if($user->password)
-                            <span class="badge bg-success">Password Sudah Di-set</span>
+                        @if(auth()->user()?->isAdmin())
+                            @if(!empty($plainPassword))
+                                <div class="d-flex align-items-center flex-wrap gap-2">
+                                    <code id="account-password" class="bg-light border rounded px-2 py-1">••••••••</code>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="toggle-account-password"
+                                            data-password="{{ $plainPassword }}">
+                                        <i class="fas fa-eye me-1"></i>Lihat
+                                    </button>
+                                </div>
+                                <small class="text-muted">Hanya admin yang dapat melihat password akun.</small>
+                            @elseif($user->password)
+                                <span class="badge bg-success">Password sudah di-set</span>
+                                <br><small class="text-muted">Password lama terenkripsi dan belum dapat ditampilkan. Atur ulang password di menu edit agar dapat dilihat admin.</small>
+                            @else
+                                <span class="badge bg-warning">Password belum di-set</span>
+                            @endif
+                        @elseif($user->password)
+                            <span class="badge bg-success">Password sudah di-set</span>
                             <br><small class="text-muted">Password telah dikonfigurasi untuk akun ini</small>
                         @else
-                            <span class="badge bg-warning">Password Belum Di-set</span>
+                            <span class="badge bg-warning">Password belum di-set</span>
                         @endif
                     </div>
                 </div>
@@ -291,6 +307,24 @@
         @endif
     </div>
 </div>
+@if(auth()->user()?->isAdmin() && !empty($plainPassword))
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const button = document.getElementById('toggle-account-password');
+    const display = document.getElementById('account-password');
+    if (!button || !display) return;
+    button.addEventListener('click', function () {
+        const revealed = button.classList.toggle('is-revealed');
+        display.textContent = revealed ? button.dataset.password : '••••••••';
+        button.innerHTML = revealed
+            ? '<i class="fas fa-eye-slash me-1"></i>Sembunyikan'
+            : '<i class="fas fa-eye me-1"></i>Lihat';
+    });
+});
+</script>
+@endpush
+@endif
 @endsection
 
 

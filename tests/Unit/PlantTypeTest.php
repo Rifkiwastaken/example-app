@@ -33,8 +33,8 @@ class PlantTypeTest extends TestCase
         $plantType = PlantType::create($plantTypeData);
 
         // Memverifikasi bahwa plant type berhasil dibuat dengan field sesuai input
-        $this->assertDatabaseHas('plant_types', [
-            'id' => $plantType->id,
+        $this->assertDatabaseHas('plant_commodities', [
+            'seed_commodity_id' => $plantType->seed_commodity_id,
             'name' => 'Padi',
             'category' => 'Cereal',
         ]);
@@ -55,13 +55,13 @@ class PlantTypeTest extends TestCase
 
         $plant1 = Plant::create([
             'name' => 'Padi Varietas 1',
-            'plant_type_id' => $plantType->id,
+            'plant_type_id' => $plantType->plant_type_id,
             'variety' => 'Varietas A',
         ]);
 
         $plant2 = Plant::create([
             'name' => 'Padi Varietas 2',
-            'plant_type_id' => $plantType->id,
+            'plant_type_id' => $plantType->plant_type_id,
             'variety' => 'Varietas B',
         ]);
 

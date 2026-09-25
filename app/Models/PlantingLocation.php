@@ -8,6 +8,7 @@ use App\Traits\HasCustomId;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class PlantingLocation extends Model
 {
@@ -38,6 +39,11 @@ class PlantingLocation extends Model
     protected $fillable = [
         'name',
         'location_summary',
+        'province',
+        'city',
+        'district',
+        'village',
+        'koordinat_gps',
         'administrative_address',
         'google_maps_link',
         'primary_photo_path',
@@ -57,63 +63,120 @@ class PlantingLocation extends Model
         'description',
     ];
 
-    public function plants(): HasMany
+    /** Tanaman (katalog) yang pernah ditanam di lokasi ini; melalui plantings (bisa duplikat). */
+    public function plantings(): HasManyThrough
     {
-        return $this->hasMany(Plant::class, 'planting_location_id', 'planting_location_id');
+        return $this->hasManyThrough(
+            Planting::class,
+            PlantingField::class,
+            'planting_location_id',
+            'planting_field_id',
+            'planting_location_id',
+            'id'
+        );
     }
 
-    public function plantings(): HasMany
+    public function locationAttachments(): HasMany
     {
-        return $this->hasMany(Planting::class, 'planting_location_id', 'planting_location_id');
-    }
-
-    public function treatments(): HasMany
-    {
-        return $this->hasMany(Treatment::class, 'planting_location_id', 'planting_location_id');
-    }
-
-    public function nutrients(): HasMany
-    {
-        return $this->hasMany(Nutrient::class, 'planting_location_id', 'planting_location_id');
-    }
-
-    public function expenses(): HasMany
-    {
-        return $this->hasMany(Expense::class, 'planting_location_id', 'planting_location_id');
-    }
-
-    public function notes(): HasMany
-    {
-        return $this->hasMany(PlantingLocationNote::class, 'planting_location_id', 'planting_location_id');
-    }
-
-    public function photos(): HasMany
-    {
-        return $this->hasMany(PlantingLocationPhoto::class, 'planting_location_id', 'planting_location_id');
+        return $this->hasMany(Attachment::class, 'planting_location_id', 'planting_location_id')
+            ->where('module', Attachment::MODULE_LOCATION);
     }
 
     public function attachments(): HasMany
     {
-        return $this->hasMany(Attachment::class, 'planting_location_id', 'planting_location_id');
+        return $this->locationAttachments();
     }
 
-    public function tasks(): HasMany
+    public function fields(): HasMany
     {
-        return $this->hasMany(Task::class, 'planting_location_id', 'planting_location_id');
+        return $this->hasMany(PlantingField::class, 'planting_location_id', 'planting_location_id');
     }
 
-    public function landManagerUsers(): BelongsToMany
+    public function dailyReportIds()
     {
-        return $this->belongsToMany(User::class, 'user_planting_location_land_manager', 'planting_location_id', 'user_id')
-            ->using(UserPlantingLocationLandManagerPivot::class)
-            ->withTimestamps();
+        return $this->plantings()->pluck('planting_production.planting_production_id');
     }
 
-    public function landWorkerUsers(): BelongsToMany
+    public function assignedUsers(): HasMany
     {
-        return $this->belongsToMany(User::class, 'user_planting_location_land_worker', 'planting_location_id', 'user_id')
-            ->using(UserPlantingLocationLandWorkerPivot::class)
-            ->withTimestamps();
+        return $this->hasMany(User::class, 'placement_location_id', 'planting_location_id');
+    }
+
+    /**
+     * Pekerja lahan kini diambil dari penempatan pada akun user
+     * (tabel pivot user_planting_location_land_worker sudah dihapus).
+     */
+    public function landWorkerUsers(): HasMany
+    {
+        return $this->hasMany(User::class, 'placement_location_id', 'planting_location_id');
+    }
+
+    public const FORMAT_PENANAMAN = [
+        'ditanam_dalam_petak' => 'Ditanam dalam petak / beds',
+        'cover_crop' => 'Tanaman penutup / cover crop',
+        'row_crop' => 'Tanaman baris / row crop',
+        'lainnya' => 'Lainnya',
+    ];
+
+    public function formatPenanamanLabel(): string
+    {
+        if ($this->planting_format === 'lainnya' && $this->planting_format_custom) {
+            return $this->planting_format_custom;
+        }
+
+        return self::FORMAT_PENANAMAN[$this->planting_format] ?? ($this->planting_format ?: '-');
+    }
+
+    public function administrativeAddressText(): string
+    {
+        $parts = array_filter([
+            $this->village,
+            $this->district,
+            $this->city,
+            $this->province,
+        ]);
+        if ($parts) {
+            return implode(', ', $parts);
+        }
+
+        return $this->administrative_address ?: ($this->location_summary ?: '-');
+    }
+
+    public function productionVarietyLabels(): array
+    {
+        $this->loadMissing('plantings.seedSource.plant.type');
+
+        return $this->plantings
+            ->where('is_completed', false)
+            ->map(function (Planting $planting) {
+                $plant = $planting->seedSource?->plant ?: $planting->plant;
+                if (! $plant) {
+                    return null;
+                }
+
+                return $plant->displayName();
+            })
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public function workerNameLabels(): array
+    {
+        $fromPivot = $this->relationLoaded('landWorkerUsers')
+            ? $this->landWorkerUsers
+            : collect();
+        $fromPlacement = $this->relationLoaded('assignedUsers')
+            ? $this->assignedUsers
+            : collect();
+
+        return $fromPivot->merge($fromPlacement)
+            ->map(fn ($user) => $user->name)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 }
 

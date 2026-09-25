@@ -4,7 +4,6 @@
 
 @section('content')
 @php
-    $harvest = $certification->harvest;
     $plant = $harvest->plant ?? null;
 @endphp
 <nav aria-label="breadcrumb" class="mb-3">
@@ -55,7 +54,7 @@
 
 <div class="card">
     <div class="card-body">
-        <form action="{{ route('certifications.reports.store', $certification) }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('certifications.reports.store', $harvest) }}" method="POST" enctype="multipart/form-data">
             @csrf
 
             <div class="card mb-3">
@@ -64,11 +63,9 @@
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label class="form-label">Jenis Sertifikasi <span class="text-danger">*</span></label>
-                        <select class="form-select" name="report_type" required>
-                            <option value="Laporan Pemeriksaan Pertanaman" {{ old('report_type', 'Laporan Pemeriksaan Pertanaman') == 'Laporan Pemeriksaan Pertanaman' ? 'selected' : '' }}>Laporan Pemeriksaan Pertanaman</option>
-                            <option value="Laporan Sertifikasi Ulang" {{ old('report_type') == 'Laporan Sertifikasi Ulang' ? 'selected' : '' }}>Laporan Sertifikasi Ulang</option>
-                        </select>
+                        <label class="form-label">Uji ke</label>
+                        <input type="number" class="form-control" name="uji_ke" value="{{ old('uji_ke', 1) }}" min="1" readonly>
+                        <small class="text-muted">Nilai 1 untuk uji pertama. Bertambah otomatis saat sertifikasi ulang.</small>
                     </div>
                 </div>
             </div>
@@ -105,6 +102,15 @@
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Petugas Pengawas Mutu (BPSB)</label>
                             <input type="text" class="form-control" name="inspector_name" value="{{ old('inspector_name') }}" placeholder="Nama Petugas">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">No. Induk <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control @error('planting_batch_number') is-invalid @enderror" name="planting_batch_number" value="{{ old('planting_batch_number') }}" required>
+                            @error('planting_batch_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">No. Lot</label>
+                            <input type="text" class="form-control" name="harvest_batch_number" value="{{ old('harvest_batch_number') }}">
                         </div>
                     </div>
                 </div>
@@ -200,13 +206,69 @@
                             <input type="date" class="form-control" name="expiry_date" value="{{ old('expiry_date') }}" required>
                             <small class="text-muted">Diisi berdasarkan sertifikat yang dikeluarkan oleh BPSB</small>
                         </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tanggal Selesai Uji</label>
+                            <input type="date" class="form-control" name="test_completed_at" value="{{ old('test_completed_at') }}">
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="card mb-3">
                 <div class="card-header bg-light">
-                    <h6 class="mb-0">Bagian D: Jumlah Benih yang Lulus Sertifikasi</h6>
+                    <h6 class="mb-0">Bagian D: Informasi Benih</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Daya Berkecambah (%)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="daya_berkecambah" value="{{ old('daya_berkecambah') }}" step="0.01" min="0" max="100">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">CVL (%)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="cvl" value="{{ old('cvl') }}" step="0.01" min="0" max="100">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Kadar Air (%)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="kadar_air" value="{{ old('kadar_air') }}" step="0.01" min="0" max="100">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Benih Murni (%)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="benih_murni" value="{{ old('benih_murni') }}" step="0.01" min="0" max="100">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Kotoran Benih (%)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="kotoran_benih" value="{{ old('kotoran_benih') }}" step="0.01" min="0" max="100">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Biji Gulma (%)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="biji_gulma" value="{{ old('biji_gulma') }}" step="0.01" min="0" max="100">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Bagian E: Jumlah Benih yang Lulus Sertifikasi</h6>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -228,6 +290,13 @@
                             <input type="hidden" name="certified_seed_unit" id="certified_seed_unit" value="{{ old('certified_seed_unit', 'kg') }}">
                         </div>
                         <div class="col-md-6 mb-3">
+                            <label class="form-label">Isi per Kemasan</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="package_content_per_pack" value="{{ old('package_content_per_pack') }}" step="0.01" min="0" placeholder="Contoh: 5">
+                                <span class="input-group-text">per kemasan</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">Estimasi Penjualan (Rp/kg)</label>
                             <div class="input-group">
                                 <span class="input-group-text">Rp</span>
@@ -240,7 +309,7 @@
 
             <div class="card mb-3">
                 <div class="card-header bg-light">
-                    <h6 class="mb-0">Bagian E: Kesimpulan & Lampiran</h6>
+                    <h6 class="mb-0">Bagian F: Kesimpulan & Lampiran</h6>
                 </div>
                 <div class="card-body">
                     <div class="row">

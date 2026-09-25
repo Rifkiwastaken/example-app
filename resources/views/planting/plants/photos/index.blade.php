@@ -19,33 +19,8 @@
     </div>
 </div>
 
-<!-- Tabs Navigation -->
 <ul class="nav nav-tabs" role="tablist">
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('plants.show', $plant) }}">
-            <i class="fas fa-info-circle me-1"></i>Detail
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('plants.current-plantings', $plant) }}">
-            <i class="fas fa-seedling me-1"></i>Penanaman saat ini
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('plants.harvests.index', $plant) }}">
-            <i class="fas fa-cut me-1"></i>Panen
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('plants.notes.index', $plant) }}">
-            <i class="fas fa-sticky-note me-1"></i>Catatan
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link active" href="{{ route('plants.photos.index', $plant) }}">
-            <i class="fas fa-camera me-1"></i>Foto
-        </a>
-    </li>
+    @include('planting.plants._tabs', ['plant' => $plant, 'activeTab' => 'photos'])
 </ul>
 
 <div class="tab-content p-3 bg-white border border-top-0 rounded-bottom">

@@ -2,50 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use App\Traits\HasCustomId;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
-class PlantNote extends Model
+class PlantNote extends PlantAttachment
 {
-    use HasFactory;
-    use HasCustomId;
-
-    protected $primaryKey = 'plant_note_id';
-    public $incrementing = false;
-    protected $keyType = 'string';
-
-    protected $fillable = [
-        'plant_id',
-        'description',
-        'note_date',
-        'keywords',
-        'attachment_path',
-    ];
-
-    protected $casts = [
-        'note_date' => 'date',
-    ];
-
-    public function plant(): BelongsTo
+    protected static function booted(): void
     {
-        return $this->belongsTo(Plant::class, 'plant_id', 'plant_id');
+        static::addGlobalScope('note', function ($query) {
+            $query->where('type', self::TYPE_NOTE);
+        });
+
+        static::creating(function (PlantNote $note) {
+            $note->type = self::TYPE_NOTE;
+        });
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

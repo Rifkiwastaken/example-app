@@ -41,27 +41,10 @@
                     <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label class="form-label">Komoditas</label>
-                    <select name="plant_id" class="form-select">
-                        <option value="">Semua Komoditas</option>
-                        @foreach($plants as $plant)
-                            <option value="{{ $plant->id }}" {{ request('plant_id') == $plant->id ? 'selected' : '' }}>
-                                {{ $plant->name }} @if($plant->variety) - {{ $plant->variety }} @endif
-                            </option>
-                        @endforeach
-                    </select>
+                    <label class="form-label">Pencarian struk</label>
+                    <input type="text" name="q" class="form-control" value="{{ request('q') }}" placeholder="Nama / instansi / kontak">
                 </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Lokasi Lahan</label>
-                    <select name="planting_location_id" class="form-select">
-                        <option value="">Semua Lokasi</option>
-                        @foreach($locations as $loc)
-                            <option value="{{ $loc->planting_location_id }}" {{ request('planting_location_id') == $loc->planting_location_id ? 'selected' : '' }}>
-                                {{ $loc->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+                @include('reports.partials._variety-scope-filter')
                 <div class="col-md-3 mb-3 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary me-2">
                         <i class="fas fa-search me-1"></i>Filter
@@ -136,11 +119,13 @@
                         <th>Tanggal Penjualan</th>
                         <th>Pembeli</th>
                         <th>Komoditas</th>
+                        <th>Jumlah volume terjual</th>
                         <th>Jumlah Item</th>
                         <th>Total Penjualan</th>
                         <th>Metode Pembayaran</th>
                         <th>Status Pembayaran</th>
                         <th>Dicatat Oleh</th>
+                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -160,15 +145,25 @@
                             <td>
                                 @php
                                     $uniquePlants = $sale->items->map(function($item) {
-                                        return $item->inventoryType->plant->name ?? ($item->inventoryType->name ?? 'N/A');
+                                        $plant = $item->packaging?->stock?->plant ?: $item->inventoryType;
+                                        return $plant->variety ?? $plant->name ?? 'N/A';
                                     })->unique()->values();
                                 @endphp
                                 @foreach($uniquePlants as $plantName)
                                     <span class="badge bg-info">{{ $plantName }}</span>
                                 @endforeach
                             </td>
-                            <td class="text-end">
-                                <strong>{{ number_format($sale->total_items, 2) }}</strong>
+                            <td>
+                                @foreach(($sale->sold_volume ?? collect()) as $unit => $qty)
+                                    <div>{{ number_format((float) $qty, 2) }} {{ $unit }}</div>
+                                @endforeach
+                            </td>
+                            <td>
+                                @forelse($sale->label_numbers ?? [] as $label)
+                                    <div><code>{{ $label }}</code></div>
+                                @empty
+                                    <strong>{{ number_format($sale->total_items, 2) }}</strong>
+                                @endforelse
                             </td>
                             <td class="text-end">
                                 <strong>Rp {{ number_format($sale->total_amount, 0, ',', '.') }}</strong>
@@ -180,10 +175,13 @@
                                 </span>
                             </td>
                             <td>{{ $sale->user->name ?? '-' }}</td>
+                            <td>
+                                <a href="{{ route('sales.show', $sale) }}" class="btn btn-sm btn-outline-info">Lihat struk</a>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="text-center text-muted py-4">
+                            <td colspan="12" class="text-center text-muted py-4">
                                 <i class="fas fa-inbox fa-2x mb-2"></i><br>
                                 Tidak ada data ditemukan
                             </td>
@@ -193,9 +191,9 @@
                 @if($sales->count() > 0)
                 <tfoot class="table-light">
                     <tr>
-                        <th colspan="6" class="text-end">Total:</th>
+                        <th colspan="7" class="text-end">Total:</th>
                         <th class="text-end">Rp {{ number_format($sales->sum('total_amount'), 0, ',', '.') }}</th>
-                        <th colspan="3"></th>
+                        <th colspan="4"></th>
                     </tr>
                 </tfoot>
                 @endif
@@ -225,7 +223,9 @@ function exportExcel() {
     const params = new URLSearchParams(formData);
     window.location.href = '{{ route("reports.sales") }}?export=excel&' + params.toString();
 }
+
 </script>
 @endpush
+@include('reports.partials._variety-scope-scripts')
 @endsection
 

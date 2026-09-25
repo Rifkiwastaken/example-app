@@ -8,7 +8,6 @@ use App\Models\InventoryType;
 use App\Models\Warehouse;
 use App\Models\Bin;
 use App\Models\Certification;
-use App\Models\InventoryTransaction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Carbon\Carbon;
 

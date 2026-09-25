@@ -62,8 +62,8 @@
                 <div class="col-md-4">
                     <div class="mb-3">
                         <label class="form-label">Batch Number</label>
-                        <input type="text" name="batch_no" class="form-control @error('batch_no') is-invalid @enderror" 
-                               value="{{ old('batch_no', '1001') }}" required>
+                        <input type="text" name="batch_no" class="form-control @error('batch_no') is-invalid @enderror"
+                               value="{{ old('batch_no') }}" placeholder="Contoh: 1001" required>
                         @error('batch_no')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>

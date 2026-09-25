@@ -26,6 +26,70 @@
     </div>
 @endif
 
+<div class="row mb-4">
+    <div class="col-md-6 mb-3 mb-md-0">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Statistik Akun</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-3">
+                        <div class="border-end">
+                            <h4 class="text-primary">{{ $stats['admin'] }}</h4>
+                            <small class="text-muted">Admin</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="border-end">
+                            <h4 class="text-warning">{{ $stats['kepala_satuan_tugas'] }}</h4>
+                            <small class="text-muted">Kepala Satuan</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="border-end">
+                            <h4 class="text-info">{{ $stats['petugas'] }}</h4>
+                            <small class="text-muted">Petugas</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <h4 class="text-success">{{ $stats['total'] }}</h4>
+                        <small class="text-muted">Total</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Akses Modul</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <small class="text-muted">Penanaman:</small><br>
+                        <span class="badge bg-warning">{{ $stats['penanaman'] }} User</span>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Sertifikasi:</small><br>
+                        <span class="badge bg-info">{{ $stats['sertifikasi'] }} User</span>
+                    </div>
+                    <div class="col-6 mt-2">
+                        <small class="text-muted">Gudang:</small><br>
+                        <span class="badge bg-info">{{ $stats['gudang'] }} User</span>
+                    </div>
+                    <div class="col-6 mt-2">
+                        <small class="text-muted">Penjualan:</small><br>
+                        <span class="badge bg-info">{{ $stats['penjualan'] }} User</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-body">
         <div class="table-responsive">
@@ -45,17 +109,17 @@
                         <td>
                             <div class="d-flex align-items-center">
                                 @if($user->photo_path)
-                                    <img src="{{ Storage::url($user->photo_path) }}" class="rounded-circle me-3" 
+                                    <img src="{{ Storage::url($user->photo_path) }}" class="rounded-circle me-3"
                                          style="width: 40px; height: 40px; object-fit: cover;" alt="{{ $user->name }}">
                                 @else
-                                    <div class="bg-primary rounded-circle me-3 d-flex align-items-center justify-content-center text-white" 
+                                    <div class="bg-primary rounded-circle me-3 d-flex align-items-center justify-content-center text-white"
                                          style="width: 40px; height: 40px;">
                                         <i class="fas fa-user"></i>
                                     </div>
                                 @endif
                                 <div>
                                     <strong>{{ $user->name }}</strong>
-                                    @if($user->id === auth()->id())
+                                    @if($user->getKey() === auth()->id())
                                         <br><small class="text-success">(Anda)</small>
                                     @endif
                                 </div>
@@ -87,8 +151,8 @@
                                 <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-outline-warning" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                @if($user->id !== auth()->id())
-                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                @if($user->getKey() !== auth()->id())
+                                <button type="button" class="btn btn-sm btn-outline-danger"
                                         title="Hapus"
                                         onclick="confirmDelete('{{ route('users.destroy', $user) }}', '{{ addslashes($user->name) }}', 'akun')">
                                     <i class="fas fa-trash"></i>
@@ -120,94 +184,22 @@
                 </tbody>
             </table>
         </div>
-        
+
         @if($users->hasPages())
-            <div class="d-flex justify-content-center">
-                {{ $users->links() }}
+            <div class="d-flex justify-content-end align-items-center gap-2 mt-3 users-pagination">
+                @if($users->onFirstPage())
+                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled>Previous</button>
+                @else
+                    <a href="{{ $users->previousPageUrl() }}" class="btn btn-sm btn-outline-secondary">Previous</a>
+                @endif
+                <span class="small text-muted">{{ $users->currentPage() }} / {{ $users->lastPage() }}</span>
+                @if($users->hasMorePages())
+                    <a href="{{ $users->nextPageUrl() }}" class="btn btn-sm btn-outline-secondary">Next</a>
+                @else
+                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled>Next</button>
+                @endif
             </div>
         @endif
     </div>
 </div>
-
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Statistik Akun</h5>
-            </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-3">
-                        <div class="border-end">
-                            <h4 class="text-primary">{{ $users->where('role', 'admin')->count() }}</h4>
-                            <small class="text-muted">Admin</small>
-                        </div>
-                    </div>
-                    <div class="col-3">
-                        <div class="border-end">
-                            <h4 class="text-warning">{{ $users->where('role', 'kepala_satuan_tugas')->count() }}</h4>
-                            <small class="text-muted">Kepala Satuan</small>
-                        </div>
-                    </div>
-                    <div class="col-3">
-                        <div class="border-end">
-                            <h4 class="text-info">{{ $users->whereIn('role', ['petugas_sertifikasi', 'petugas_gudang', 'petugas_bbi'])->count() }}</h4>
-                            <small class="text-muted">Petugas</small>
-                        </div>
-                    </div>
-                    <div class="col-3">
-                        <h4 class="text-success">{{ $users->count() }}</h4>
-                        <small class="text-muted">Total</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Akses Modul</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-6">
-                        <small class="text-muted">Penanaman:</small><br>
-                        <span class="badge bg-warning">{{ $users->where('role', 'kepala_satuan_tugas')->count() }} User</span>
-                    </div>
-                    <div class="col-6">
-                        <small class="text-muted">Sertifikasi:</small><br>
-                        <span class="badge bg-info">{{ $users->where('role', 'petugas_sertifikasi')->count() }} User</span>
-                    </div>
-                    <div class="col-6 mt-2">
-                        <small class="text-muted">Gudang:</small><br>
-                        <span class="badge bg-info">{{ $users->where('role', 'petugas_gudang')->count() }} User</span>
-                    </div>
-                    <div class="col-6 mt-2">
-                        <small class="text-muted">Penjualan:</small><br>
-                        <span class="badge bg-info">{{ $users->where('role', 'petugas_bbi')->count() }} User</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 @endsection
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

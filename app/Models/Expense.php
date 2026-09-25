@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\HasCustomId;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Expense extends Model
 {
@@ -17,7 +18,6 @@ class Expense extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'planting_location_id',
         'expense_name',
         'work_name',
         'amount',
@@ -29,8 +29,6 @@ class Expense extends Model
         'planting_id',
         'description',
         'responsible_person_id',
-        'treatment_id',
-        'nutrient_id',
         'edited_at',
         'edited_by',
     ];
@@ -42,19 +40,17 @@ class Expense extends Model
         'edited_at' => 'datetime',
     ];
 
-    public function plantingLocation(): BelongsTo
+    /** Lokasi penanaman melalui planting. */
+    public function plantingLocation(): HasOneThrough
     {
-        return $this->belongsTo(PlantingLocation::class);
-    }
-
-    public function treatment(): BelongsTo
-    {
-        return $this->belongsTo(Treatment::class);
-    }
-
-    public function nutrient(): BelongsTo
-    {
-        return $this->belongsTo(Nutrient::class);
+        return $this->hasOneThrough(
+            PlantingLocation::class,
+            Planting::class,
+            'planting_location_id', // FK on plantings -> planting_locations
+            'planting_id',          // FK on expenses -> plantings
+            'planting_id',          // local key on expenses
+            'planting_id'           // local key on plantings
+        );
     }
 
     public function responsiblePerson(): BelongsTo
@@ -64,7 +60,7 @@ class Expense extends Model
 
     public function planting(): BelongsTo
     {
-        return $this->belongsTo(Planting::class, 'planting_id', 'planting_id');
+        return $this->belongsTo(Planting::class, 'planting_id', 'planting_production_id');
     }
 
     public function editor(): BelongsTo
@@ -72,19 +68,9 @@ class Expense extends Model
         return $this->belongsTo(User::class, 'edited_by', 'user_id');
     }
 
-    /**
-     * Get plant from treatment or nutrient
-     */
+    /** Tanaman (plant) melalui planting. */
     public function getPlantAttribute()
     {
-        if ($this->treatment && $this->treatment->planting && $this->treatment->planting->plant) {
-            return $this->treatment->planting->plant;
-        }
-        
-        if ($this->nutrient && $this->nutrient->planting && $this->nutrient->planting->plant) {
-            return $this->nutrient->planting->plant;
-        }
-        
-        return null;
+        return $this->planting && $this->planting->plant ? $this->planting->plant : null;
     }
 }

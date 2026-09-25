@@ -21,14 +21,13 @@ return new class extends Migration
         }
 
         $tables = [
-            'seed_histories',
-            'inventory_type_certification_reports',
+            'stock_histories',
             'inventory_type_seeds',
-            'inventory_type_warehouses',
+            'warehouse_type',
             'inventory_transactions',
             'inventory_notes',
             'inventory_photos',
-            'inventory_lots',
+            'warehouse_lots',
             'certification_reports',
             'certifications',
             'inventory_types',

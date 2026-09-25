@@ -13,7 +13,9 @@ class Bin extends Model
     use HasFactory;
     use HasCustomId;
 
-    protected $primaryKey = 'bin_id';
+    protected $table = 'warehouse_racks';
+
+    protected $primaryKey = 'warehouse_bin_id';
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -43,15 +45,45 @@ class Bin extends Model
      */
     public function inventoryLots(): HasMany
     {
-        return $this->hasMany(InventoryLot::class, 'bin_id', 'bin_id');
+        return $this->packagings();
+    }
+
+    public function packagings(): HasMany
+    {
+        return $this->hasMany(StockPackaging::class, 'rak_gudang_id', 'warehouse_bin_id');
+    }
+
+    public function stocks(): HasMany
+    {
+        return $this->hasMany(Stock::class, 'rak_gudang_id', 'warehouse_bin_id');
     }
 
     /**
-     * Get current stock in this bin
+     * Get current stock in this bin (hanya lot aktif: stok > 0 dan belum kadaluarsa).
      */
     public function getCurrentStockAttribute(): float
     {
-        return $this->inventoryLots()->sum('current_stock');
+        return (float) $this->packagings()->where('status_kemasan', StockPackaging::STATUS_TERSEDIA)->sum('kapasitas_per_kemasan');
+    }
+
+    /**
+     * Nama varietas benih yang saat ini tersimpan di blok penyimpanan ini.
+     *
+     * @return array<int, string>
+     */
+    public function storedVarieties(): array
+    {
+        return Stock::query()
+            ->whereIn('id', $this->packagings()
+                ->where('status_kemasan', StockPackaging::STATUS_TERSEDIA)
+                ->select('stok_benih_id'))
+            ->with('plant')
+            ->get()
+            ->map(fn (Stock $stock) => $stock->plant?->variety ?: $stock->plant?->name)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 }
 

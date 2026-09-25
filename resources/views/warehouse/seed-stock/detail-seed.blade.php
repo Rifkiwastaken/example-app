@@ -6,7 +6,7 @@
 @php
     $plantName = $seed->plant?->name ?? $certificationReport?->certification?->harvest?->plant?->name ?? $certificationReport?->certification?->plant?->name ?? 'Benih';
     $plantVariety = $seed->plant?->variety ?? $certificationReport?->certification?->harvest?->plant?->variety ?? $certificationReport?->certification?->plant?->variety ?? null;
-    $locationName = $seed->plantingLocation?->name ?? $certificationReport?->certification?->plantingLocation?->name ?? $certificationReport?->certification?->harvest?->location?->name ?? '-';
+    $locationName = $seed->plantingLocation?->name ?? $seed->planting_location?->name ?? $certificationReport?->certification?->plantingLocation?->name ?? $certificationReport?->certification?->harvest?->location?->name ?? '-';
 @endphp
 <!-- Breadcrumbs -->
 <nav aria-label="breadcrumb" class="mb-3">
@@ -100,17 +100,12 @@
             @endif
             <div class="col-md-6 mb-3">
                 <label class="form-label fw-bold">Pengisi Data</label>
-                <p class="mb-0">{{ $seed->filledByUser->name ?? '-' }}</p>
+                <p class="mb-0">{{ $seed->reporter_name ?? $seed->inspector_name ?? '-' }}</p>
             </div>
-            @if($seed->edited_at)
+            @if($seed->updated_at)
             <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">Terakhir Di Edit</label>
-                <p class="mb-0">
-                    {{ $seed->edited_at->format('d M Y H:i') }}
-                    @if($seed->editor)
-                        <br><small class="text-muted">Oleh: {{ $seed->editor->name }}</small>
-                    @endif
-                </p>
+                <label class="form-label fw-bold">Terakhir Diperbarui</label>
+                <p class="mb-0">{{ $seed->updated_at->format('d M Y H:i') }}</p>
             </div>
             @endif
         </div>
@@ -308,7 +303,7 @@
                                 {{ $certificationReport->expiry_date->format('d M Y') }}
                                 @if($certificationReport->expiry_date->isPast())
                                     <span class="badge bg-danger ms-2">Melewati Masa Edar</span>
-                                @elseif($certificationReport->expiry_date->diffInMonths(now()) <= 3)
+                                @elseif($certificationReport->isApproachingExpiry())
                                     <span class="badge bg-warning ms-2">Mendekati Masa Edar</span>
                                 @endif
                             @else

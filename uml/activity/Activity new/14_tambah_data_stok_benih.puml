@@ -3,51 +3,52 @@
 ' Use case 14: Menambahkan data stok benih
 ' Aktor: Admin/Kepala Sek, Petugas BBI, Petugas Gudang
 !theme plain
+skinparam backgroundColor white
 skinparam activity {
     BackgroundColor #E1F5FE
     BorderColor #01579B
     FontSize 11
 }
 skinparam swimlane {
-    BackgroundColor #F5F5F5
-    BorderColor #424242
-    TitleBackgroundColor #BBDEFB
-    TitleBorderColor #1976D2
+    BackgroundColor White
+    BorderColor #CCCCCC
+    TitleBackgroundColor White
+    TitleBorderColor #999999
 }
 
 title Activity Diagram - Menambahkan data stok benih
 
-|#LightBlue|User|
+|#White|User|
 start
 :Masuk ke halaman stok benih;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Validasi role pengguna;
 :Query data stok benih dari database;
 :Menampilkan daftar stok benih;
 
-|#LightBlue|User|
+|#White|User|
 :Klik tombol tambah data stok;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Tampilkan form tambah stok benih;
 
 if (Tambah dari sertifikasi?) then (Ya)
-    |#LightBlue|User|
+    |#White|User|
     :Pilih tipe tanaman;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Load sertifikasi yang lulus;
-    |#LightBlue|User|
+    |#White|User|
     :Pilih sertifikasi benih;
     :Pilih stok benih;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Pre-fill form dengan data sertifikasi;
-    |#LightBlue|User|
+    |#White|User|
     :Edit data jika perlu;
     :Isi nomor penyimpanan;
     :Submit form;
 else (Tambah manual)
-    |#LightBlue|User|
+    |#White|User|
     :Pilih tanaman;
     :Pilih lokasi penanaman;
     :Isi data stok benih;
@@ -55,7 +56,7 @@ else (Tambah manual)
     :Submit form;
 endif
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Validasi data;
 if (Data valid?) then (Ya)
     :Simpan data stok benih ke database;

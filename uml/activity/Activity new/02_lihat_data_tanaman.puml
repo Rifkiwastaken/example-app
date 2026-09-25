@@ -3,50 +3,51 @@
 ' Use case 02: Melihat data tanaman (include dari Mengelola data tanaman)
 ' Aktor: Penangkar/Kepala Satgas
 !theme plain
+skinparam backgroundColor white
 skinparam activity {
     BackgroundColor #E1F5FE
     BorderColor #01579B
     FontSize 11
 }
 skinparam swimlane {
-    BackgroundColor #F5F5F5
-    BorderColor #424242
-    TitleBackgroundColor #BBDEFB
-    TitleBorderColor #1976D2
+    BackgroundColor White
+    BorderColor #CCCCCC
+    TitleBackgroundColor White
+    TitleBorderColor #999999
 }
 
 title Activity Diagram - Melihat data tanaman
 
-|#LightBlue|User|
+|#White|User|
 start
 :Masuk ke halaman data tanaman;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Validasi role pengguna;
 :Query data tanaman dari database;
 :Load data tipe tanaman terkait;
 :Menampilkan daftar tanaman;
 
-|#LightBlue|User|
+|#White|User|
 :Lihat daftar tanaman;
 
 if (Filter atau cari?) then (Ya)
-    |#LightBlue|User|
+    |#White|User|
     :Masukkan filter atau kata kunci;
     :Submit filter;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Query data dengan filter;
     :Tampilkan hasil filter;
 else (Tidak)
 endif
 
 if (Lihat detail?) then (Ya)
-    |#LightBlue|User|
+    |#White|User|
     :Klik tombol lihat detail;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Load detail data tanaman;
     :Tampilkan detail tanaman;
-    |#LightBlue|User|
+    |#White|User|
     :Lihat detail tanaman;
 else (Tidak)
 endif

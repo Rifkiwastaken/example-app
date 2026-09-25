@@ -74,7 +74,7 @@
             </div>
 
             <h6 class="mb-3"><i class="fas fa-exchange-alt me-2"></i>Riwayat Transaksi (Stok Masuk / Pengurangan)</h6>
-            @php $transactions = $transactionsByLot[$lot->inventory_lot_id] ?? collect(); @endphp
+            @php $transactions = $transactionsByLot[$lot->warehouse_lot_id] ?? collect(); @endphp
             @if($transactions->isEmpty())
                 <p class="text-muted small mb-0">Belum ada riwayat transaksi.</p>
             @else
@@ -85,24 +85,37 @@
                                 <th>Tanggal</th>
                                 <th>Jenis</th>
                                 <th>Jumlah</th>
+                                <th>Stok sebelum</th>
+                                <th>Stok sesudah</th>
                                 <th>Alasan / Catatan</th>
                                 <th>User</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($transactions as $tx)
+                            @php
+                                $dq = $tx->signedQuantityForLotLedger();
+                                $before = $tx->lotStockBefore();
+                                $after = $tx->lotStockAfter();
+                            @endphp
                             <tr>
                                 <td>{{ $tx->created_at ? $tx->created_at->format('d M Y H:i') : '-' }}</td>
                                 <td>
                                     @if($tx->transaction_type === 'stok_masuk')
-                                        <span class="badge bg-success">Stok Masuk</span>
+                                        <span class="badge bg-dark">Stok Masuk</span>
                                     @elseif($tx->transaction_type === 'pengurangan')
-                                        <span class="badge bg-danger">Pengurangan</span>
+                                        <span class="badge bg-secondary">Pengurangan</span>
+                                    @elseif($tx->transaction_type === 'distribusi')
+                                        <span class="badge bg-primary">Distribusi</span>
+                                    @elseif($tx->transaction_type === 'penghapusan')
+                                        <span class="badge bg-danger">Penghapusan</span>
                                     @else
-                                        <span class="badge bg-secondary">{{ $tx->transaction_type }}</span>
+                                        <span class="badge bg-secondary">{{ $tx->transaction_type_label }}</span>
                                     @endif
                                 </td>
-                                <td>{{ $tx->quantity > 0 ? '+' : '' }}{{ number_format($tx->quantity, 2) }} {{ $tx->unit ?? 'kg' }}</td>
+                                <td class="{{ $dq < 0 ? 'text-danger' : ($dq > 0 ? 'text-success' : '') }}">{{ $dq > 0 ? '+' : '' }}{{ number_format($dq, 2) }} {{ $tx->unit ?? 'kg' }}</td>
+                                <td>{{ $before !== null ? number_format($before, 2) . ' ' . ($tx->unit ?? 'kg') : '-' }}</td>
+                                <td>{{ $after !== null ? number_format($after, 2) . ' ' . ($tx->unit ?? 'kg') : '-' }}</td>
                                 <td>{{ $tx->reason ?? '-' }} @if($tx->notes)<br><small class="text-muted">{{ \Illuminate\Support\Str::limit($tx->notes, 60) }}</small>@endif</td>
                                 <td>{{ $tx->user->name ?? '-' }}</td>
                             </tr>

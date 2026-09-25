@@ -3,43 +3,44 @@
 ' Use case 08: Mengelola data sertifikasi
 ' Aktor: Admin/Kepala Sek, Petugas BBI
 !theme plain
+skinparam backgroundColor white
 skinparam activity {
     BackgroundColor #E1F5FE
     BorderColor #01579B
     FontSize 11
 }
 skinparam swimlane {
-    BackgroundColor #F5F5F5
-    BorderColor #424242
-    TitleBackgroundColor #BBDEFB
-    TitleBorderColor #1976D2
+    BackgroundColor White
+    BorderColor #CCCCCC
+    TitleBackgroundColor White
+    TitleBorderColor #999999
 }
 
 title Activity Diagram - Mengelola data sertifikasi
 
-|#LightBlue|User|
+|#White|User|
 start
 :Masuk ke halaman kelola sertifikasi;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Validasi role pengguna;
 :Query data sertifikasi dari database;
 :Load data panen dan laporan terkait;
 :Menampilkan daftar sertifikasi;
 
-|#LightBlue|User|
+|#White|User|
 :Lihat daftar sertifikasi;
 
 if (Pilih aksi?) then (Tambah Baru)
-    |#LightBlue|User|
+    |#White|User|
     :Klik tombol tambah sertifikasi;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Tampilkan form tambah sertifikasi;
-    |#LightBlue|User|
+    |#White|User|
     :Pilih panen yang akan disertifikasi;
     :Isi form data sertifikasi;
     :Submit form;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Validasi data;
     if (Data valid?) then (Ya)
         :Simpan data sertifikasi ke database;
@@ -48,15 +49,15 @@ if (Pilih aksi?) then (Tambah Baru)
         :Tampilkan pesan error;
     endif
 elseif (Buat Laporan) then
-    |#LightBlue|User|
+    |#White|User|
     :Klik tombol buat laporan;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Tampilkan form laporan pemeriksaan;
-    |#LightBlue|User|
+    |#White|User|
     :Isi form laporan;
     :Upload dokumen scan;
     :Submit form;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Validasi data;
     if (Data valid?) then (Ya)
         :Simpan laporan ke database;
@@ -66,14 +67,14 @@ elseif (Buat Laporan) then
         :Tampilkan pesan error;
     endif
 elseif (Edit Laporan) then
-    |#LightBlue|User|
+    |#White|User|
     :Klik tombol edit laporan;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Tampilkan form edit dengan data terisi;
-    |#LightBlue|User|
+    |#White|User|
     :Edit data laporan;
     :Submit form;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Validasi data;
     if (Data valid?) then (Ya)
         :Update data laporan di database;
@@ -82,22 +83,22 @@ elseif (Edit Laporan) then
         :Tampilkan pesan error;
     endif
 elseif (Evaluasi) then
-    |#LightBlue|User|
+    |#White|User|
     :Klik tombol evaluasi;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Tampilkan form evaluasi;
-    |#LightBlue|User|
+    |#White|User|
     :Isi hasil evaluasi;
     :Submit form;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Update status sertifikasi;
     :Tampilkan pesan sukses;
 else (Lihat Detail)
-    |#LightBlue|User|
+    |#White|User|
     :Klik tombol lihat detail;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Tampilkan detail data sertifikasi;
-    |#LightBlue|User|
+    |#White|User|
     :Lihat detail sertifikasi;
 endif
 

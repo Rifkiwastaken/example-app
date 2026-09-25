@@ -4,7 +4,7 @@
 use Illuminate\Support\Facades\Storage;
 @endphp
 
-@section('title', 'Pelaporan - ' . $planting->plant->name . ' - SIBESTI')
+@section('title', 'Pelaporan - ' . ($planting->plant?->name ?? 'Penanaman') . ' - SIBESTI')
 
 @push('styles')
 <style>
@@ -135,7 +135,7 @@ use Illuminate\Support\Facades\Storage;
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="mb-0">{{ $planting->plant->name }}</h4>
+        <h4 class="mb-0">{{ $planting->plant?->name ?? 'Tanaman tidak ditemukan' }}</h4>
         <small class="text-muted">Lokasi Penanaman: {{ $plantingLocation->name }}</small>
         @if($planting->bed_label)
             <br><small class="text-muted">Lokasi Tanam: {{ $planting->bed_label }}</small>
@@ -171,13 +171,13 @@ use Illuminate\Support\Facades\Storage;
         </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="tab" href="#catatan-subtab" id="tab-catatan">
-            <i class="fas fa-sticky-note me-1"></i>Catatan
+        <a class="nav-link" data-bs-toggle="tab" href="#pengeluaran-subtab" id="tab-pengeluaran">
+            <i class="fas fa-money-bill-wave me-1"></i>Pengeluaran Lainnya
         </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="tab" href="#lampiran-subtab" id="tab-lampiran">
-            <i class="fas fa-paperclip me-1"></i>Lampiran
+        <a class="nav-link" data-bs-toggle="tab" href="#catatan-subtab" id="tab-catatan">
+            <i class="fas fa-sticky-note me-1"></i>Catatan
         </a>
     </li>
 </ul>
@@ -186,7 +186,7 @@ use Illuminate\Support\Facades\Storage;
     <!-- Sub-tab: Laporan -->
     <div class="tab-pane show active" id="laporan-subtab">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="mb-0">Laporan untuk Penanaman: {{ $planting->plant->name }} @if($planting->bed_label) ({{ $planting->bed_label }}) @endif</h6>
+                    <h6 class="mb-0">Laporan untuk Penanaman: {{ $planting->plant?->name ?? 'Tanaman tidak ditemukan' }} @if($planting->bed_label) ({{ $planting->bed_label }}) @endif</h6>
                     <div class="d-flex gap-2">
                         @if(auth()->user()->isAdmin() || auth()->user()->canManageDataInPelaporan($plantingLocation))
                             <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalGunakanTemplate">
@@ -217,7 +217,7 @@ use Illuminate\Support\Facades\Storage;
                         <select class="form-select form-select-sm" id="filterAllAssignee" onchange="filterAllTasks()">
                             <option value="all">Ditugaskan untuk</option>
                             @foreach($locationUsers as $user)
-                                <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                <option value="{{ $user->user_id }}">{{ $user->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -241,6 +241,7 @@ use Illuminate\Support\Facades\Storage;
                                 <th>Prioritas</th>
                                 <th>Status</th>
                                 <th>Ditugaskan</th>
+                                <th>Pengisi Laporan</th>
                                 <th width="120">Aksi</th>
                             </tr>
                         </thead>
@@ -255,7 +256,7 @@ use Illuminate\Support\Facades\Storage;
                                     </td>
                                     <td>
                                         @if($task->planting_id && $task->planting)
-                                            {{ $task->planting->plant->name ?? 'Tanaman' }}
+                                            {{ $task->planting?->plant?->name ?? 'Tanaman' }}
                                             @if($task->planting->bed_label) - {{ $task->planting->bed_label }} @endif
                                         @else
                                             <span class="text-muted">Umum (Lahan Ini)</span>
@@ -275,17 +276,22 @@ use Illuminate\Support\Facades\Storage;
                                     <td>
                                         @if($task->assignedUser)
                                             {{ $task->assignedUser->name }}
+                                        @elseif(is_array($task->collaborators) && count($task->collaborators) > 0)
+                                            <span class="text-muted">Semua User</span>
                                         @else
                                             <span class="text-muted">(Unassigned)</span>
                                         @endif
                                     </td>
                                     <td>
+                                        {{ $task->createdByUser?->name ?? '-' }}
+                                    </td>
+                                    <td>
                                         <div class="btn-group btn-group-sm">
-                                            <button type="button" class="btn btn-outline-info" onclick="viewTask('{{ $task->task_id }}')" title="Lihat Detail">
+                                            <button type="button" class="btn btn-outline-info" onclick="viewTask('{{ $task->planting_task_id }}')" title="Lihat Detail">
                                                 <i class="fas fa-eye"></i>
                                             </button>
                                             @if(auth()->user()->isAdmin() || auth()->user()->canAddDataInPelaporan($plantingLocation))
-                                                <button type="button" class="btn btn-outline-primary" onclick="isiLaporan('{{ $task->task_id }}')" title="Isi Laporan">
+                                                <button type="button" class="btn btn-outline-primary" onclick="isiLaporan('{{ $task->planting_task_id }}')" title="Isi Laporan">
                                                     <i class="fas fa-clipboard-list"></i>
                                                 </button>
                                                 <form action="{{ route('planting-locations.tasks.destroy', [$plantingLocation, $task]) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus laporan ini?')">
@@ -311,10 +317,183 @@ use Illuminate\Support\Facades\Storage;
                 </div>
     </div>
 
+    <!-- Sub-tab: Pengeluaran Lainnya -->
+    <div class="tab-pane" id="pengeluaran-subtab">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h6 class="mb-1">Pengeluaran lainnya untuk penanaman ini</h6>
+                <small class="text-muted">
+                    Pengeluaran ini dicatat pada menu Pengeluaran lokasi penanaman dan otomatis terhubung ke
+                    tanaman, penanaman, dan lokasi penanaman ini.
+                </small>
+            </div>
+            <div class="d-flex gap-2">
+                @if(auth()->user()->isAdmin() || auth()->user()->canAddDataInPelaporan($plantingLocation))
+                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalTambahPengeluaranLainnya">
+                        <i class="fas fa-plus me-1"></i>Tambah Pengeluaran Lainnya
+                    </button>
+                @endif
+                <a href="{{ route('planting-locations.expenses.index', $plantingLocation) }}?planting_id={{ $planting->planting_id }}"
+                   class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-external-link-alt me-1"></i>Buka Halaman Pengeluaran
+                </a>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="card border-start border-3 border-success">
+                    <div class="card-body py-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted d-block">Total Pengeluaran Lainnya</small>
+                                <strong>Rp {{ number_format($totalOtherExpenses ?? 0, 0, ',', '.') }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="fas fa-list me-2"></i>Daftar Pengeluaran Lainnya</h6>
+                <small class="text-muted">Sumber data: menu Pengeluaran di lokasi penanaman ini</small>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Nama Pengeluaran</th>
+                                <th>Tipe</th>
+                                <th>Jumlah</th>
+                                <th>Penanggung Jawab</th>
+                                <th width="120">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($otherExpenses ?? [] as $expense)
+                                <tr>
+                                    <td>{{ $expense->expense_date ? $expense->expense_date->format('d M Y') : '-' }}</td>
+                                    <td><strong>{{ $expense->expense_name }}</strong></td>
+                                    <td>
+                                        @php
+                                            $label = $expense->expense_type === 'upah_pekerja' ? 'Upah Pekerja' : 'Pengeluaran Lainnya';
+                                            $badge = $expense->expense_type === 'upah_pekerja' ? 'dark' : 'secondary';
+                                        @endphp
+                                        <span class="badge bg-{{ $badge }}">{{ $label }}</span>
+                                    </td>
+                                    <td>Rp {{ number_format($expense->amount ?? 0, 0, ',', '.') }}</td>
+                                    <td>{{ $expense->responsiblePerson->name ?? '-' }}</td>
+                                    <td>
+                                        <a href="{{ route('planting-locations.expenses.index', $plantingLocation) }}?planting_id={{ $planting->planting_id }}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i> Lihat
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">
+                                        Belum ada pengeluaran lainnya untuk penanaman ini.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Tambah Pengeluaran Lainnya (langsung dari penanaman) -->
+    <div class="modal fade" id="modalTambahPengeluaranLainnya" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form action="{{ route('planting-locations.expenses.store', $plantingLocation) }}" method="POST" id="formPengeluaranLainnya">
+                    @csrf
+                    <input type="hidden" name="from_planting_reports" value="1">
+                    <input type="hidden" name="planting_id_for_redirect" value="{{ $planting->planting_id }}">
+                    <input type="hidden" name="planting_id" value="{{ $planting->planting_id }}">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Tambah Pengeluaran Lainnya</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Tipe Pengeluaran <span class="text-danger">*</span></label>
+                            <select name="expense_type" id="expense_type_report" class="form-select" required onchange="toggleExpenseTypeFieldsReport()">
+                                <option value="">-- Pilih Tipe Pengeluaran --</option>
+                                <option value="upah_pekerja">Upah Pekerja</option>
+                                <option value="lainnya">Lainnya</option>
+                            </select>
+                            <small class="text-muted">Pengeluaran ini akan dikaitkan langsung dengan penanaman ini.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Penanggung Jawab</label>
+                            <input type="text" class="form-control" value="{{ auth()->user()->name }}" disabled>
+                            <small class="text-muted">Penanggung jawab otomatis diisi dengan user yang sedang login.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Tanaman & Lokasi Penanaman</label>
+                            <div class="form-control bg-light" readonly>
+                                {{ $planting->plant?->name ?? '-' }}
+                                @if($planting->plant?->variety) - {{ $planting->plant->variety }} @endif
+                                @if($planting->bed_label) — Petak: {{ $planting->bed_label }} @endif
+                                <br>
+                                <small class="text-muted">{{ $plantingLocation->name }}</small>
+                            </div>
+                        </div>
+
+                        <div id="expenseFormFields_report" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">Nama Pengeluaran <span class="text-danger">*</span></label>
+                                <input type="text" name="expense_name" id="expense_name_report" class="form-control" required>
+                                <input type="hidden" name="work_name" id="work_name_report">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Tanggal Pengeluaran</label>
+                                    <input type="date" name="work_date" id="work_date_report" class="form-control" value="{{ date('Y-m-d') }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Jumlah Pengeluaran <span class="text-danger">*</span></label>
+                                    <input type="number" name="amount" id="amount_report" class="form-control" step="0.01" min="0" required>
+                                </div>
+                            </div>
+                            <div class="mb-3" id="workerFields_report" style="display: none;">
+                                <label class="form-label">Nama Pekerja</label>
+                                <input type="text" name="worker_name" id="worker_name_report" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Deskripsi Pekerjaan</label>
+                                <textarea name="work_description" id="work_description_report" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Keterangan</label>
+                                <textarea name="description" id="description_report" class="form-control" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-success" id="btnSubmitPengeluaranReport" disabled>
+                            <i class="fas fa-save me-1"></i>Simpan Pengeluaran
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Sub-tab: Perawatan -->
     <div class="tab-pane" id="perawatan-subtab">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="mb-0">Data Perawatan untuk Penanaman: {{ $planting->plant->name }} @if($planting->bed_label) ({{ $planting->bed_label }}) @endif</h6>
+            <h6 class="mb-0">Data Perawatan untuk Penanaman: {{ $planting->plant?->name ?? 'Tanaman tidak ditemukan' }} @if($planting->bed_label) ({{ $planting->bed_label }}) @endif</h6>
             @if(auth()->user()->isAdmin() || auth()->user()->canAddDataInPelaporan($plantingLocation))
                 <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalPerawatanBaru">
                     <i class="fas fa-plus me-1"></i>Tambah Perawatan
@@ -362,7 +541,7 @@ use Illuminate\Support\Facades\Storage;
                                 @endif
                             </td>
                             <td>
-                                <button type="button" class="btn btn-sm btn-info" onclick="loadTreatmentDetail({{ $treatment->id }})" data-bs-toggle="modal" data-bs-target="#modalDetailPerawatan" title="Lihat Detail">
+                                <button type="button" class="btn btn-sm btn-info" onclick="loadTreatmentDetail('{{ $treatment->planting_treatment_id }}')" data-bs-toggle="modal" data-bs-target="#modalDetailPerawatan" title="Lihat Detail">
                                     <i class="fas fa-eye"></i>
                                 </button>
                                 @if(auth()->user()->isAdmin() || auth()->user()->canAddDataInPelaporan($plantingLocation))
@@ -387,7 +566,7 @@ use Illuminate\Support\Facades\Storage;
     <!-- Sub-tab: Nutrisi -->
     <div class="tab-pane" id="nutrisi-subtab">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="mb-0">Data Nutrisi untuk Penanaman: {{ $planting->plant->name }} @if($planting->bed_label) ({{ $planting->bed_label }}) @endif</h6>
+            <h6 class="mb-0">Data Nutrisi untuk Penanaman: {{ $planting->plant?->name ?? 'Tanaman tidak ditemukan' }} @if($planting->bed_label) ({{ $planting->bed_label }}) @endif</h6>
             @if(auth()->user()->isAdmin() || auth()->user()->canAddDataInPelaporan($plantingLocation))
                 <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalNutrisiBaru">
                     <i class="fas fa-plus me-1"></i>Tambah Nutrisi
@@ -426,7 +605,7 @@ use Illuminate\Support\Facades\Storage;
                                 @endif
                             </td>
                             <td>
-                                <button type="button" class="btn btn-sm btn-info" onclick="loadNutrientDetail({{ $nutrient->id }})" data-bs-toggle="modal" data-bs-target="#modalDetailNutrisi" title="Lihat Detail">
+                                <button type="button" class="btn btn-sm btn-info" onclick="loadNutrientDetail('{{ $nutrient->planting_nutrient_id }}')" data-bs-toggle="modal" data-bs-target="#modalDetailNutrisi" title="Lihat Detail">
                                     <i class="fas fa-eye"></i>
                                 </button>
                                 @if(auth()->user()->isAdmin() || auth()->user()->canAddDataInPelaporan($plantingLocation))
@@ -553,14 +732,14 @@ use Illuminate\Support\Facades\Storage;
                             <p class="card-text"><small class="text-muted">{{ $attachment->attachment_date ? $attachment->attachment_date->format('d M Y') : '-' }}</small></p>
                             <p class="card-text"><small class="text-muted">Oleh: {{ $attachment->creator->name ?? '-' }}</small></p>
                             <div class="btn-group btn-group-sm w-100">
-                                <button type="button" class="btn btn-info" onclick="loadAttachmentDetail('{{ $attachment->attachment_id }}')" data-bs-toggle="modal" data-bs-target="#modalDetailLampiran" title="Lihat Detail">
+                                <button type="button" class="btn btn-info" onclick="loadAttachmentDetail('{{ $attachment->planting_attachment_id }}')" data-bs-toggle="modal" data-bs-target="#modalDetailLampiran" title="Lihat Detail">
                                     <i class="fas fa-eye"></i>
                                 </button>
                                 <a href="{{ Storage::url($attachment->file_path) }}" target="_blank" class="btn btn-primary" title="Download">
                                     <i class="fas fa-file-download"></i>
                                 </a>
                                 @if(auth()->user()->isAdmin() || auth()->user()->canAddDataInPelaporan($plantingLocation))
-                                    <button type="button" class="btn btn-warning" onclick="loadAttachmentEdit('{{ $attachment->attachment_id }}')" data-bs-toggle="modal" data-bs-target="#modalEditLampiran" title="Edit">
+                                    <button type="button" class="btn btn-warning" onclick="loadAttachmentEdit('{{ $attachment->planting_attachment_id }}')" data-bs-toggle="modal" data-bs-target="#modalEditLampiran" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <form action="{{ route('planting-locations.attachments.destroy', [$plantingLocation, $attachment]) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus lampiran ini?')">
@@ -595,7 +774,7 @@ use Illuminate\Support\Facades\Storage;
                 <input type="hidden" name="from_planting_reports" value="1">
                 <input type="hidden" name="planting_id_for_redirect" value="{{ $planting->planting_id }}">
                 <div class="modal-header">
-                    <h5 class="modal-title">Tugas Baru untuk Penanaman: {{ $planting->plant->name }} @if($planting->bed_label) ({{ $planting->bed_label }}) @endif</h5>
+                    <h5 class="modal-title">Tugas Baru untuk Penanaman: {{ $planting->plant?->name ?? 'Tanaman tidak ditemukan' }} @if($planting->bed_label) ({{ $planting->bed_label }}) @endif</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -615,7 +794,7 @@ use Illuminate\Support\Facades\Storage;
                                     <option value="umum">Umum (di lokasi penanaman ini)</option>
                                     @foreach($allPlantingsForLocation as $p)
                                         <option value="{{ $p->planting_id }}" {{ $p->planting_id == $planting->planting_id ? 'selected' : '' }}>
-                                            {{ $p->plant->name ?? 'Tanaman' }} 
+                                            {{ $p->plant?->name ?? 'Tanaman' }} 
                                             @if($p->bed_label) - {{ $p->bed_label }} @endif
                                             @if($p->planted_at) ({{ $p->planted_at->format('d M Y') }}) @endif
                                         </option>
@@ -680,10 +859,13 @@ use Illuminate\Support\Facades\Storage;
                                     <option value="">-- Pilih User --</option>
                                     <option value="semua_user">Semua User</option>
                                     @foreach($locationUsers as $user)
-                                        <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                        <option value="{{ $user->user_id }}">{{ $user->name }}</option>
                                     @endforeach
                                 </select>
-                                <small class="text-muted">Pilih "Semua User" untuk menugaskan ke semua user yang terdaftar sebagai penanggung jawab di lokasi penanaman ini</small>
+                                <small class="text-muted">
+                                    Jika dikosongkan, tugas akan otomatis dianggap untuk <strong>semua user</strong> di lokasi ini.
+                                    Pilih user tertentu jika hanya satu user yang boleh mengisi laporan.
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -913,7 +1095,7 @@ use Illuminate\Support\Facades\Storage;
                                 <option value="umum">Umum (di lokasi penanaman ini)</option>
                                 @foreach($allPlantingsForLocation as $p)
                                     <option value="{{ $p->planting_id }}" {{ $p->planting_id == $planting->planting_id ? 'selected' : '' }}>
-                                        {{ $p->plant->name ?? 'Tanaman' }} 
+                                        {{ $p->plant?->name ?? 'Tanaman' }} 
                                         @if($p->bed_label) - {{ $p->bed_label }} @endif
                                         @if($p->planted_at) ({{ $p->planted_at->format('d M Y') }}) @endif
                                     </option>
@@ -1043,7 +1225,7 @@ use Illuminate\Support\Facades\Storage;
                                 <option value="umum">Umum (di lokasi penanaman ini)</option>
                                 @foreach($allPlantingsForLocation as $p)
                                     <option value="{{ $p->planting_id }}" {{ $p->planting_id == $planting->planting_id ? 'selected' : '' }}>
-                                        {{ $p->plant->name ?? 'Tanaman' }} 
+                                        {{ $p->plant?->name ?? 'Tanaman' }} 
                                         @if($p->bed_label) - {{ $p->bed_label }} @endif
                                         @if($p->planted_at) ({{ $p->planted_at->format('d M Y') }}) @endif
                                     </option>
@@ -1165,9 +1347,6 @@ use Illuminate\Support\Facades\Storage;
         <div class="modal-content">
             <form action="{{ route('planting-locations.attachments.store', $plantingLocation) }}" method="POST" enctype="multipart/form-data">
                 @csrf
-                <input type="hidden" name="from_planting_reports" value="1">
-                <input type="hidden" name="planting_id_for_redirect" value="{{ $planting->planting_id }}">
-                <input type="hidden" name="planting_id" value="{{ $planting->planting_id }}">
                 <div class="modal-header">
                     <h5 class="modal-title">Tambah Lampiran</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -1385,7 +1564,7 @@ use Illuminate\Support\Facades\Storage;
                                 <option value="umum">Umum (di lokasi penanaman ini)</option>
                                 @foreach($allPlantingsForLocation as $p)
                                     <option value="{{ $p->planting_id }}" {{ $p->planting_id == $planting->planting_id ? 'selected' : '' }}>
-                                        {{ $p->plant->name ?? 'Tanaman' }} 
+                                        {{ $p->plant?->name ?? 'Tanaman' }} 
                                         @if($p->bed_label) - {{ $p->bed_label }} @endif
                                         @if($p->planted_at) ({{ $p->planted_at->format('d M Y') }}) @endif
                                     </option>
@@ -1441,6 +1620,58 @@ use Illuminate\Support\Facades\Storage;
 
 @push('scripts')
 <script>
+function toggleExpenseTypeFieldsReport() {
+    const expenseType = document.getElementById('expense_type_report').value;
+    const formFields = document.getElementById('expenseFormFields_report');
+    const btnSubmit = document.getElementById('btnSubmitPengeluaranReport');
+    const workerFields = document.getElementById('workerFields_report');
+    const expenseName = document.getElementById('expense_name_report');
+
+    if (expenseType) {
+        formFields.style.display = 'block';
+        btnSubmit.disabled = false;
+
+        if (expenseType === 'upah_pekerja') {
+            workerFields.style.display = 'block';
+            if (expenseName) {
+                expenseName.placeholder = 'Contoh: Pembersihan lahan, Penanaman, dll';
+            }
+        } else {
+            workerFields.style.display = 'none';
+            if (expenseName) {
+                expenseName.placeholder = 'Masukkan nama pengeluaran';
+            }
+        }
+    } else {
+        formFields.style.display = 'none';
+        btnSubmit.disabled = true;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const expenseNameInput = document.getElementById('expense_name_report');
+    const workNameInput = document.getElementById('work_name_report');
+
+    if (expenseNameInput && workNameInput) {
+        expenseNameInput.addEventListener('input', function() {
+            workNameInput.value = expenseNameInput.value;
+        });
+    }
+
+    const modal = document.getElementById('modalTambahPengeluaranLainnya');
+    if (modal) {
+        modal.addEventListener('hidden.bs.modal', function() {
+            const form = document.getElementById('formPengeluaranLainnya');
+            if (form) {
+                form.reset();
+                document.getElementById('expenseFormFields_report').style.display = 'none';
+                document.getElementById('btnSubmitPengeluaranReport').disabled = true;
+                document.getElementById('work_date_report').value = '{{ date('Y-m-d') }}';
+            }
+        });
+    }
+}
+);
 // Set planting_id automatically when modal opens
 document.addEventListener('DOMContentLoaded', function() {
     const modalTugasBaru = document.getElementById('modalTugasBaru');
@@ -1654,16 +1885,19 @@ function useTemplate(templateId) {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.tasks_list && data.tasks_list.length > 0) {
-            const task = data.tasks_list[0];
+        // Template sekarang menyimpan field langsung: title, description, checklist, attachments
+        if (data) {
+            const task = {
+                title: data.title || data.name || '',
+                description: data.description || '',
+                checklist: data.checklist || [],
+                attachments: data.attachments || [],
+            };
             const form = document.getElementById('formLaporanBaru');
             
             // Fill form with template data
             form.querySelector('input[name="title"]').value = task.title || '';
             form.querySelector('textarea[name="description"]').value = task.description || '';
-            form.querySelector('textarea[name="task_report"]').value = task.task_report || '';
-            form.querySelector('select[name="new_status"]').value = task.new_status || 'dalam_progress';
-            form.querySelector('select[name="new_priority"]').value = task.new_priority || 'medium';
             
             // Set planting_id to current planting
             const associationSelect = form.querySelector('select[name="planting_id"]');
@@ -1892,7 +2126,7 @@ function viewTask(taskId) {
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Pembuat Laporan</label>
+                        <label class="form-label fw-bold">Pengisi Laporan</label>
                         <p class="mb-0">${createdByName}</p>
                     </div>
                 </div>
@@ -2045,7 +2279,7 @@ function editTask(taskId) {
         
         // Get all plantings and users data from server
         const plantingsData = @json($allPlantingsForLocation->map(function($p) {
-            return ['id' => $p->planting_id, 'name' => $p->plant->name ?? '', 'bed_label' => $p->bed_label];
+            return ['id' => $p->planting_id, 'name' => $p->plant?->name ?? '', 'bed_label' => $p->bed_label];
         })->values());
         const usersData = @json($locationUsers->map(function($u) {
             return ['id' => $u->user_id, 'name' => $u->name];
@@ -2156,7 +2390,7 @@ function editTask(taskId) {
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label">Pembuat Laporan</label>
+                        <label class="form-label">Pengisi Laporan</label>
                         <select name="created_by" class="form-select">
                             ${usersOptionsCreatedBy}
                         </select>
@@ -2297,9 +2531,12 @@ function isiLaporan(taskId) {
             } else if (task.assigned_to === 'semua_user' || task.assigned_to === 'all') {
                 assignedUserName = 'Semua User';
             }
+        } else if (Array.isArray(task.collaborators) && task.collaborators.length > 0) {
+            // Jika tidak ada assigned_to tapi ada collaborators (kasus \"Semua User\")
+            assignedUserName = 'Semua User';
         }
         
-        // Pembuat Laporan = user yang saat ini mengisi form (otomatis, tidak dapat diubah)
+        // Pengisi Laporan = user yang saat ini mengisi form (otomatis, tidak dapat diubah)
         const currentUserNameForReport = @json(auth()->user()->name ?? '');
         
         // Get priority label
@@ -2368,7 +2605,7 @@ function isiLaporan(taskId) {
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label">Pembuat Laporan</label>
+                        <label class="form-label">Pengisi Laporan</label>
                         <input type="text" class="form-control bg-light" value="${escapeHtml(currentUserNameForReport) || '-'}" readonly>
                         <small class="text-muted">User yang mengisi form ini (otomatis)</small>
                     </div>
@@ -3062,8 +3299,6 @@ function loadAttachmentEdit(attachmentId) {
             <form id="formEditLampiran" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
-                <input type="hidden" name="from_planting_reports" value="1">
-                <input type="hidden" name="planting_id_for_redirect" value="{{ $planting->planting_id }}">
                 <div class="modal-header">
                     <h5 class="modal-title">Edit Lampiran</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

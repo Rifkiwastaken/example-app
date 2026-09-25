@@ -31,46 +31,25 @@
                     <label class="form-label">Sampai Tanggal</label>
                     <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
                 </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Komoditas/Tanaman</label>
-                    <select name="plant_id" class="form-select">
-                        <option value="">Semua Komoditas</option>
-                        @foreach($plants as $plant)
-                            <option value="{{ $plant->id }}" {{ request('plant_id') == $plant->id ? 'selected' : '' }}>
-                                {{ $plant->name }} @if($plant->variety) - {{ $plant->variety }} @endif
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Tipe Inventaris</label>
-                    <select name="inventory_type_id" class="form-select">
-                        <option value="">Semua Tipe</option>
-                        @foreach($inventoryTypes as $type)
-                            <option value="{{ $type->id }}" {{ request('inventory_type_id') == $type->id ? 'selected' : '' }}>
-                                {{ $type->plant->name ?? ($type->name ?? 'N/A') }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Lot/Batch</label>
-                    <select name="inventory_lot_id" class="form-select">
-                        <option value="">Semua Lot</option>
-                        @foreach($lots as $lot)
-                            <option value="{{ $lot->id }}" {{ request('inventory_lot_id') == $lot->id ? 'selected' : '' }}>
-                                {{ $lot->production_id ?? 'Lot #' . $lot->id }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+                @include('reports.partials._variety-scope-filter')
                 <div class="col-md-3 mb-3">
                     <label class="form-label">Gudang</label>
                     <select name="warehouse_id" class="form-select">
                         <option value="">Semua Gudang</option>
                         @foreach($warehouses as $warehouse)
-                            <option value="{{ $warehouse->id }}" {{ request('warehouse_id') == $warehouse->id ? 'selected' : '' }}>
+                            <option value="{{ $warehouse->warehouse_id }}" {{ request('warehouse_id') == $warehouse->warehouse_id ? 'selected' : '' }}>
                                 {{ $warehouse->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Nama Rak</label>
+                    <select name="bin_id" class="form-select">
+                        <option value="">Semua Rak</option>
+                        @foreach($bins as $bin)
+                            <option value="{{ $bin->getKey() }}" {{ request('bin_id') == $bin->getKey() || request('bin_internal_id') == $bin->internal_id ? 'selected' : '' }}>
+                                {{ $bin->name }} @if($bin->internal_id) ({{ $bin->internal_id }}) @endif
                             </option>
                         @endforeach
                     </select>
@@ -124,7 +103,7 @@
                         <th>Saldo</th>
                         <th>Unit</th>
                         <th>Gudang</th>
-                        <th>Bin</th>
+                        <th>Nama Rak</th>
                         <th>Keterangan</th>
                         <th>User</th>
                     </tr>
@@ -132,7 +111,7 @@
                 <tbody>
                     @forelse($transactions as $index => $transaction)
                         @php
-                            $isAddition = in_array($transaction->transaction_type, ['stok_masuk', 'penyesuaian_tambah', 'pindah_lokasi']);
+                            $isAddition = in_array($transaction->transaction_type, ['mendaftarkan_stok', 'stok_masuk', 'penyesuaian_tambah', 'pindah_lokasi']);
                         @endphp
                         <tr>
                             <td>{{ $transactions->firstItem() + $index }}</td>
@@ -141,14 +120,17 @@
                                 <small class="text-muted">{{ $transaction->created_at->format('H:i:s') }}</small>
                             </td>
                             <td>
-                                <strong>{{ $transaction->inventoryType->plant->name ?? ($transaction->inventoryType->name ?? 'N/A') }}</strong>
-                                @if($transaction->inventoryType->plant && $transaction->inventoryType->plant->variety)
-                                    <br><small class="text-muted">{{ $transaction->inventoryType->plant->variety }}</small>
+                                <strong>{{ $transaction->plant->name ?? 'N/A' }}</strong>
+                                @if($transaction->plant?->variety)
+                                    <br><small class="text-muted">{{ $transaction->plant->variety }}</small>
                                 @endif
                             </td>
                             <td>
-                                @if($transaction->inventoryLot)
-                                    <code>{{ $transaction->inventoryLot->production_id ?? 'Lot #' . $transaction->inventoryLot->id }}</code>
+                                @if($transaction->stock)
+                                    <code>{{ $transaction->stock->no_label_resmi }}</code>
+                                    @if($transaction->packaging)
+                                        <br><small class="text-muted">{{ $transaction->packaging->no_label_seri }}</small>
+                                    @endif
                                 @else
                                     <span class="text-muted">-</span>
                                 @endif
@@ -176,8 +158,8 @@
                                 <strong>{{ number_format($transaction->balance, 2) }}</strong>
                             </td>
                             <td>{{ $transaction->unit ?? '-' }}</td>
-                            <td>{{ $transaction->warehouse->name ?? '-' }}</td>
-                            <td>{{ $transaction->bin->name ?? '-' }}</td>
+                            <td>{{ $transaction->stock->rack->warehouse->name ?? $transaction->packaging->rack->warehouse->name ?? $transaction->warehouse->name ?? '-' }}</td>
+                            <td>{{ $transaction->stock->rack->name ?? $transaction->packaging->rack->name ?? $transaction->bin->name ?? '-' }}</td>
                             <td>
                                 @if($transaction->reason)
                                     <small>{{ $transaction->reason }}</small>
@@ -227,5 +209,6 @@ function exportExcel() {
 }
 </script>
 @endpush
+@include('reports.partials._variety-scope-scripts')
 @endsection
 

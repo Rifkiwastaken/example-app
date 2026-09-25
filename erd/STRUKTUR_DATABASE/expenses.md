@@ -7,25 +7,28 @@ Tabel untuk menyimpan data pengeluaran
 
 | Nama Atribut | Tipe Data | Ukuran | Keterangan |
 |--------------|-----------|--------|------------|
-| **id** | BIGINT | - | Primary Key, Auto Increment |
-| planting_location_id | BIGINT | - | Foreign Key → planting_locations.id (NOT NULL) |
-| expense_name | VARCHAR | 50 | Nama pengeluaran (NOT NULL) |
-| amount | DECIMAL | 10,2 | Jumlah pengeluaran dalam Rp (NOT NULL) |
-| expense_type | ENUM | - | Tipe: 'perawatan', 'nutrisi' (NOT NULL) |
-| expense_date | DATE | - | Tanggal pengeluaran (NOT NULL) |
-| treatment_id | BIGINT | - | Foreign Key → treatments.id (NULL) |
-| nutrient_id | BIGINT | - | Foreign Key → nutrients.id (NULL) |
-| created_at | TIMESTAMP | - | Tanggal dibuat (NOT NULL) |
-| updated_at | TIMESTAMP | - | Tanggal diupdate (NOT NULL) |
+| **expense_id** | VARCHAR | 36 | Primary Key |
+| planting_location_id | VARCHAR | 36 | Foreign Key → planting_locations.planting_location_id |
+| treatment_id | VARCHAR | 36 | Foreign Key → treatments.treatment_id |
+| nutrient_id | VARCHAR | 36 | Foreign Key → nutrients.nutrient_id |
+| responsible_person_id | VARCHAR | 36 | Foreign Key → users.user_id |
+| expense_name | VARCHAR | 50 | |
+| amount | DECIMAL | 15,2 | |
+| expense_type | VARCHAR | 50 | |
+| expense_date | DATE | | |
+| notes | TEXT | | |
+| created_at | TIMESTAMP | | |
+| updated_at | TIMESTAMP | | |
 
 ## Relasi
 - Many-to-One dengan: `planting_locations` (planting_location_id, CASCADE DELETE), `treatments` (treatment_id, CASCADE DELETE), `nutrients` (nutrient_id, CASCADE DELETE)
 
 ## Index
-- PRIMARY KEY: `id`
-- FOREIGN KEY: `planting_location_id` → `planting_locations.id` (CASCADE DELETE)
-- FOREIGN KEY: `treatment_id` → `treatments.id` (CASCADE DELETE)
-- FOREIGN KEY: `nutrient_id` → `nutrients.id` (CASCADE DELETE)
+- PRIMARY KEY: `expense_id`
+- FOREIGN KEY: `planting_location_id` → `planting_locations.planting_location_id`
+- FOREIGN KEY: `treatment_id` → `treatments.treatment_id`
+- FOREIGN KEY: `nutrient_id` → `nutrients.nutrient_id`
+- FOREIGN KEY: `responsible_person_id` → `users.user_id`
 
 
 

@@ -32,20 +32,12 @@
                         <small class="text-muted ms-4">Membandingkan rencana (target) dengan realisasi lapangan</small>
                     </li>
                     <li class="mb-2">
-                        <a href="{{ route('reports.production-supplies') }}" class="text-decoration-none">
-                            <i class="fas fa-flask me-2 text-primary"></i>
-                            Laporan Penggunaan Sarana Produksi
-                        </a>
-                        <br>
-                        <small class="text-muted ms-4">Rekap penggunaan pupuk dan pestisida untuk audit biaya</small>
-                    </li>
-                    <li class="mb-2">
                         <a href="{{ route('reports.by-location') }}" class="text-decoration-none">
                             <i class="fas fa-map-marker-alt me-2 text-primary"></i>
-                            Laporan Per Lokasi Lahan
+                            Laporan Produksi
                         </a>
                         <br>
-                        <small class="text-muted ms-4">Laporan lengkap semua data pelaporan per lokasi lahan</small>
+                        <small class="text-muted ms-4">Timeline progress penanaman, sertifikasi, hingga stok</small>
                     </li>
                 </ul>
             </div>
@@ -64,14 +56,6 @@
             <div class="card-body">
                 <p class="text-muted mb-3">Menjawab: "Apa aset yang kita miliki sekarang dan kondisinya?"</p>
                 <ul class="list-unstyled">
-                    <li class="mb-2">
-                        <a href="{{ route('reports.stock-position') }}" class="text-decoration-none">
-                            <i class="fas fa-boxes me-2 text-success"></i>
-                            Laporan Posisi Stok Akhir (Stock Opname)
-                        </a>
-                        <br>
-                        <small class="text-muted ms-4">Jumlah stok real-time di semua gudang</small>
-                    </li>
                     <li class="mb-2">
                         <a href="{{ route('reports.stock-mutation') }}" class="text-decoration-none">
                             <i class="fas fa-exchange-alt me-2 text-success"></i>
@@ -104,6 +88,14 @@
                         </a>
                         <br>
                         <small class="text-muted ms-4">Laporan keuangan sederhana untuk pendapatan (PAD)</small>
+                    </li>
+                    <li class="mb-2">
+                        <a href="{{ route('reports.distribution') }}" class="text-decoration-none">
+                            <i class="fas fa-map-marked-alt me-2 text-info"></i>
+                            Laporan Persebaran
+                        </a>
+                        <br>
+                        <small class="text-muted ms-4">Peta sebaran benih terjual berdasarkan koordinat GPS rencana tanam</small>
                     </li>
                 </ul>
             </div>

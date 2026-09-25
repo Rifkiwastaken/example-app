@@ -3,33 +3,34 @@
 ' Use case 09: Login
 ' Aktor: Admin/Kepala Sek, Petugas BBI, Penangkar/Kepala Satgas, Petugas Gudang
 !theme plain
+skinparam backgroundColor white
 skinparam activity {
     BackgroundColor #E1F5FE
     BorderColor #01579B
     FontSize 11
 }
 skinparam swimlane {
-    BackgroundColor #F5F5F5
-    BorderColor #424242
-    TitleBackgroundColor #BBDEFB
-    TitleBorderColor #1976D2
+    BackgroundColor White
+    BorderColor #CCCCCC
+    TitleBackgroundColor White
+    TitleBorderColor #999999
 }
 
 title Activity Diagram - Login
 
-|#LightBlue|User|
+|#White|User|
 start
 :Masuk ke halaman login;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Tampilkan form login;
 
-|#LightBlue|User|
+|#White|User|
 :Masukkan email/username;
 :Masukkan password;
 :Klik tombol login;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Validasi input;
 if (Input valid?) then (Tidak)
     :Tampilkan pesan error;
@@ -52,7 +53,7 @@ endif
 :Set role dan permissions;
 :Redirect ke dashboard;
 
-|#LightBlue|User|
+|#White|User|
 :Masuk ke dashboard;
 
 stop

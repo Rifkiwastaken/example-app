@@ -26,6 +26,10 @@ class Kernel extends ConsoleKernel
         $schedule->command('sibesti:check-expiring-seeds')
                  ->dailyAt('08:00')
                  ->timezone('Asia/Jakarta');
+
+        $schedule->call(function () {
+            \App\Models\SeedRequest::releaseExpiredHolds();
+        })->dailyAt('01:00')->timezone('Asia/Jakarta');
     }
 
     /**

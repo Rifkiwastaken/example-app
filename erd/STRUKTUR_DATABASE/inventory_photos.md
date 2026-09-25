@@ -7,21 +7,21 @@ Tabel untuk menyimpan foto inventory
 
 | Nama Atribut | Tipe Data | Ukuran | Keterangan |
 |--------------|-----------|--------|------------|
-| **id** | BIGINT | - | Primary Key, Auto Increment |
-| inventory_type_id | BIGINT | - | Foreign Key → inventory_types.id (NOT NULL) |
-| photo_path | VARCHAR | 50 | Path foto (NOT NULL) |
-| caption | VARCHAR | 50 | Keterangan foto (NULL) |
-| user_id | BIGINT | - | Foreign Key → users.id (NOT NULL) |
-| created_at | TIMESTAMP | - | Tanggal dibuat (NOT NULL) |
-| updated_at | TIMESTAMP | - | Tanggal diupdate (NOT NULL) |
+| **inventory_photo_id** | VARCHAR | 36 | Primary Key |
+| inventory_type_id | VARCHAR | 36 | Foreign Key → inventory_types.inventory_type_id |
+| user_id | VARCHAR | 36 | Foreign Key → users.user_id |
+| photo_path | VARCHAR | 255 | |
+| caption | TEXT | | |
+| created_at | TIMESTAMP | | |
+| updated_at | TIMESTAMP | | |
 
 ## Relasi
-- Many-to-One dengan: `inventory_types` (inventory_type_id, CASCADE DELETE), `users` (user_id, CASCADE DELETE)
+- Many-to-One dengan: `inventory_types` (inventory_type_id), `users` (user_id)
 
 ## Index
-- PRIMARY KEY: `id`
-- FOREIGN KEY: `inventory_type_id` → `inventory_types.id` (CASCADE DELETE)
-- FOREIGN KEY: `user_id` → `users.id` (CASCADE DELETE)
+- PRIMARY KEY: `inventory_photo_id`
+- FOREIGN KEY: `inventory_type_id` → `inventory_types.inventory_type_id`
+- FOREIGN KEY: `user_id` → `users.user_id`
 
 
 

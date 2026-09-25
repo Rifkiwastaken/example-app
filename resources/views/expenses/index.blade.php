@@ -155,20 +155,21 @@
                                 @endif
                             </td>
                             <td>
-                                {{ $expense->plantingLocation?->name ?? '-' }}
+                                {{ ($expense->planting && $expense->planting->location) ? $expense->planting->location->name : '-' }}
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    @if($expense->plantingLocation)
-                                    <button type="button" class="btn btn-outline-info" onclick="viewExpense('{{ $expense->expense_id }}', '{{ $expense->plantingLocation->planting_location_id }}')" title="Lihat Detail">
+                                    @if($expense->planting && $expense->planting->location)
+                                    @php($loc = $expense->planting->location)
+                                    <button type="button" class="btn btn-outline-info" onclick="viewExpense('{{ $expense->expense_id }}', '{{ $loc->planting_location_id }}')" title="Lihat Detail">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    @if(auth()->user()->isAdmin() || (auth()->user()->isAssignedToPlantingLocation($expense->plantingLocation) && auth()->user()->canAddDataInPelaporan($expense->plantingLocation)))
+                                    @if(auth()->user()->isAdmin() || (auth()->user()->isAssignedToPlantingLocation($loc) && auth()->user()->canAddDataInPelaporan($loc)))
                                         @if(in_array($expense->expense_type, ['upah_pekerja', 'lainnya']))
-                                            <button type="button" class="btn btn-outline-warning" onclick="editExpense('{{ $expense->expense_id }}', '{{ $expense->plantingLocation->planting_location_id }}')" title="Edit">
+                                            <button type="button" class="btn btn-outline-warning" onclick="editExpense('{{ $expense->expense_id }}', '{{ $loc->planting_location_id }}')" title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <form action="{{ route('planting-locations.expenses.destroy', [$expense->plantingLocation, $expense]) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus pengeluaran ini?')">
+                                            <form action="{{ route('planting-locations.expenses.destroy', [$loc, $expense]) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus pengeluaran ini?')">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-outline-danger" title="Hapus">

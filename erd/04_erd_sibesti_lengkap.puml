@@ -14,27 +14,15 @@ package "User Management" #LightBlue {
     entity "users" as users {
         * **user_id** : VARCHAR(36) <<PK>>
         --
-        name : VARCHAR(255)
+        name : VARCHAR(50)
         email : VARCHAR(255) <<UNIQUE>>
         password : VARCHAR(255)
-        role : ENUM(admin, kepala_satuan_tugas, petugas_sertifikasi, petugas_gudang, petugas_bbi)
-        location_id : VARCHAR(36) <<FK>>
-        full_name : VARCHAR(255)
+        role : ENUM(admin, kepala_satuan_tugas, petugas_sertifikasi, petugas_gudang, petugas_bbi, penangkar)
+        location_placement : VARCHAR(50)
+        full_name : VARCHAR(50)
         status : ENUM(active, inactive)
-        created_at : TIMESTAMP
-        updated_at : TIMESTAMP
-    }
-
-    entity "locations" as locations {
-        * **location_id** : VARCHAR(36) <<PK>>
-        --
-        name : VARCHAR(255)
-        city : VARCHAR(255)
-        district : VARCHAR(255)
-        type : ENUM(lokasi_lahan, lokasi_sertifikasi, lokasi_gudang, lokasi_kantor_utama)
-        description : TEXT
-        google_maps_link : VARCHAR(500)
-        photo : VARCHAR(255)
+        contact_type : ENUM
+        primary_phone_is_whatsapp : TINYINT(1)
         created_at : TIMESTAMP
         updated_at : TIMESTAMP
     }
@@ -67,11 +55,12 @@ package "Planting Module" #LightGreen {
     entity "planting_locations" as planting_locations {
         * **planting_location_id** : VARCHAR(36) <<PK>>
         --
-        name : VARCHAR(255)
-        location_id : VARCHAR(36) <<FK>>
-        location_type : ENUM
-        planting_format : ENUM
-        map_size : DECIMAL(10,2)
+        name : VARCHAR(50)
+        location_type : ENUM(lapangan, sawah, greenhouse, grow_room, padang_rumput, petak_ternak, lainnya)
+        location_type_custom : VARCHAR(50)
+        planting_format : ENUM(petak, cover_crop, row, lainnya)
+        planting_format_custom : VARCHAR(50)
+        num_beds : INT
         description : TEXT
         created_at : TIMESTAMP
         updated_at : TIMESTAMP
@@ -82,9 +71,12 @@ package "Planting Module" #LightGreen {
         --
         plant_id : VARCHAR(36) <<FK>>
         planting_location_id : VARCHAR(36) <<FK>>
-        bed_label : VARCHAR(255)
-        quantity_planted : DECIMAL(15,2)
+        bed_label : VARCHAR(50)
+        planting_batch_number : VARCHAR(50)
+        quantity_planted : INT
         planted_at : DATE
+        area_ha : DECIMAL(10,2)
+        estimated_harvest_date : DATE
         is_completed : TINYINT(1)
         created_at : TIMESTAMP
         updated_at : TIMESTAMP
@@ -162,8 +154,10 @@ package "Planting Module" #LightGreen {
         * **planting_location_note_id** : VARCHAR(36) <<PK>>
         --
         planting_location_id : VARCHAR(36) <<FK>>
+        planting_id : VARCHAR(36) <<FK>>
         title : VARCHAR(255)
         description : TEXT
+        user_id : VARCHAR(36) <<FK>>
         created_at : TIMESTAMP
         updated_at : TIMESTAMP
     }
@@ -172,6 +166,7 @@ package "Planting Module" #LightGreen {
         * **planting_location_photo_id** : VARCHAR(36) <<PK>>
         --
         planting_location_id : VARCHAR(36) <<FK>>
+        planting_id : VARCHAR(36) <<FK>>
         file_path : VARCHAR(255)
         description : TEXT
         created_at : TIMESTAMP
@@ -222,9 +217,10 @@ package "Inventory Module" #LightCoral {
     entity "warehouses" as warehouses {
         * **warehouse_id** : VARCHAR(36) <<PK>>
         --
-        name : VARCHAR(255)
+        name : VARCHAR(50)
         internal_id : VARCHAR(50) <<UNIQUE>>
-        tracking_type : ENUM
+        tracking_type : VARCHAR(50)
+        responsible_person_id : VARCHAR(36) <<FK>>
         description : TEXT
         created_at : TIMESTAMP
         updated_at : TIMESTAMP
@@ -317,7 +313,16 @@ package "Inventory Module" #LightCoral {
         inventory_type_id : VARCHAR(36) <<FK>>
         plant_id : VARCHAR(36) <<FK>>
         planting_location_id : VARCHAR(36) <<FK>>
-        quantity : DECIMAL(15,2)
+        certification_report_id : VARCHAR(36) <<FK>>
+        quantity : DECIMAL(12,2)
+        seed_unit : VARCHAR(50)
+        seed_unit_quantity : DECIMAL(12,2)
+        seed_per_unit : DECIMAL(12,2)
+        seed_per_unit_unit : VARCHAR(50)
+        total_seed_quantity : DECIMAL(12,2)
+        total_seed_unit : VARCHAR(50)
+        estimated_sale_price_per_kg : DECIMAL(12,2)
+        expiry_date : DATE
         created_at : TIMESTAMP
         updated_at : TIMESTAMP
     }
@@ -328,6 +333,20 @@ package "Inventory Module" #LightCoral {
         inventory_type_id : VARCHAR(36) <<FK>>
         certification_report_id : VARCHAR(36) <<FK>>
         quantity : DECIMAL(15,2)
+        created_at : TIMESTAMP
+        updated_at : TIMESTAMP
+    }
+
+    entity "seed_histories" as seed_histories {
+        * **seed_history_id** : VARCHAR(36) <<PK>>
+        --
+        inventory_type_id : VARCHAR(36) <<FK>>
+        inventory_type_seed_id : VARCHAR(36) <<FK>>
+        action : VARCHAR(50)
+        description : TEXT
+        old_data : JSON
+        new_data : JSON
+        user_id : VARCHAR(36) <<FK>>
         created_at : TIMESTAMP
         updated_at : TIMESTAMP
     }
@@ -409,17 +428,18 @@ package "Support Tables" #Lavender {
         * **attachment_id** : VARCHAR(36) <<PK>>
         --
         planting_location_id : VARCHAR(36) <<FK>>
-        title : VARCHAR(255)
-        file_path : VARCHAR(255)
+        planting_id : VARCHAR(36) <<FK>>
+        title : VARCHAR(50)
+        file_path : VARCHAR(50)
         created_by : VARCHAR(36) <<FK>>
         created_at : TIMESTAMP
         updated_at : TIMESTAMP
     }
 
     entity "landing_page_settings" as landing_page_settings {
-        * **id** : BIGINT <<PK>>
+        * **landing_page_setting_id** : VARCHAR(36) <<PK>>
         --
-        key : VARCHAR(255) <<UNIQUE>>
+        key_name : VARCHAR(100) <<UNIQUE>>
         value : TEXT
         created_at : TIMESTAMP
         updated_at : TIMESTAMP
@@ -444,8 +464,7 @@ package "Support Tables" #Lavender {
     }
 }
 
-' === RELATIONSHIPS ===
-users }o--o| locations : location_id
+' === RELATIONSHIPS (tabel locations telah dihapus) ===
 plant_types ||--o{ plants
 plants }o--o| planting_locations
 plants ||--o{ plantings
@@ -453,7 +472,6 @@ plants ||--o{ harvests
 plants ||--o{ plant_notes
 plants ||--o{ plant_photos
 plants ||--o{ certifications
-planting_locations }o--o| locations
 planting_locations ||--o{ plantings
 planting_locations ||--o{ harvests
 planting_locations ||--o{ treatments
@@ -468,11 +486,16 @@ planting_locations ||--o{ user_pl_manager
 planting_locations ||--o{ user_pl_worker
 plantings ||--o{ harvests
 plantings ||--o{ planting_losses
+plantings ||--o{ planting_location_notes
+plantings ||--o{ planting_location_photos
+plantings ||--o{ attachments
 plantings ||--o{ treatments
 plantings ||--o{ nutrients
 harvests ||--o{ certifications
 certifications ||--o{ certification_reports
 certification_reports ||--o{ inv_type_cert_reports
+certification_reports ||--o{ inventory_type_seeds : certification_report_id
+warehouses }o--o| users : responsible_person_id
 warehouses ||--o{ bins
 warehouses ||--o{ inventory_lots
 warehouses ||--o{ inventory_transactions
@@ -489,26 +512,31 @@ inventory_types ||--o{ inventory_type_seeds
 inventory_types ||--o{ inv_type_cert_reports
 inventory_types ||--o{ sale_items
 inventory_types }o--o| users : responsible_person_id
+inventory_types ||--o{ seed_histories
 inventory_lots ||--o{ inventory_transactions
 inventory_lots ||--o{ sale_items
 inventory_lots }o--o| certifications
+inventory_type_seeds ||--o{ seed_histories
 sales ||--o{ sale_items
 sales }o--o| users
+sales }o--o| planting_locations : planting_location_id
 tasks }o--o| users : assigned_to
 tasks }o--o| users : created_by
+tasks }o--o| plantings : planting_id
 tasks }o--o| task_templates : template_id
 tasks }o--o| task_series : series_id
 task_series }o--o| task_templates
 users ||--o{ inventory_transactions
 users ||--o{ inventory_notes
 users ||--o{ inventory_photos
+users ||--o{ seed_histories
 users ||--o{ user_pl_manager
 users ||--o{ user_pl_worker
 
 note bottom
-  ERD 04 - SIBESTI Lengkap
+  ERD 04 - SIBESTI Lengkap (sesuai database saat ini)
   PK: VARCHAR(36), format {nama_tabel}_id
-  Update: Februari 2026
+  Tabel locations telah dihapus. Termasuk seed_histories. Update: Februari 2026
 end note
 
 @enduml

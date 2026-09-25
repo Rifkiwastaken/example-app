@@ -5,17 +5,26 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h4 class="mb-0">Daftar Tanaman</h4>
-    <div class="btn-group flex-wrap d-none d-md-flex">
-        <a href="{{ route('plants.create') }}" class="btn btn-success"><i class="fas fa-plus me-2"></i>Tanaman Baru</a>
-        <a href="{{ route('plant-types.index') }}" class="btn btn-outline-primary"><i class="fas fa-list me-2"></i>Tipe Tanaman</a>
-    </div>
-    <!-- Mobile buttons -->
-    <div class="d-flex d-md-none w-100 gap-2">
-        <a href="{{ route('plants.create') }}" class="btn btn-success btn-sm flex-fill">
-            <i class="fas fa-plus me-1"></i>Tanaman Baru
+    <div class="d-none d-md-flex gap-2">
+        <a href="{{ route('plants.create') }}" class="btn btn-success">
+            <i class="fas fa-plus me-2"></i>Tambahkan Varietas Tanaman
         </a>
-        <a href="{{ route('plant-types.index') }}" class="btn btn-outline-primary btn-sm flex-fill">
-            <i class="fas fa-list me-1"></i>Tipe Tanaman
+        <a href="{{ route('plant-types.index') }}" class="btn btn-primary">
+            <i class="fas fa-tags me-2"></i>Kategori Tanaman
+        </a>
+        <a href="{{ route('seed-units.index') }}" class="btn btn-outline-success">
+            <i class="fas fa-balance-scale me-2"></i>Tambah Satuan Benih
+        </a>
+    </div>
+    <div class="d-flex d-md-none w-100 gap-2 flex-wrap">
+        <a href="{{ route('plants.create') }}" class="btn btn-success btn-sm flex-fill">
+            <i class="fas fa-plus me-1"></i>Tambahkan Varietas Tanaman
+        </a>
+        <a href="{{ route('plant-types.index') }}" class="btn btn-primary btn-sm flex-fill">
+            <i class="fas fa-tags me-1"></i>Kategori Tanaman
+        </a>
+        <a href="{{ route('seed-units.index') }}" class="btn btn-outline-success btn-sm flex-fill">
+            <i class="fas fa-balance-scale me-1"></i>Tambah Satuan Benih
         </a>
     </div>
 </div>
@@ -23,14 +32,30 @@
 <div class="card mb-4">
     <div class="card-body">
         <form class="row g-3" method="GET" action="{{ route('plants.index') }}" id="filterForm">
-            <div class="col-md-3">
-                <label class="form-label">Tipe Tanaman</label>
-                <select name="plant_type_id" class="form-select">
-                    <option value="">Semua Tipe</option>
-                    @foreach($types as $type)
-                        <option value="{{ $type->id }}" {{ request('plant_type_id') == $type->id ? 'selected' : '' }}>
-                            {{ $type->category ? $type->category.' - ' : '' }}{{ $type->name }}
-                        </option>
+            <div class="col-md-2">
+                <label class="form-label">Kategori</label>
+                <select name="category" class="form-select" onchange="this.form.submit()">
+                    <option value="">Semua kategori</option>
+                    @foreach($categories ?? [] as $cat)
+                        <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Nama tanaman</label>
+                <select name="plant_name" class="form-select" {{ request('category') ? '' : 'disabled' }} onchange="this.form.submit()">
+                    <option value="">Semua nama</option>
+                    @foreach($plantNameOptions ?? [] as $option)
+                        <option value="{{ $option->name }}" {{ request('plant_name') == $option->name ? 'selected' : '' }}>{{ $option->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Varietas</label>
+                <select name="variety_id" class="form-select" {{ request('plant_name') ? '' : 'disabled' }}>
+                    <option value="">Semua varietas</option>
+                    @foreach($varietyOptions ?? [] as $variety)
+                        <option value="{{ $variety->getKey() }}" {{ request('variety_id') == $variety->getKey() ? 'selected' : '' }}>{{ $variety->variety ?: $variety->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -69,18 +94,31 @@
             <table class="table table-hover">
                 <thead>
                 <tr>
+                    <th>Kategori</th>
                     <th>Nama Tanaman</th>
-                    <th>Tipe</th>
+                    <th>Varietas</th>
                     <th>Lokasi</th>
                     <th width="140">Aksi</th>
                 </tr>
                 </thead>
                 <tbody>
+                @php $lastCategory = null; @endphp
                 @forelse($plants as $plant)
+                    @php $category = $plant->type?->category ?: 'Lainnya'; @endphp
+                    @if($lastCategory !== $category)
+                        <tr class="table-light"><td colspan="5" class="fw-bold">{{ $category }}</td></tr>
+                        @php $lastCategory = $category; @endphp
+                    @endif
                     <tr>
-                        <td><a href="{{ route('plants.show', $plant) }}" class="text-decoration-none">{{ $plant->name }}</a><br><small class="text-muted">Varietas: {{ $plant->variety ?: '-' }}</small></td>
-                        <td>{{ $plant->type?->name ?: '-' }}</td>
-                        <td>{{ $plant->plantingLocation?->name ?: '-' }}</td>
+                        <td>{{ $category }}</td>
+                        <td><a href="{{ route('plants.show', $plant) }}" class="text-decoration-none">{{ $plant->type?->name ?: $plant->name }}</a></td>
+                        <td>{{ $plant->variety ?: '-' }}</td>
+                        <td>
+                            @foreach($plant->plantings->map(fn($p) => $p->location?->name)->filter()->unique() as $locName)
+                                <span class="data-pill data-pill-muted">{{ $locName }}</span>
+                            @endforeach
+                            @if($plant->plantings->map(fn($p) => $p->location?->name)->filter()->unique()->isEmpty())-@endif
+                        </td>
                         <td>
                             <div class="btn-group">
                                 <a href="{{ route('plants.show', $plant) }}" class="btn btn-sm btn-outline-info" title="Lihat Detail"><i class="fas fa-eye"></i></a>
@@ -95,7 +133,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="text-center py-4 text-muted">Belum ada data tanaman.</td></tr>
+                    <tr><td colspan="5" class="text-center py-4 text-muted">Belum ada data tanaman.</td></tr>
                 @endforelse
                 </tbody>
             </table>
@@ -111,12 +149,12 @@
                             <div class="flex-grow-1">
                                 <h6 class="card-title mb-1">
                                     <a href="{{ route('plants.show', $plant) }}" class="text-decoration-none text-primary fw-bold">
-                                        {{ $plant->name }}
+                                        {{ $plant->type?->name ?: $plant->name }}
                                     </a>
                                 </h6>
                                 @if($plant->variety)
                                     <small class="text-muted">
-                                        <i class="fas fa-seed me-1"></i>Varietas: {{ $plant->variety }}
+                                        <i class="fas fa-seedling me-1"></i>Varietas: {{ $plant->variety }}
                                     </small>
                                 @endif
                             </div>
@@ -127,15 +165,15 @@
                             <div class="row g-2">
                                 <div class="col-6">
                                     <small class="text-muted d-block mb-1">
-                                        <i class="fas fa-tag me-1"></i>Tipe
+                                        <i class="fas fa-tag me-1"></i>Kategori
                                     </small>
-                                    <div class="fw-medium">{{ $plant->type?->name ?: '-' }}</div>
+                                    <div class="fw-medium">{{ $plant->type?->category ?: '-' }}</div>
                                 </div>
                                 <div class="col-6">
                                     <small class="text-muted d-block mb-1">
                                         <i class="fas fa-map-marker-alt me-1"></i>Lokasi
                                     </small>
-                                    <div class="fw-medium">{{ $plant->plantingLocation?->name ?: '-' }}</div>
+                                    <div class="fw-medium">{{ $plant->plantings->map(fn($p) => $p->location?->name)->filter()->unique()->join(', ') ?: '-' }}</div>
                                 </div>
                             </div>
                         </div>

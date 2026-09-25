@@ -14,7 +14,7 @@ title SIBESTI - ERD Detail Lengkap
 ' Tanggal Update: Februari 2026
 
 package "User" {
-    entity "users" as users {
+entity "users" as users {
         * **user_id** : VARCHAR(36) <<PK>>
         --
         name : VARCHAR(255)
@@ -46,7 +46,7 @@ package "User" {
 }
 
 package "Planting Module" {
-    entity "plant_types" as plant_types {
+entity "plant_types" as plant_types {
         * **plant_type_id** : VARCHAR(36) <<PK>>
         --
         name : VARCHAR(255)
@@ -55,7 +55,7 @@ package "Planting Module" {
         updated_at : TIMESTAMP
     }
 
-    entity "plants" as plants {
+entity "plants" as plants {
         * **plant_id** : VARCHAR(36) <<PK>>
         --
         name : VARCHAR(255)
@@ -68,7 +68,7 @@ package "Planting Module" {
         updated_at : TIMESTAMP
     }
 
-    entity "planting_locations" as planting_locations {
+entity "planting_locations" as planting_locations {
         * **planting_location_id** : VARCHAR(36) <<PK>>
         --
         name : VARCHAR(255)
@@ -84,7 +84,7 @@ package "Planting Module" {
         updated_at : TIMESTAMP
     }
 
-    entity "plantings" as plantings {
+entity "plantings" as plantings {
         * **planting_id** : VARCHAR(36) <<PK>>
         --
         plant_id : VARCHAR(36) <<FK>>
@@ -105,7 +105,7 @@ package "Planting Module" {
         updated_at : TIMESTAMP
     }
 
-    entity "harvests" as harvests {
+entity "harvests" as harvests {
         * **harvest_id** : VARCHAR(36) <<PK>>
         --
         plant_id : VARCHAR(36) <<FK>>
@@ -335,7 +335,7 @@ package "Inventory & Sales" {
         updated_at : TIMESTAMP
     }
 
-    entity "seed_histories" as seed_histories {
+entity "seed_histories" as seed_histories {
         * **seed_history_id** : VARCHAR(36) <<PK>>
         --
         inventory_type_seed_id : VARCHAR(36) <<FK>>
@@ -377,7 +377,7 @@ package "Support" {
         updated_at : TIMESTAMP
     }
 
-    entity "tasks" as tasks {
+entity "tasks" as tasks {
         * **task_id** : VARCHAR(36) <<PK>>
         --
         title : VARCHAR(255)

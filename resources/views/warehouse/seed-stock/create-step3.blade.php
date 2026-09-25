@@ -14,9 +14,14 @@
             <h4 class="text-success">Berhasil!</h4>
         </div>
         
+        @php
+            $whCount = count($step2Data['warehouses'] ?? []);
+        @endphp
         <p class="mb-4">
-            Tipe inventaris <strong>"{{ $step1Data['name'] }}"</strong> telah berhasil dibuat dan ditautkan ke 
-            <strong>{{ count($step2Data['warehouses']) }} Gudang</strong>.
+            Tipe inventaris <strong>"{{ $step1Data['name'] }}"</strong> telah berhasil dibuat.
+            @if($whCount > 0)
+                Pada wizard Anda memilih preferensi untuk <strong>{{ $whCount }} gudang</strong> (informasi ini tidak disimpan sebagai tautan master; penempatan stok mengikuti lot di gudang).
+            @endif
         </p>
 
         <div class="alert alert-info text-start mb-4">

@@ -3,49 +3,50 @@
 ' Use case 04: Melihat data lokasi penanaman (include dari Mengelola data lokasi penanaman)
 ' Aktor: Penangkar/Kepala Satgas
 !theme plain
+skinparam backgroundColor white
 skinparam activity {
     BackgroundColor #E1F5FE
     BorderColor #01579B
     FontSize 11
 }
 skinparam swimlane {
-    BackgroundColor #F5F5F5
-    BorderColor #424242
-    TitleBackgroundColor #BBDEFB
-    TitleBorderColor #1976D2
+    BackgroundColor White
+    BorderColor #CCCCCC
+    TitleBackgroundColor White
+    TitleBorderColor #999999
 }
 
 title Activity Diagram - Melihat data lokasi penanaman
 
-|#LightBlue|User|
+|#White|User|
 start
 :Masuk ke halaman data lokasi penanaman;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Validasi role pengguna;
 :Query data lokasi penanaman dari database;
 :Menampilkan daftar lokasi penanaman;
 
-|#LightBlue|User|
+|#White|User|
 :Lihat daftar lokasi penanaman;
 
 if (Filter atau cari?) then (Ya)
-    |#LightBlue|User|
+    |#White|User|
     :Masukkan filter atau kata kunci;
     :Submit filter;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Query data dengan filter;
     :Tampilkan hasil filter;
 else (Tidak)
 endif
 
 if (Lihat detail?) then (Ya)
-    |#LightBlue|User|
+    |#White|User|
     :Klik tombol lihat detail;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Load detail data lokasi;
     :Tampilkan detail lokasi;
-    |#LightBlue|User|
+    |#White|User|
     :Lihat detail lokasi;
 else (Tidak)
 endif

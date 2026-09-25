@@ -17,15 +17,18 @@ class TaskTemplate extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'name',
-        'description',
-        'tasks_list',
+        'name',         // nama template
+        'title',        // judul tugas default
+        'description',  // deskripsi tugas default
+        'checklist',    // checklist default (array)
+        'attachments',  // lampiran default (array path)
         'association',
         'is_active',
     ];
 
     protected $casts = [
-        'tasks_list' => 'array',
+        'checklist' => 'array',
+        'attachments' => 'array',
         'is_active' => 'boolean',
     ];
 
@@ -34,15 +37,7 @@ class TaskTemplate extends Model
      */
     public function tasks(): HasMany
     {
-        return $this->hasMany(Task::class, 'template_id', 'task_template_id');
-    }
-
-    /**
-     * Get series using this template
-     */
-    public function series(): HasMany
-    {
-        return $this->hasMany(TaskSeries::class, 'template_id', 'task_template_id');
+        return $this->hasMany(Task::class, 'task_template_id', 'task_template_id');
     }
 
     /**

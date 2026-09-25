@@ -6,8 +6,16 @@ use App\Models\Plant;
 use App\Models\PlantType;
 use App\Models\PlantingLocation;
 use App\Models\Planting;
-use App\Models\Harvest;
+use App\Models\SeedSource;
+use App\Models\SeedUnit;
+use App\Models\PlantingPostHarvest;
+use App\Models\SaleItem;
+use App\Models\Stock;
+use App\Models\StockHistory;
+use App\Models\StockPackaging;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class PlantController extends Controller
 {
@@ -145,43 +153,83 @@ class PlantController extends Controller
 
     public function index(Request $request)
     {
-        $query = Plant::with(['type', 'plantingLocation']);
+        $query = Plant::with(['type', 'plantings.location']);
 
-        // Search by name
+        // Search by nama tanaman, varietas, atau deskripsi
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where('name', 'like', '%' . $search . '%');
+            $like = '%' . $search . '%';
+            $query->where(function ($q) use ($like) {
+                $q->where('name', 'like', $like)
+                    ->orWhere('variety', 'like', $like)
+                    ->orWhere('description', 'like', $like)
+                    ->orWhereHas('type', function ($typeQuery) use ($like) {
+                        $typeQuery->where('name', 'like', $like)
+                            ->orWhere('category', 'like', $like);
+                    });
+            });
         }
 
         if ($request->filled('planting_location_id')) {
-            $query->where('planting_location_id', $request->planting_location_id);
+            $query->whereHas('plantings', fn ($q) => $q->where('planting_location_id', $request->planting_location_id));
+        }
+        if ($request->filled('category')) {
+            $query->whereHas('type', fn ($q) => $q->whereRaw('LOWER(category) = ?', [mb_strtolower($request->category)]));
+        }
+        if ($request->filled('plant_name')) {
+            $query->whereHas('type', fn ($q) => $q->where('name', $request->plant_name));
+        }
+        if ($request->filled('variety_id')) {
+            $query->where('seed_varieties_id', $request->variety_id);
         }
         if ($request->filled('plant_type_id')) {
-            $query->where('plant_type_id', $request->plant_type_id);
+            $query->where('seed_commodity_id', $request->plant_type_id);
         }
 
-        $plants = $query->orderBy('name')->paginate(15)->withQueryString();
+        $plants = $query
+            ->join('plant_commodities', 'plant_varieties.seed_commodity_id', '=', 'plant_commodities.seed_commodity_id')
+            ->select('plant_varieties.*')
+            ->orderBy('plant_commodities.category')
+            ->orderBy('plant_commodities.name')
+            ->orderBy('plant_varieties.variety')
+            ->paginate(15)
+            ->withQueryString();
         $types = PlantType::orderBy('category')->orderBy('name')->get();
         $locations = PlantingLocation::orderBy('name')->get();
-        return view('planting/plants/index', compact('plants', 'types', 'locations'));
+        $categories = $types->pluck('category')->filter()->unique()->sort()->values();
+        $plantNameOptions = $types
+            ->when($request->filled('category'), fn ($rows) => $rows->filter(fn ($row) => strcasecmp((string) $row->category, $request->category) === 0))
+            ->unique('name')
+            ->sortBy('name')
+            ->values();
+        $varietyOptions = Plant::query()
+            ->when($request->filled('category'), fn ($q) => $q->whereHas('type', fn ($t) => $t->whereRaw('LOWER(category) = ?', [mb_strtolower($request->category)])))
+            ->when($request->filled('plant_name'), fn ($q) => $q->whereHas('type', fn ($t) => $t->where('name', $request->plant_name)))
+            ->orderBy('variety')
+            ->get();
+        return view('planting/plants/index', compact('plants', 'types', 'locations', 'categories', 'plantNameOptions', 'varietyOptions'));
     }
 
     public function create()
     {
         $types = PlantType::orderBy('category')->orderBy('name')->get();
         $locations = PlantingLocation::orderBy('name')->get();
-        return view('planting/plants/create', compact('types', 'locations'));
+        $seedUnits = SeedUnit::orderBy('name')->get();
+        return view('planting/plants/create', compact('types', 'locations', 'seedUnits'));
     }
 
     public function store(Request $request)
     {
         try {
             $data = $request->validate([
-                'plant_type_id' => 'required|exists:plant_types,plant_type_id',
-                'variety' => 'nullable|string|max:255',
-                'planting_location_ids' => 'nullable|array',
-                'planting_location_ids.*' => 'nullable|exists:planting_locations,planting_location_id',
-                // Planting details
+                'plant_type_id' => 'required|exists:plant_commodities,seed_commodity_id',
+                'variety' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    Rule::unique('plant_varieties', 'variety'),
+                ],
+                'description' => 'nullable|string',
                 'days_to_emerge' => 'nullable|integer|min:0',
                 'spacing_between_plants' => 'nullable|numeric|min:0',
                 'spacing_between_rows' => 'nullable|numeric|min:0',
@@ -194,14 +242,22 @@ class PlantController extends Controller
                 'soil_condition' => 'nullable|string|max:255',
                 'planting_detail' => 'nullable|string',
                 'pruning_detail' => 'nullable|string',
-                // Harvest details
                 'days_to_flower' => 'nullable|integer|min:0',
                 'days_to_harvest' => 'nullable|integer|min:0',
                 'harvest_window_days' => 'nullable|integer|min:0',
                 'expected_loss_rate' => 'nullable|numeric|min:0|max:100',
-                'harvest_unit' => 'nullable|string|max:255',
-                'expected_yield_per_hectare' => 'nullable|numeric|min:0',
-                'quantity_planted' => 'nullable|numeric|min:0',
+                'harvest_unit' => 'nullable|string',
+                'satuan_stok_id' => 'required|exists:seed_units,seed_unit_id',
+                'satuan_tanam_id' => 'required|exists:seed_units,seed_unit_id',
+                'satuan_panen_id' => 'required|exists:seed_units,seed_unit_id',
+                'public_description' => 'nullable|string',
+                'public_photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
+                'harga_jual' => 'required|numeric|min:0',
+                'minimal_stok' => 'required|numeric|min:0',
+            ], [
+                'plant_type_id.required' => 'Nama tanaman wajib dipilih.',
+                'variety.required' => 'Varietas wajib diisi.',
+                'variety.unique' => 'Varietas ini sudah digunakan. Gunakan varietas lain.',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()->back()
@@ -210,40 +266,13 @@ class PlantController extends Controller
         }
         
         try {
-            // Generate name from plant type and variety
-            $name = '';
-            if ($request->filled('plant_type_id')) {
-                $plantType = PlantType::find($request->plant_type_id);
-                if ($plantType) {
-                    $name = ($plantType->category ? $plantType->category . ' - ' : '') . $plantType->name;
-                    if ($request->filled('variety')) {
-                        $name .= ' ' . $request->variety;
-                    }
-                }
-            } else {
-                // If no plant type, use variety as name
-                $name = $request->variety ?? 'Tanaman Baru';
-            }
-            
-            // Ensure name is not empty
-            if (empty(trim($name))) {
-                $name = 'Tanaman Baru';
-            }
+            $name = $this->composePlantDisplayName($request->input('variety'));
             
             $plantData = [
                 'name' => trim($name),
                 'plant_type_id' => $data['plant_type_id'] ?? null,
-                'variety' => $data['variety'] ?? null,
-                'planting_location_id' => !empty($data['planting_location_ids']) ? $data['planting_location_ids'][0] : null,
-                'status' => 'perencanaan',
-                'progress' => 0,
-            ];
-            
-            $plant = Plant::create($plantData);
-            
-            // Data katalog (detail tanaman) disimpan di record Planting agar muncul di halaman detail
-            $catalogData = [
-                'plant_id' => $plant->plant_id,
+                'variety' => $data['variety'],
+                'description' => $data['description'] ?? null,
                 'days_to_emerge' => $data['days_to_emerge'] ?? null,
                 'spacing_between_plants' => $data['spacing_between_plants'] ?? null,
                 'spacing_between_rows' => $data['spacing_between_rows'] ?? null,
@@ -260,26 +289,22 @@ class PlantController extends Controller
                 'days_to_harvest' => $data['days_to_harvest'] ?? null,
                 'harvest_window_days' => $data['harvest_window_days'] ?? null,
                 'expected_loss_rate' => $data['expected_loss_rate'] ?? null,
-                'harvest_unit' => $this->mapHarvestUnit($data['harvest_unit'] ?? null),
-                'expected_yield_per_hectare' => $data['expected_yield_per_hectare'] ?? null,
-                'quantity_planted' => $data['quantity_planted'] ?? null,
+                'harvest_unit' => $data['harvest_unit'] ?? null,
+                'satuan_stok_id' => $data['satuan_stok_id'] ?? null,
+                'satuan_tanam_id' => $data['satuan_tanam_id'] ?? null,
+                'satuan_panen_id' => $data['satuan_panen_id'] ?? null,
+                'harga_jual' => $data['harga_jual'] ?? null,
+                'minimal_stok' => $data['minimal_stok'] ?? null,
+                'public_description' => $data['public_description'] ?? null,
             ];
             
-            $plantingLocationIds = array_filter((array) ($data['planting_location_ids'] ?? []));
-            if (!empty($plantingLocationIds)) {
-                foreach ($plantingLocationIds as $locationId) {
-                    if (!empty($locationId)) {
-                        $catalogData['planting_location_id'] = $locationId;
-                        Planting::create($catalogData);
-                    }
-                }
-            } else {
-                // Tanpa lokasi pun tetap buat satu record Planting agar detail tanaman tampil di halaman detail
-                $catalogData['planting_location_id'] = null;
-                Planting::create($catalogData);
+            if ($request->hasFile('public_photo')) {
+                $plantData['public_photo_path'] = $request->file('public_photo')->store('plants/public', 'public');
             }
             
-            return redirect()->route('plants.show', $plant)->with('success', 'Tanaman berhasil ditambahkan');
+            $plant = Plant::create($plantData);
+            
+            return redirect()->route('plants.show', $plant)->with('success', 'Varietas tanaman berhasil ditambahkan');
         } catch (\Exception $e) {
             \Log::error('Error creating plant: ' . $e->getMessage(), [
                 'exception' => $e,
@@ -294,8 +319,15 @@ class PlantController extends Controller
 
     public function show(Plant $plant)
     {
-        $plant->load(['type', 'plantingLocation', 'plantings', 'harvests']);
-        return view('planting/plants/show', compact('plant'));
+        $plant->load(['type', 'satuanStok', 'plantings.location', 'plantings.field', 'plantings.seedSource']);
+        $seedUnits = \App\Models\SeedUnit::orderBy('name')->get();
+        $stocks = Stock::where('seed_varieties_id', $plant->getKey())->get();
+        $packagingIds = StockPackaging::whereIn('stok_benih_id', $stocks->pluck('id'))->pluck('id');
+        $currentStock = (float) $stocks->where('status_stok', Stock::STATUS_SIAP)->sum('stok_saat_ini');
+        $soldQty = (float) SaleItem::whereIn('stock_packaging_id', $packagingIds)->sum('quantity');
+        $revenue = (float) SaleItem::whereIn('stock_packaging_id', $packagingIds)->sum('subtotal');
+
+        return view('planting/plants/show', compact('plant', 'seedUnits', 'currentStock', 'soldQty', 'revenue'));
     }
 
     public function edit(Plant $plant)
@@ -305,10 +337,11 @@ class PlantController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk mengedit data tanaman.');
         }
         
-        $plant->load('plantings');
+        $plant->load(['plantings']);
         $types = PlantType::orderBy('category')->orderBy('name')->get();
         $locations = PlantingLocation::orderBy('name')->get();
-        return view('planting/plants/edit', compact('plant', 'types', 'locations'));
+        $seedUnits = SeedUnit::orderBy('name')->get();
+        return view('planting/plants/edit', compact('plant', 'types', 'locations', 'seedUnits'));
     }
 
     public function update(Request $request, Plant $plant)
@@ -319,11 +352,14 @@ class PlantController extends Controller
         }
         
         $data = $request->validate([
-            'plant_type_id' => 'nullable|exists:plant_types,plant_type_id',
-            'variety' => 'nullable|string|max:255',
-            'planting_location_ids' => 'nullable|array',
-            'planting_location_ids.*' => 'exists:planting_locations,planting_location_id',
-            // Planting details
+            'plant_type_id' => 'nullable|exists:plant_commodities,seed_commodity_id',
+            'variety' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('plant_varieties', 'variety')->ignore($plant->getKey(), 'seed_varieties_id'),
+            ],
+            'description' => 'nullable|string',
             'days_to_emerge' => 'nullable|integer|min:0',
             'spacing_between_plants' => 'nullable|numeric|min:0',
             'spacing_between_rows' => 'nullable|numeric|min:0',
@@ -336,47 +372,35 @@ class PlantController extends Controller
             'soil_condition' => 'nullable|string|max:255',
             'planting_detail' => 'nullable|string',
             'pruning_detail' => 'nullable|string',
-            // Harvest details
             'days_to_flower' => 'nullable|integer|min:0',
             'days_to_harvest' => 'nullable|integer|min:0',
             'harvest_window_days' => 'nullable|integer|min:0',
             'expected_loss_rate' => 'nullable|numeric|min:0|max:100',
-            'harvest_unit' => 'nullable|string|max:255',
-            'expected_yield_per_hectare' => 'nullable|numeric|min:0',
-            'quantity_planted' => 'nullable|numeric|min:0',
+            'harvest_unit' => 'nullable|string',
+            'satuan_stok_id' => 'required|exists:seed_units,seed_unit_id',
+            'satuan_tanam_id' => 'required|exists:seed_units,seed_unit_id',
+            'satuan_panen_id' => 'required|exists:seed_units,seed_unit_id',
+            'public_description' => 'nullable|string',
+            'public_photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
+            'harga_jual' => 'required|numeric|min:0',
+            'minimal_stok' => 'required|numeric|min:0',
+        ], [
+            'variety.required' => 'Varietas wajib diisi.',
+            'variety.unique' => 'Varietas ini sudah digunakan. Gunakan varietas lain.',
+            'satuan_stok_id.required' => 'Satuan stok wajib dipilih.',
+            'satuan_tanam_id.required' => 'Satuan tanam wajib dipilih.',
+            'satuan_panen_id.required' => 'Satuan panen wajib dipilih.',
+            'harga_jual.required' => 'Harga satuan wajib diisi.',
+            'minimal_stok.required' => 'Minimal stok wajib diisi.',
         ]);
         
-        // Generate name from plant type and variety
-        $name = '';
-        if ($request->filled('plant_type_id')) {
-            $plantType = PlantType::find($request->plant_type_id);
-            if ($plantType) {
-                $name = ($plantType->category ? $plantType->category . ' - ' : '') . $plantType->name;
-                if ($request->filled('variety')) {
-                    $name .= ' ' . $request->variety;
-                }
-            }
-        } else {
-            // If no plant type, use variety as name
-            $name = $request->variety ?? $plant->name;
-        }
-        
-        // Ensure name is not empty
-        if (empty(trim($name))) {
-            $name = $plant->name;
-        }
+        $name = $this->composePlantDisplayName($request->input('variety'), $plant->name);
         
         $plantData = [
             'name' => trim($name),
             'plant_type_id' => $data['plant_type_id'] ?? null,
-            'variety' => $data['variety'] ?? null,
-            'planting_location_id' => !empty($data['planting_location_ids']) ? $data['planting_location_ids'][0] : null,
-        ];
-        
-        $plant->update($plantData);
-        
-        // Data katalog (detail tanaman) untuk disimpan ke record Planting
-        $plantingData = [
+            'variety' => $data['variety'],
+            'description' => $data['description'] ?? null,
             'days_to_emerge' => $data['days_to_emerge'] ?? null,
             'spacing_between_plants' => $data['spacing_between_plants'] ?? null,
             'spacing_between_rows' => $data['spacing_between_rows'] ?? null,
@@ -393,55 +417,23 @@ class PlantController extends Controller
             'days_to_harvest' => $data['days_to_harvest'] ?? null,
             'harvest_window_days' => $data['harvest_window_days'] ?? null,
             'expected_loss_rate' => $data['expected_loss_rate'] ?? null,
-            'harvest_unit' => $this->mapHarvestUnit($data['harvest_unit'] ?? null),
-            'expected_yield_per_hectare' => $data['expected_yield_per_hectare'] ?? null,
-            'quantity_planted' => $data['quantity_planted'] ?? null,
+            'harvest_unit' => $data['harvest_unit'] ?? null,
+            'satuan_stok_id' => $data['satuan_stok_id'] ?? null,
+            'satuan_tanam_id' => $data['satuan_tanam_id'] ?? null,
+            'satuan_panen_id' => $data['satuan_panen_id'] ?? null,
+            'harga_jual' => $data['harga_jual'] ?? null,
+            'minimal_stok' => $data['minimal_stok'] ?? null,
+            'public_description' => $data['public_description'] ?? null,
         ];
-        
-        // Normalize: treat empty string as null for location
-        $rawLocationIds = $data['planting_location_ids'] ?? [];
-        $plantingLocationIds = array_values(array_map(function ($id) {
-            return ($id === '' || $id === null) ? null : $id;
-        }, array_filter($rawLocationIds, function ($id) {
-            return $id !== null && $id !== '';
-        })));
-        // If we have one empty selection, treat as one null location
-        if (!empty($rawLocationIds) && count($plantingLocationIds) === 0 && in_array('', $rawLocationIds, true)) {
-            $plantingLocationIds = [null];
+
+        if ($request->hasFile('public_photo')) {
+            if ($plant->public_photo_path) {
+                \Storage::disk('public')->delete($plant->public_photo_path);
+            }
+            $plantData['public_photo_path'] = $request->file('public_photo')->store('plants/public', 'public');
         }
         
-        $existingPlantings = $plant->plantings;
-        
-        if (!empty($plantingLocationIds)) {
-            foreach ($plantingLocationIds as $locationId) {
-                $plantingData['planting_location_id'] = $locationId;
-                $existingPlanting = $existingPlantings->firstWhere('planting_location_id', $locationId);
-                
-                if ($existingPlanting) {
-                    $existingPlanting->update($plantingData);
-                } else {
-                    $plantingData['plant_id'] = $plant->plant_id;
-                    Planting::create($plantingData);
-                }
-            }
-            // Hapus record penanaman yang lokasinya tidak lagi dipilih (dan belum punya panen)
-            $plantingsToDelete = $existingPlantings->whereNotIn('planting_location_id', $plantingLocationIds);
-            foreach ($plantingsToDelete as $plantingToDelete) {
-                if (!$plantingToDelete->harvest) {
-                    $plantingToDelete->delete();
-                }
-            }
-        } else {
-            // Tanpa lokasi: tetap simpan detail tanaman ke satu record Planting (update yang pertama atau buat baru)
-            $first = $existingPlantings->first();
-            $plantingData['plant_id'] = $plant->plant_id;
-            $plantingData['planting_location_id'] = null;
-            if ($first) {
-                $first->update($plantingData);
-            } else {
-                Planting::create($plantingData);
-            }
-        }
+        $plant->update($plantData);
         
         return redirect()->route('plants.show', $plant)->with('success', 'Tanaman diperbarui');
     }
@@ -451,61 +443,72 @@ class PlantController extends Controller
      */
     public function currentPlantings(Plant $plant, Request $request)
     {
-        $plant->load(['type']);
-        
-        // Get all active plantings for this plant
-        // Active means not completed (is_completed = false)
-        $currentPlantings = Planting::where('plant_id', $plant->plant_id)
-            ->with(['harvests', 'losses'])
-            ->where('is_completed', false)
-            ->get();
-        
-        // Get all planting locations for the "Tanam Baru" form
-        $allPlantingLocations = PlantingLocation::orderBy('name')->get();
-        
-        // Get all plants for the "Tanam Baru" form
-        $allPlants = Plant::with('type')->orderBy('name')->get();
-        
-        // Group by location for better display
-        $plantingsByLocation = $currentPlantings->groupBy('planting_location_id');
-        
-        // Get harvested, lost, and failed plantings for sub-tabs
-        // Harvested plantings: any planting that has at least one harvest with quantity > 0
-        // Removed is_completed check so all plantings with harvests are shown
-        $harvestedPlantings = Planting::where('plant_id', $plant->plant_id)
-            ->whereHas('harvests', function($q) {
-                $q->where('quantity', '>', 0);
+        $plant->load(['type', 'satuanTanam']);
+
+        $plantings = Planting::whereHas('seedSource', function ($q) use ($plant) {
+                $q->where('seed_varieties_id', $plant->getKey());
             })
-            ->with(['harvests' => function($q) {
-                $q->where('quantity', '>', 0)->orderBy('harvested_at', 'desc');
-            }, 'location'])
-            ->orderBy('planted_at', 'desc')
+            ->with(['field.plantingLocation', 'seedSource.plant', 'plant.satuanTanam', 'postHarvests'])
+            ->whereNotNull('planted_at')
+            ->orderByDesc('planted_at')
             ->get();
-        
-        $lostPlantings = Planting::where('plant_id', $plant->plant_id)
-            ->whereHas('losses')
-            ->with(['losses'])
-            ->orderBy('planted_at', 'desc')
-            ->get();
-        
-        $failedPlantings = Planting::where('plant_id', $plant->plant_id)
-            ->whereHas('harvests', function($q) {
-                $q->where('quantity', '<=', 0);
-            })
-            ->with(['harvests'])
-            ->orderBy('planted_at', 'desc')
-            ->get();
-        
-        return view('planting.plants.current-plantings', compact(
-            'plant', 
-            'currentPlantings', 
-            'plantingsByLocation',
-            'allPlantingLocations',
-            'allPlants',
-            'harvestedPlantings',
-            'lostPlantings',
-            'failedPlantings'
-        ));
+
+        $currentPlantings = $plantings->filter(fn (Planting $item) => ! $item->is_completed)->values();
+        $historyPlantings = $plantings->filter(fn (Planting $item) => $item->is_completed)->values();
+
+        return view('planting.plants.current-plantings', compact('plant', 'currentPlantings', 'historyPlantings'));
+    }
+
+    public function storeProduction(Request $request, Plant $plant)
+    {
+        $data = $request->validate([
+            'seed_source_id' => 'required|exists:plant_seed_source,seed_source_id',
+            'planting_field_id' => 'required|exists:planting_fields,id',
+            'planting_batch_number' => 'required|string|max:255|unique:planting_production,planting_batch_number',
+            'planted_at' => 'required|date',
+            'planting_amount' => 'required|numeric|min:0',
+            'estimated_harvest_date' => 'nullable|date|after_or_equal:planted_at',
+        ], [
+            'seed_source_id.required' => 'Benih sumber wajib dipilih.',
+            'planting_field_id.required' => 'Lahan wajib dipilih.',
+        ]);
+
+        $seedSource = SeedSource::findOrFail($data['seed_source_id']);
+        if ($seedSource->seed_varieties_id !== $plant->getKey()) {
+            return back()->withErrors(['seed_source_id' => 'Benih sumber tidak sesuai dengan tanaman ini.'])->withInput();
+        }
+        if ((float) $seedSource->quantity_kg <= 0) {
+            return back()->withErrors(['seed_source_id' => 'Benih sumber ini tidak tersedia.'])->withInput();
+        }
+
+        $field = \App\Models\PlantingField::findOrFail($data['planting_field_id']);
+
+        $batch = trim((string) ($data['planting_batch_number'] ?? ''));
+        if ($batch === '') {
+            $year = date('Y');
+            $count = Planting::whereYear('planted_at', $year)->count() + 1;
+            $batch = 'TANAM-' . $year . '-' . str_pad((string) $count, 3, '0', STR_PAD_LEFT);
+            while (Planting::where('planting_batch_number', $batch)->exists()) {
+                $count++;
+                $batch = 'TANAM-' . $year . '-' . str_pad((string) $count, 3, '0', STR_PAD_LEFT);
+            }
+        }
+        $data['planting_batch_number'] = $batch;
+        $data['satuan_panen_id'] = $plant->satuan_panen_id;
+        $data['status'] = Planting::STATUS_PERENCANAAN;
+        $data['is_completed'] = false;
+
+        if ((float) $seedSource->quantity_kg < (float) $data['planting_amount']) {
+            return back()->withErrors(['planting_amount' => 'Jumlah benih yang ditanam melebihi sisa benih sumber.'])->withInput();
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($data, $seedSource) {
+            $seedSource->decrement('quantity_kg', $data['planting_amount']);
+            Planting::create($data);
+        });
+
+        return redirect()->route('plants.current-plantings', $plant)
+            ->with('success', 'Produksi penanaman berhasil ditambahkan');
     }
 
     /**
@@ -516,11 +519,11 @@ class PlantController extends Controller
         $plant->load(['type']);
         
         // Verify that this planting belongs to this plant
-        if ($planting->plant_id != $plant->plant_id) {
+        if ($planting->seedSource?->seed_varieties_id !== $plant->getKey()) {
             abort(404, 'Penanaman tidak ditemukan untuk tanaman ini.');
         }
         
-        $plantingLocation = $planting->location;
+        $plantingLocation = $planting->location ?? $planting->field?->plantingLocation;
         
         // Check if user has access to this planting location
         $user = auth()->user();
@@ -535,7 +538,7 @@ class PlantController extends Controller
         $taskMonth = $request->get('task_month', '');
         
         $tasksQuery = $plantingLocation->tasks()
-            ->where('planting_id', $planting->planting_id)
+            ->where('planting_tasks.planting_id', $planting->planting_id)
             ->with(['assignedUser', 'planting.plant']);
         
         if ($statusFilter !== 'all') {
@@ -562,8 +565,8 @@ class PlantController extends Controller
         $allTasks = $plantingLocation->tasks()
             ->with(['planting.plant', 'assignedUser', 'createdByUser', 'lastEditedByUser'])
             ->where(function($query) use ($planting) {
-                $query->where('planting_id', $planting->planting_id)
-                      ->orWhereNull('planting_id');
+                $query->where('planting_tasks.planting_id', $planting->planting_id)
+                      ->orWhereNull('planting_tasks.planting_id');
             })
             ->orderBy('due_date', 'desc')
             ->orderBy('created_at', 'desc')
@@ -571,7 +574,7 @@ class PlantController extends Controller
         
         // Get available years for task filter
         $existingYears = $plantingLocation->tasks()
-            ->where('planting_id', $planting->planting_id)
+            ->where('planting_tasks.planting_id', $planting->planting_id)
             ->whereNotNull('due_date')
             ->selectRaw('YEAR(due_date) as year')
             ->distinct()
@@ -608,15 +611,15 @@ class PlantController extends Controller
         
         // Load treatments for this planting
         $treatments = $plantingLocation->treatments()
-            ->where('planting_id', $planting->planting_id)
-            ->with(['plantingLocation', 'planting.plant', 'responsiblePerson', 'editor'])
+            ->where('planting_treatments.planting_id', $planting->planting_id)
+            ->with(['planting.plant', 'responsiblePerson', 'editor'])
             ->orderBy('treatment_date', 'desc')
             ->get();
         
         // Load nutrients for this planting
         $nutrients = $plantingLocation->nutrients()
-            ->where('planting_id', $planting->planting_id)
-            ->with(['plantingLocation', 'planting.plant', 'editor'])
+            ->where('planting_nutrients.planting_id', $planting->planting_id)
+            ->with(['planting.plant', 'editor'])
             ->orderBy('application_date', 'desc')
             ->get();
         
@@ -642,19 +645,15 @@ class PlantController extends Controller
         // Get all users for task assignment
         $users = \App\Models\User::orderBy('name')->get();
         
-        // Get land managers and workers for this location
-        $landManagers = $plantingLocation->landManagerUsers()->orderBy('name')->get();
-        $landWorkers = $plantingLocation->landWorkerUsers()->orderBy('name')->get();
-        $locationUsers = $landManagers->merge($landWorkers)->unique('id')->sortBy('name');
+        // Get workers for this location (pekerja lahan)
+        $locationUsers = $plantingLocation->landWorkerUsers()->orderBy('name')->get()->unique('user_id')->sortBy('name')->values();
         
-        // Get task templates
-        $taskTemplates = \App\Models\TaskTemplate::where('association', 'penanaman')
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+        $taskTemplates = \Illuminate\Support\Facades\Schema::hasTable('task_templates')
+            ? \App\Models\TaskTemplate::where('association', 'penanaman')->where('is_active', true)->orderBy('name')->get()
+            : collect();
         
         // Get inventory types for treatment dropdown
-        $inventoryTypes = \App\Models\InventoryType::orderBy('name')->get();
+        $inventoryTypes = collect();
         
         // Get active plantings for dropdowns (only this planting)
         $activePlantings = collect([$planting]);
@@ -692,42 +691,6 @@ class PlantController extends Controller
         ));
     }
 
-    /**
-     * Show harvest history for a plant
-     */
-    public function harvestsIndex(Plant $plant, Request $request)
-    {
-        $plant->load(['type']);
-        
-        $query = Harvest::where('plant_id', $plant->plant_id)
-            ->with(['planting', 'certification'])
-            ->orderBy('harvested_at', 'desc');
-        
-        // Filter by year if provided
-        if ($request->filled('year')) {
-            $query->whereYear('harvested_at', $request->year);
-        }
-        
-        // Filter by location if provided
-        if ($request->filled('planting_location_id')) {
-            $query->where('planting_location_id', $request->planting_location_id);
-        }
-        
-        $harvests = $query->paginate(15);
-        $locations = PlantingLocation::whereHas('plantings', function($q) use ($plant) {
-            $q->where('plant_id', $plant->plant_id);
-        })->orderBy('name')->get();
-        
-        // Get available years for filter
-        $years = Harvest::where('plant_id', $plant->plant_id)
-            ->selectRaw('YEAR(harvested_at) as year')
-            ->distinct()
-            ->orderBy('year', 'desc')
-            ->pluck('year');
-        
-        return view('planting.plants.harvests', compact('plant', 'harvests', 'locations', 'years'));
-    }
-
     public function destroy(Plant $plant)
     {
         // Prevent penangkar from deleting plants
@@ -737,6 +700,109 @@ class PlantController extends Controller
         
         $plant->delete();
         return redirect()->route('plants.index')->with('success', 'Tanaman berhasil dihapus');
+    }
+
+    /**
+     * Kolom plant_varieties.name di database live adalah VARCHAR(50).
+     * Nama tampilan memakai varietas, bukan gabungan kategori + komoditas.
+     */
+    protected function composePlantDisplayName(?string $variety, ?string $fallback = null): string
+    {
+        $name = trim((string) ($variety ?: $fallback ?: 'Tanaman Baru'));
+        if ($name === '') {
+            $name = 'Tanaman Baru';
+        }
+
+        return mb_substr($name, 0, 50);
+    }
+
+    public function labelCertificates(Plant $plant)
+    {
+        $plant->load(['type', 'satuanStok']);
+        $stocks = Stock::with(['postHarvest.planting', 'certificationReport', 'packagings'])
+            ->where('seed_varieties_id', $plant->getKey())
+            ->whereNotNull('certification_report_id')
+            ->orderByDesc('created_at')
+            ->get()
+            ->groupBy(fn (Stock $stock) => $stock->nomor_induk ?: $stock->id)
+            ->map(function ($group) {
+                $stock = $group->sortByDesc('created_at')->first();
+                $label = $stock->certificationReport;
+                $active = $group->flatMap->packagings
+                    ->where('status_kemasan', StockPackaging::STATUS_TERSEDIA)
+                    ->count();
+
+                return (object) [
+                    'stock' => $stock,
+                    'nomor_induk' => $stock->nomor_induk,
+                    'nomor_batch' => $stock->postHarvest?->planting?->planting_batch_number,
+                    'kelas_benih' => $label?->warnaLabel() ?: '-',
+                    'total_tersedia' => $active,
+                    'isi_kemasan' => $label?->ukuran_kemasan_retail_kg,
+                    'total_produk' => $group->flatMap->packagings->count(),
+                    'tgl_selesai' => $stock->postHarvest?->tgl_selesai_uji,
+                    'tgl_masa_edar' => $stock->tgl_kedaluwarsa ?: $stock->postHarvest?->tgl_kadaluarsa_mutu,
+                ];
+            })
+            ->values();
+
+        return view('planting.plants.label-certificates', compact('plant', 'stocks'));
+    }
+
+    public function labelCertificateStock(Plant $plant, Stock $stock)
+    {
+        if ($stock->seed_varieties_id !== $plant->getKey()) {
+            abort(404);
+        }
+        $plant->load(['type', 'satuanStok']);
+        $packagings = $stock->packagings()->with(['label', 'stock'])->orderBy('no_label_seri')->get();
+
+        return view('planting.plants.label-certificate-stock', compact('plant', 'stock', 'packagings'));
+    }
+
+    public function labelStockHistory(Plant $plant)
+    {
+        $plant->load(['type', 'satuanStok']);
+        $stocks = Stock::with(['packagings', 'certificationReport'])
+            ->where('seed_varieties_id', $plant->getKey())
+            ->orderByDesc('created_at')
+            ->paginate(20);
+        $activeStocks = Stock::with(['packagings.rack.warehouse', 'rack.warehouse'])
+            ->where('seed_varieties_id', $plant->getKey())
+            ->where('stok_saat_ini', '>', 0)
+            ->where('status_stok', Stock::STATUS_SIAP)
+            ->orderByDesc('created_at')
+            ->get()
+            ->filter(fn (Stock $stock) => $stock->hasLabel() && ! $stock->isAwaitingPackaging())
+            ->values();
+        $histories = StockHistory::with(['packaging', 'user'])
+            ->where('seed_varieties_id', $plant->getKey())
+            ->orderByDesc('created_at')
+            ->paginate(20, ['*'], 'history_page');
+
+        return view('planting.plants.label-stock-history', compact('plant', 'stocks', 'activeStocks', 'histories'));
+    }
+
+    public function salesHistory(Plant $plant)
+    {
+        $plant->load('type');
+        $sales = SaleItem::query()
+            ->select(
+                'receipt_number',
+                DB::raw('MIN(sale_date) as sale_date'),
+                DB::raw('MIN(buyer_name) as buyer_name'),
+                DB::raw('SUM(quantity) as total_quantity'),
+                DB::raw('COUNT(sale_item_id) as product_count'),
+                DB::raw('SUM(subtotal) as total_amount'),
+                DB::raw('MIN(sale_item_id) as first_id'),
+                DB::raw('MIN(unit) as unit')
+            )
+            ->whereHas('packaging.stock', fn ($q) => $q->where('seed_varieties_id', $plant->getKey()))
+            ->groupBy('receipt_number')
+            ->orderByDesc('sale_date')
+            ->paginate(20);
+
+        return view('planting.plants.sales-history', compact('plant', 'sales'));
     }
 }
 

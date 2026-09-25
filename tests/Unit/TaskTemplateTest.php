@@ -47,11 +47,11 @@ class TaskTemplateTest extends TestCase
 
         $task1 = Task::create([
             'title' => 'Task 1',
-            'template_id' => $template->task_template_id,
+            'task_template_id' => $template->task_template_id,
         ]);
         $task2 = Task::create([
             'title' => 'Task 2',
-            'template_id' => $template->task_template_id,
+            'task_template_id' => $template->task_template_id,
         ]);
 
         $tasks = $template->tasks;

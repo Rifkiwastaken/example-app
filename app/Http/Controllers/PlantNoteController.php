@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attachment;
 use App\Models\Plant;
-use App\Models\PlantNote;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -11,92 +11,133 @@ class PlantNoteController extends Controller
 {
     public function index(Plant $plant)
     {
-        $notes = $plant->notes()->orderBy('note_date', 'desc')->paginate(15);
-        return view('planting/plants/notes/index', compact('plant', 'notes'));
+        $notes = Attachment::with('creator')
+            ->forPlant($plant->getKey())
+            ->orderByDesc('attachment_date')
+            ->orderByDesc('created_at')
+            ->paginate(15);
+
+        return view('planting.plants.notes.index', compact('plant', 'notes'));
     }
 
     public function create(Plant $plant)
     {
-        return view('planting/plants/notes/create', compact('plant'));
+        return view('planting.plants.notes.create', compact('plant'));
     }
 
     public function store(Request $request, Plant $plant)
     {
-        $data = $request->validate([
-            'description' => 'required|string',
-            'note_date' => 'required|date',
-            'keywords' => 'nullable|string|max:255',
-            'attachment' => 'nullable|file|max:10240', // 10MB max
+        $attachment = $this->storeAttachment($request, [
+            'module' => Attachment::MODULE_PLANT,
+            'seed_varieties_id' => $plant->getKey(),
+            'planting_location_id' => null,
+            'stock_id' => null,
         ]);
 
-        $data['plant_id'] = $plant->plant_id;
-
-        if ($request->hasFile('attachment')) {
-            $file = $request->file('attachment');
-            $data['attachment_path'] = $file->store('plant-notes', 'public');
-        }
-
-        PlantNote::create($data);
-        
         return redirect()->route('plants.notes.index', $plant)
-            ->with('success', 'Catatan berhasil ditambahkan');
+            ->with('success', 'Lampiran berhasil ditambahkan');
     }
 
-    public function show(Plant $plant, PlantNote $note)
+    public function show(Plant $plant, Attachment $note)
     {
-        return view('planting/plants/notes/show', compact('plant', 'note'));
+        $this->ensureBelongsToPlant($plant, $note);
+        $note->load('creator');
+
+        return view('planting.plants.notes.show', compact('plant', 'note'));
     }
 
-    public function edit(Plant $plant, PlantNote $note)
+    public function edit(Plant $plant, Attachment $note)
     {
-        // Prevent penangkar from editing notes
         if (auth()->user()->role === 'penangkar') {
-            abort(403, 'Anda tidak memiliki izin untuk mengedit catatan.');
+            abort(403, 'Anda tidak memiliki izin untuk mengedit lampiran.');
         }
-        
-        return view('planting/plants/notes/edit', compact('plant', 'note'));
+
+        $this->ensureBelongsToPlant($plant, $note);
+
+        return view('planting.plants.notes.edit', compact('plant', 'note'));
     }
 
-    public function update(Request $request, Plant $plant, PlantNote $note)
+    public function update(Request $request, Plant $plant, Attachment $note)
     {
-        // Prevent penangkar from updating notes
         if (auth()->user()->role === 'penangkar') {
-            abort(403, 'Anda tidak memiliki izin untuk mengedit catatan.');
-        }
-        
-        $data = $request->validate([
-            'description' => 'required|string',
-            'note_date' => 'required|date',
-            'keywords' => 'nullable|string|max:255',
-            'attachment' => 'nullable|file|max:10240', // 10MB max
-        ]);
-
-        if ($request->hasFile('attachment')) {
-            $file = $request->file('attachment');
-            $data['attachment_path'] = $file->store('plant-notes', 'public');
+            abort(403, 'Anda tidak memiliki izin untuk mengedit lampiran.');
         }
 
-        $note->update($data);
-        
+        $this->ensureBelongsToPlant($plant, $note);
+        $this->updateAttachment($request, $note);
+
         return redirect()->route('plants.notes.index', $plant)
-            ->with('success', 'Catatan berhasil diperbarui');
+            ->with('success', 'Lampiran berhasil diperbarui');
     }
 
-    public function destroy(Plant $plant, PlantNote $note)
+    public function destroy(Plant $plant, Attachment $note)
     {
-        // Prevent penangkar from deleting notes
         if (auth()->user()->role === 'penangkar') {
-            abort(403, 'Anda tidak memiliki izin untuk menghapus catatan.');
+            abort(403, 'Anda tidak memiliki izin untuk menghapus lampiran.');
         }
-        
-        // Delete attachment file if exists
-        if ($note->attachment_path && Storage::disk('public')->exists($note->attachment_path)) {
-            Storage::disk('public')->delete($note->attachment_path);
+
+        $this->ensureBelongsToPlant($plant, $note);
+        if ($note->file_path && Storage::disk('public')->exists($note->file_path)) {
+            Storage::disk('public')->delete($note->file_path);
         }
-        
         $note->delete();
-        
+
         return redirect()->route('plants.notes.index', $plant)
-            ->with('success', 'Catatan berhasil dihapus');
+            ->with('success', 'Lampiran berhasil dihapus');
+    }
+
+    protected function storeAttachment(Request $request, array $context): Attachment
+    {
+        $data = $this->validated($request, true);
+        $file = $request->file('file');
+
+        return Attachment::create(array_merge($context, [
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'attachment_date' => $data['attachment_date'],
+            'created_by' => auth()->user()->user_id,
+            'file_path' => $file ? $file->store('attachments', 'public') : null,
+            'file_name' => $file?->getClientOriginalName(),
+            'file_size' => $file?->getSize(),
+            'mime_type' => $file?->getMimeType(),
+        ]));
+    }
+
+    protected function updateAttachment(Request $request, Attachment $note): void
+    {
+        $data = $this->validated($request, false);
+        $payload = [
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'attachment_date' => $data['attachment_date'],
+        ];
+        if ($request->hasFile('file')) {
+            if ($note->file_path && Storage::disk('public')->exists($note->file_path)) {
+                Storage::disk('public')->delete($note->file_path);
+            }
+            $file = $request->file('file');
+            $payload['file_path'] = $file->store('attachments', 'public');
+            $payload['file_name'] = $file->getClientOriginalName();
+            $payload['file_size'] = $file->getSize();
+            $payload['mime_type'] = $file->getMimeType();
+        }
+        $note->update($payload);
+    }
+
+    protected function validated(Request $request, bool $fileRequired): array
+    {
+        return $request->validate([
+            'title' => 'required|string|max:255',
+            'attachment_date' => 'required|date',
+            'description' => 'nullable|string',
+            'file' => ($fileRequired ? 'required' : 'nullable').'|file|max:10240',
+        ]);
+    }
+
+    protected function ensureBelongsToPlant(Plant $plant, Attachment $note): void
+    {
+        if ($note->module !== Attachment::MODULE_PLANT || $note->seed_varieties_id !== $plant->getKey()) {
+            abort(404);
+        }
     }
 }

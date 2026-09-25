@@ -13,47 +13,32 @@
 
 -- Tabel: users
 -- Deskripsi: Data pengguna sistem
+-- CATATAN: Tabel locations telah dihapus. Kolom location_id tidak ada; gunakan location_placement.
 CREATE TABLE users (
     user_id VARCHAR(36) PRIMARY KEY,
-    name VARCHAR(255),
+    name VARCHAR(50),
     email VARCHAR(255) UNIQUE,
     email_verified_at TIMESTAMP,
     password VARCHAR(255),
-    role ENUM('admin', 'pimpinan', 'petugas_lapangan', 'penangkar'),
-    location_id VARCHAR(36),
-    location_placement VARCHAR(255),
-    photo_path VARCHAR(255),
-    full_name VARCHAR(255),
+    remember_token VARCHAR(100),
+    role ENUM('admin', 'kepala_satuan_tugas', 'petugas_sertifikasi', 'petugas_gudang', 'petugas_bbi', 'penangkar'),
+    location_placement VARCHAR(50),
+    photo_path VARCHAR(50),
+    full_name VARCHAR(50),
     status ENUM('active', 'inactive'),
-    contact_type ENUM('internal', 'external'),
-    organization VARCHAR(255),
-    position VARCHAR(255),
+    contact_type ENUM('pegawai_uptd_bbi_tpph', 'pegawai_gudang', 'petugas_sertifikasi', 'petani', 'penyuluh', 'penangkar', 'lainnya'),
+    organization VARCHAR(50),
+    position VARCHAR(50),
     nip VARCHAR(50),
     primary_phone VARCHAR(20),
+    primary_phone_is_whatsapp TINYINT(1),
     secondary_phone VARCHAR(20),
     address TEXT,
-    province VARCHAR(100),
-    city VARCHAR(100),
-    district VARCHAR(100),
-    village VARCHAR(100),
+    province VARCHAR(50),
+    city VARCHAR(50),
+    district VARCHAR(50),
+    village VARCHAR(50),
     notes TEXT,
-    remember_token VARCHAR(100),
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    FOREIGN KEY (location_id) REFERENCES locations(location_id)
-);
-
--- Tabel: locations
--- Deskripsi: Data lokasi fisik/kantor
-CREATE TABLE locations (
-    location_id VARCHAR(36) PRIMARY KEY,
-    name VARCHAR(255),
-    city VARCHAR(255),
-    district VARCHAR(255),
-    type ENUM('kantor', 'lapangan', 'gudang', 'lainnya'),
-    description TEXT,
-    google_maps_link VARCHAR(500),
-    photo VARCHAR(255),
     created_at TIMESTAMP,
     updated_at TIMESTAMP
 );
@@ -190,45 +175,46 @@ CREATE TABLE plants (
 
 -- Tabel: planting_locations
 -- Deskripsi: Lokasi penanaman/lahan
+-- CATATAN: Tabel locations telah dihapus. Kolom location_id tidak ada.
 CREATE TABLE planting_locations (
     planting_location_id VARCHAR(36) PRIMARY KEY,
-    name VARCHAR(255),
-    location_id VARCHAR(36),
-    location_type ENUM('sawah', 'kebun', 'greenhouse', 'polybag', 'lainnya'),
-    planting_format ENUM('bedengan', 'baris', 'kotak', 'acak', 'lainnya'),
-    planting_format_custom VARCHAR(255),
+    name VARCHAR(50),
+    location_type ENUM('lapangan', 'sawah', 'greenhouse', 'grow_room', 'padang_rumput', 'petak_ternak', 'lainnya'),
+    location_type_custom VARCHAR(50),
+    planting_format ENUM('petak', 'cover_crop', 'row', 'lainnya'),
+    planting_format_custom VARCHAR(50),
     num_beds INT,
-    bed_length_m DECIMAL(10,2),
-    bed_width_m DECIMAL(10,2),
-    map_size DECIMAL(10,2),
-    light_condition VARCHAR(255),
+    bed_length_m DECIMAL(8,2),
+    bed_width_m DECIMAL(8,2),
+    map_size VARCHAR(50),
+    light_condition VARCHAR(50),
     description TEXT,
-    location_summary TEXT,
+    location_summary VARCHAR(50),
     administrative_address TEXT,
-    google_maps_link VARCHAR(500),
-    land_status VARCHAR(255),
-    ownership_status VARCHAR(255),
-    water_source VARCHAR(255),
-    soil_type VARCHAR(255),
+    google_maps_link VARCHAR(50),
+    primary_photo_path VARCHAR(50),
+    land_status VARCHAR(50),
+    ownership_status VARCHAR(50),
+    water_source VARCHAR(50),
+    soil_type VARCHAR(50),
     elevation_masl INT,
-    primary_photo_path VARCHAR(255),
     created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    FOREIGN KEY (location_id) REFERENCES locations(location_id)
+    updated_at TIMESTAMP
 );
 
 -- Tabel: plantings
 -- Deskripsi: Data penanaman
 CREATE TABLE plantings (
     planting_id VARCHAR(36) PRIMARY KEY,
-    plant_id VARCHAR(36),
+    plant_id VARCHAR(36) NOT NULL,
     planting_location_id VARCHAR(36),
-    bed_label VARCHAR(255),
+    bed_label VARCHAR(50),
+    planting_batch_number VARCHAR(50),
     days_to_emerge INT,
-    spacing_between_plants DECIMAL(10,2),
-    spacing_between_rows DECIMAL(10,2),
-    sowing_depth DECIMAL(10,2),
-    avg_height DECIMAL(10,2),
+    spacing_between_plants VARCHAR(50),
+    spacing_between_rows VARCHAR(50),
+    sowing_depth VARCHAR(50),
+    avg_height VARCHAR(50),
     start_method ENUM('tanam_langsung', 'baki_semai', 'pindahkan_ke_tanah', 'transplant', 'container', 'ditanam_di_baki_semai', 'batang_bawah', 'umbi', 'sambung_okulasi', 'lainnya'),
     germination_stage ENUM('benih_ditanam', 'perkecambahan', 'bibit', 'sudah_ditanam', 'vegetatif', 'berbunga', 'pematangan_buah', 'selesai'),
     seeds_per_hole INT,
@@ -240,16 +226,20 @@ CREATE TABLE plantings (
     days_to_flower INT,
     days_to_harvest INT,
     harvest_window_days INT,
-    expected_loss_rate DECIMAL(5,2),
+    expected_loss_rate VARCHAR(50),
     harvest_unit ENUM('ikat', 'barel', 'tandan', 'gantang', 'lusin', 'gram', 'batang', 'kilogram', 'kiloliter', 'liter', 'mililiter', 'satuan', 'ton'),
-    expected_yield_per_hectare DECIMAL(15,2),
-    quantity_planted DECIMAL(15,2),
+    planting_format VARCHAR(50),
+    planting_format_custom VARCHAR(50),
+    expected_yield_per_hectare DECIMAL(12,2),
+    quantity_planted INT,
     planted_at DATE,
+    area_ha DECIMAL(10,2),
+    estimated_harvest_date DATE,
     is_completed TINYINT(1),
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
-    FOREIGN KEY (plant_id) REFERENCES plants(plant_id),
-    FOREIGN KEY (planting_location_id) REFERENCES planting_locations(planting_location_id)
+    FOREIGN KEY (plant_id) REFERENCES plants(plant_id) ON DELETE CASCADE,
+    FOREIGN KEY (planting_location_id) REFERENCES planting_locations(planting_location_id) ON DELETE SET NULL
 );
 
 -- Tabel: harvests
@@ -323,6 +313,7 @@ CREATE TABLE plant_photos (
 CREATE TABLE planting_location_notes (
     planting_location_note_id VARCHAR(36) PRIMARY KEY,
     planting_location_id VARCHAR(36),
+    planting_id VARCHAR(36),
     title VARCHAR(255),
     description TEXT,
     note_date DATE,
@@ -334,6 +325,7 @@ CREATE TABLE planting_location_notes (
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
     FOREIGN KEY (planting_location_id) REFERENCES planting_locations(planting_location_id),
+    FOREIGN KEY (planting_id) REFERENCES plantings(planting_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
@@ -342,6 +334,7 @@ CREATE TABLE planting_location_notes (
 CREATE TABLE planting_location_photos (
     planting_location_photo_id VARCHAR(36) PRIMARY KEY,
     planting_location_id VARCHAR(36),
+    planting_id VARCHAR(36),
     file_path VARCHAR(255),
     file_name VARCHAR(255),
     file_size INT,
@@ -350,7 +343,8 @@ CREATE TABLE planting_location_photos (
     taken_at TIMESTAMP,
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
-    FOREIGN KEY (planting_location_id) REFERENCES planting_locations(planting_location_id)
+    FOREIGN KEY (planting_location_id) REFERENCES planting_locations(planting_location_id),
+    FOREIGN KEY (planting_id) REFERENCES plantings(planting_id)
 );
 
 
@@ -447,19 +441,21 @@ CREATE TABLE expenses (
 CREATE TABLE attachments (
     attachment_id VARCHAR(36) PRIMARY KEY,
     planting_location_id VARCHAR(36),
-    title VARCHAR(255),
+    planting_id VARCHAR(36),
+    title VARCHAR(50),
     description TEXT,
     attachment_date DATE,
-    file_path VARCHAR(255),
-    file_name VARCHAR(255),
+    file_path VARCHAR(50),
+    file_name VARCHAR(50),
     file_size INT,
-    mime_type VARCHAR(100),
+    mime_type VARCHAR(50),
     created_by VARCHAR(36),
     edited_at TIMESTAMP,
     edited_by VARCHAR(36),
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
     FOREIGN KEY (planting_location_id) REFERENCES planting_locations(planting_location_id),
+    FOREIGN KEY (planting_id) REFERENCES plantings(planting_id),
     FOREIGN KEY (created_by) REFERENCES users(user_id),
     FOREIGN KEY (edited_by) REFERENCES users(user_id)
 );
@@ -782,19 +778,19 @@ CREATE TABLE landing_page_settings (
 
 
 -- =====================================================
--- RINGKASAN TABEL
+-- RINGKASAN TABEL (sesuai database saat ini)
 -- =====================================================
--- Total Tabel: 35
--- 
--- 1. Sistem & Autentikasi (4):
---    - users, locations, password_reset_tokens, personal_access_tokens
+-- Total Tabel: 34 (tabel locations telah dihapus)
+--
+-- 1. Sistem & Autentikasi (3):
+--    - users, password_reset_tokens, personal_access_tokens
 --
 -- 2. Manajemen Tugas (3):
 --    - task_templates, task_series, tasks
 --
--- 3. Modul Penanaman (9):
+-- 3. Modul Penanaman (10):
 --    - plant_types, plants, planting_locations, plantings, harvests,
---    - planting_losses, plant_notes, plant_photos, 
+--    - planting_losses, plant_notes, plant_photos,
 --    - planting_location_notes, planting_location_photos
 --
 -- 4. Treatment & Nutrient (4):
@@ -803,7 +799,7 @@ CREATE TABLE landing_page_settings (
 -- 5. Sertifikasi (2):
 --    - certifications, certification_reports
 --
--- 6. Gudang & Inventori (8):
+-- 6. Gudang & Inventori (10):
 --    - warehouses, bins, inventory_types, inventory_lots,
 --    - inventory_transactions, inventory_type_warehouses,
 --    - inventory_notes, inventory_photos, inventory_type_seeds,

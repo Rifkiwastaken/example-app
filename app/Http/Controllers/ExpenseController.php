@@ -25,11 +25,8 @@ class ExpenseController extends Controller
         $plantingLocationId = $request->get('planting_location_id', '');
         $plantingId = $request->get('planting_id', '');
         
-        // Build query
-        $query = Expense::with([
-            'treatment.planting.plant.type', 
-            'nutrient.planting.plant.type'
-        ])
+        // Build query (expense hanya punya planting_id, lokasi/tanaman dari planting)
+        $query = Expense::with(['planting.plant.type', 'planting.location'])
             ->orderBy('expense_date', 'desc');
         
         // Filter by year
@@ -42,20 +39,14 @@ class ExpenseController extends Controller
             $query->whereMonth('expense_date', $month);
         }
         
-        // Filter by plant (from treatment or nutrient)
+        // Filter by plant (via planting)
         if ($plantId) {
-            $query->where(function($q) use ($plantId) {
-                $q->whereHas('treatment.planting', function($q) use ($plantId) {
-                    $q->where('plant_id', $plantId);
-                })->orWhereHas('nutrient.planting', function($q) use ($plantId) {
-                    $q->where('plant_id', $plantId);
-                });
-            });
+            $query->whereHas('planting', fn($q) => $q->forPlant($plantId));
         }
         
-        // Filter by planting location
+        // Filter by planting location (via planting)
         if ($plantingLocationId) {
-            $query->where('planting_location_id', $plantingLocationId);
+            $query->whereHas('planting', fn($q) => $q->where('planting_location_id', $plantingLocationId));
         }
         
         // Filter by planting
@@ -63,7 +54,7 @@ class ExpenseController extends Controller
             $query->where('planting_id', $plantingId);
         }
         
-        // Filter by user access if not admin
+        // Filter by user access if not admin (via planting -> planting_location_id)
         if (!$user->isAdmin()) {
             if (in_array($user->role, ['kepala_satuan_tugas', 'penangkar'])) {
                 $managedIds = $user->managedPlantingLocations()->pluck('planting_locations.planting_location_id')->toArray();
@@ -71,7 +62,7 @@ class ExpenseController extends Controller
                 $assignedLocationIds = array_unique(array_merge($managedIds, $workedIds));
                 
                 if (count($assignedLocationIds) > 0) {
-                    $query->whereIn('planting_location_id', $assignedLocationIds);
+                    $query->whereHas('planting', fn($q) => $q->whereIn('planting_location_id', $assignedLocationIds));
                 } else {
                     $query->whereRaw('1 = 0'); // No access
                 }
@@ -91,16 +82,10 @@ class ExpenseController extends Controller
             $totalExpensesQuery->whereMonth('expense_date', $month);
         }
         if ($plantId) {
-            $totalExpensesQuery->where(function($q) use ($plantId) {
-                $q->whereHas('treatment.planting', function($q) use ($plantId) {
-                    $q->where('plant_id', $plantId);
-                })->orWhereHas('nutrient.planting', function($q) use ($plantId) {
-                    $q->where('plant_id', $plantId);
-                });
-            });
+            $totalExpensesQuery->whereHas('planting', fn($q) => $q->forPlant($plantId));
         }
         if ($plantingLocationId) {
-            $totalExpensesQuery->where('planting_location_id', $plantingLocationId);
+            $totalExpensesQuery->whereHas('planting', fn($q) => $q->where('planting_location_id', $plantingLocationId));
         }
         if ($plantingId) {
             $totalExpensesQuery->where('planting_id', $plantingId);
@@ -114,7 +99,7 @@ class ExpenseController extends Controller
                 $assignedLocationIds = array_unique(array_merge($managedIds, $workedIds));
                 
                 if (count($assignedLocationIds) > 0) {
-                    $totalExpensesQuery->whereIn('planting_location_id', $assignedLocationIds);
+                    $totalExpensesQuery->whereHas('planting', fn($q) => $q->whereIn('planting_location_id', $assignedLocationIds));
                 } else {
                     $totalExpensesQuery->whereRaw('1 = 0');
                 }

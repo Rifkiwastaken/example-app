@@ -7,23 +7,23 @@ Tabel untuk menghubungkan inventory type dengan warehouse dan bin
 
 | Nama Atribut | Tipe Data | Ukuran | Keterangan |
 |--------------|-----------|--------|------------|
-| **id** | BIGINT | - | Primary Key, Auto Increment |
-| inventory_type_id | BIGINT | - | Foreign Key → inventory_types.id (NOT NULL) |
-| warehouse_id | BIGINT | - | Foreign Key → warehouses.id (NOT NULL) |
-| bin_id | BIGINT | - | Foreign Key → bins.id (NULL) |
-| warehouse_only | BOOLEAN | - | Hanya di lokasi gudang tanpa bin (NOT NULL) |
-| created_at | TIMESTAMP | - | Tanggal dibuat (NOT NULL) |
-| updated_at | TIMESTAMP | - | Tanggal diupdate (NOT NULL) |
+| **inventory_type_warehouse_id** | VARCHAR | 36 | Primary Key |
+| inventory_type_id | VARCHAR | 36 | Foreign Key → inventory_types.inventory_type_id |
+| warehouse_id | VARCHAR | 36 | Foreign Key → warehouses.warehouse_id |
+| bin_id | VARCHAR | 36 | Foreign Key → bins.bin_id |
+| warehouse_only | TINYINT(1) | | |
+| created_at | TIMESTAMP | | |
+| updated_at | TIMESTAMP | | |
 
 ## Relasi
-- Many-to-One dengan: `inventory_types` (inventory_type_id, CASCADE DELETE), `warehouses` (warehouse_id, CASCADE DELETE), `bins` (bin_id, CASCADE DELETE)
+- Many-to-One dengan: `inventory_types` (inventory_type_id), `warehouses` (warehouse_id), `bins` (bin_id)
 
 ## Index
-- PRIMARY KEY: `id`
+- PRIMARY KEY: `inventory_type_warehouse_id`
 - UNIQUE: (`inventory_type_id`, `warehouse_id`, `bin_id`)
-- FOREIGN KEY: `inventory_type_id` → `inventory_types.id` (CASCADE DELETE)
-- FOREIGN KEY: `warehouse_id` → `warehouses.id` (CASCADE DELETE)
-- FOREIGN KEY: `bin_id` → `bins.id` (CASCADE DELETE)
+- FOREIGN KEY: `inventory_type_id` → `inventory_types.inventory_type_id`
+- FOREIGN KEY: `warehouse_id` → `warehouses.warehouse_id`
+- FOREIGN KEY: `bin_id` → `bins.bin_id`
 
 
 

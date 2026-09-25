@@ -41,7 +41,7 @@ class PlantingTest extends TestCase
         $plantingData = [
             'plant_id' => $plant->id,
             'planting_location_id' => $plantingLocation->id,
-            'quantity_planted' => 100,
+            'planting_amount' => 100,
             'planted_at' => Carbon::now(),
             'estimated_harvest_date' => Carbon::now()->addMonths(4),
             'area_ha' => 1.5,
@@ -56,7 +56,7 @@ class PlantingTest extends TestCase
             'id' => $planting->id,
             'plant_id' => $plant->id,
             'planting_location_id' => $plantingLocation->id,
-            'quantity_planted' => 100,
+            'planting_amount' => 100,
         ]);
     }
 
@@ -75,7 +75,7 @@ class PlantingTest extends TestCase
 
         $planting = Planting::create([
             'plant_id' => $plant->id,
-            'quantity_planted' => 100,
+            'planting_amount' => 100,
         ]);
 
         // Memverifikasi bahwa relasi berfungsi dengan benar
@@ -96,7 +96,7 @@ class PlantingTest extends TestCase
 
         $planting = Planting::create([
             'planting_location_id' => $plantingLocation->id,
-            'quantity_planted' => 100,
+            'planting_amount' => 100,
         ]);
 
         // Memverifikasi bahwa relasi berfungsi dengan benar
@@ -112,7 +112,7 @@ class PlantingTest extends TestCase
     {
         // Membuat planting dan beberapa harvests
         $planting = Planting::create([
-            'quantity_planted' => 100,
+            'planting_amount' => 100,
         ]);
 
         $harvest1 = Harvest::create([
@@ -142,7 +142,7 @@ class PlantingTest extends TestCase
     {
         // Membuat planting dan beberapa losses
         $planting = Planting::create([
-            'quantity_planted' => 100,
+            'planting_amount' => 100,
         ]);
 
         $loss1 = PlantingLoss::create([

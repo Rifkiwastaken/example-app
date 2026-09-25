@@ -13,9 +13,13 @@ return new class extends Migration
     {
         Schema::create('task_templates', function (Blueprint $table) {
             $table->string('task_template_id', 36)->primary();
+            // Nama template (label untuk dipilih pengguna)
             $table->string('name');
+            // Field-field utama yang meniru struktur tugas
+            $table->string('title')->nullable();
             $table->text('description')->nullable();
-            $table->json('tasks_list')->nullable(); // JSON array of task configurations
+            $table->json('checklist')->nullable();
+            $table->json('attachments')->nullable();
             $table->enum('association', ['penanaman', 'sertifikasi', 'gudang', 'penjualan']);
             $table->boolean('is_active')->default(true);
             $table->timestamps();

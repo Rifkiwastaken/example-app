@@ -3,42 +3,43 @@
 ' Use case 05: Mengelola data Penanaman
 ' Aktor: Admin/Kepala Sek, Penangkar/Kepala Satgas
 !theme plain
+skinparam backgroundColor white
 skinparam activity {
     BackgroundColor #E1F5FE
     BorderColor #01579B
     FontSize 11
 }
 skinparam swimlane {
-    BackgroundColor #F5F5F5
-    BorderColor #424242
-    TitleBackgroundColor #BBDEFB
-    TitleBorderColor #1976D2
+    BackgroundColor White
+    BorderColor #CCCCCC
+    TitleBackgroundColor White
+    TitleBorderColor #999999
 }
 
 title Activity Diagram - Mengelola data Penanaman
 
-|#LightBlue|User|
+|#White|User|
 start
 :Masuk ke halaman kelola penanaman;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Validasi role pengguna;
 :Query data penanaman dari database;
 :Load data tanaman dan lokasi terkait;
 :Menampilkan daftar penanaman;
 
-|#LightBlue|User|
+|#White|User|
 :Lihat daftar penanaman;
 
 if (Pilih aksi?) then (Tambah Baru)
-    |#LightBlue|User|
+    |#White|User|
     :Klik tombol tambah penanaman;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Tampilkan form tambah penanaman;
-    |#LightBlue|User|
+    |#White|User|
     :Isi form data penanaman;
     :Submit form;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Validasi data;
     if (Data valid?) then (Ya)
         :Simpan data penanaman ke database;
@@ -47,14 +48,14 @@ if (Pilih aksi?) then (Tambah Baru)
         :Tampilkan pesan error;
     endif
 elseif (Edit) then
-    |#LightBlue|User|
+    |#White|User|
     :Klik tombol edit;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Tampilkan form edit dengan data terisi;
-    |#LightBlue|User|
+    |#White|User|
     :Edit data penanaman;
     :Submit form;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Validasi data;
     if (Data valid?) then (Ya)
         :Update data penanaman di database;
@@ -63,31 +64,31 @@ elseif (Edit) then
         :Tampilkan pesan error;
     endif
 elseif (Hapus) then
-    |#LightBlue|User|
+    |#White|User|
     :Klik tombol hapus;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Tampilkan konfirmasi hapus;
-    |#LightBlue|User|
+    |#White|User|
     if (Konfirmasi hapus?) then (Ya)
-        |#LightGreen|Sistem|
+        |#White|Sistem|
         :Hapus data penanaman dari database;
         :Tampilkan pesan sukses;
     else (Tidak)
         :Batal hapus;
     endif
 elseif (Tracking) then
-    |#LightBlue|User|
+    |#White|User|
     :Klik tombol tracking;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Tampilkan halaman tracking perkembangan;
-    |#LightBlue|User|
+    |#White|User|
     :Lihat dan update tracking;
 else (Lihat Detail)
-    |#LightBlue|User|
+    |#White|User|
     :Klik tombol lihat detail;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Tampilkan detail data penanaman;
-    |#LightBlue|User|
+    |#White|User|
     :Lihat detail penanaman;
 endif
 

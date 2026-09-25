@@ -3,82 +3,83 @@
 ' Use case 18: Mengelola data laporan
 ' Aktor: Admin/Kepala Sek, Petugas BBI
 !theme plain
+skinparam backgroundColor white
 skinparam activity {
     BackgroundColor #E1F5FE
     BorderColor #01579B
     FontSize 11
 }
 skinparam swimlane {
-    BackgroundColor #F5F5F5
-    BorderColor #424242
-    TitleBackgroundColor #BBDEFB
-    TitleBorderColor #1976D2
+    BackgroundColor White
+    BorderColor #CCCCCC
+    TitleBackgroundColor White
+    TitleBorderColor #999999
 }
 
 title Activity Diagram - Mengelola data laporan
 
-|#LightBlue|User|
+|#White|User|
 start
 :Masuk ke halaman laporan;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Validasi role pengguna;
 :Tampilkan menu laporan;
 
-|#LightBlue|User|
+|#White|User|
 :Pilih jenis laporan;
 
 if (Jenis laporan?) then (Laporan Penanaman)
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Query data penanaman;
     :Generate laporan penanaman;
     :Tampilkan laporan;
-    |#LightBlue|User|
+    |#White|User|
     :Lihat laporan penanaman;
 elseif (Laporan Panen)
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Query data panen;
     :Generate laporan panen;
     :Tampilkan laporan;
-    |#LightBlue|User|
+    |#White|User|
     :Lihat laporan panen;
 elseif (Laporan Sertifikasi)
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Query data sertifikasi;
     :Generate laporan sertifikasi;
     :Tampilkan laporan;
-    |#LightBlue|User|
+    |#White|User|
     :Lihat laporan sertifikasi;
 elseif (Laporan Stok Benih)
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Query data stok benih;
     :Generate laporan stok;
     :Tampilkan laporan;
-    |#LightBlue|User|
+    |#White|User|
     :Lihat laporan stok;
 elseif (Laporan Penjualan)
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Query data penjualan;
     :Generate laporan penjualan;
     :Tampilkan laporan;
-    |#LightBlue|User|
+    |#White|User|
     :Lihat laporan penjualan;
 else (Laporan Transaksi)
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Query data transaksi;
     :Generate laporan transaksi;
     :Tampilkan laporan;
-    |#LightBlue|User|
+    |#White|User|
     :Lihat laporan transaksi;
 endif
 
 if (Export laporan?) then (Ya)
-    |#LightBlue|User|
+    |#White|User|
     :Klik tombol export;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Generate file laporan (PDF/Excel);
     :Download file laporan;
-    |#LightBlue|User|
+    |#White|User|
     :Terima file laporan;
 else (Tidak)
 endif

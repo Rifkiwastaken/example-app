@@ -9,19 +9,18 @@ Folder ini berisi dokumentasi struktur database untuk setiap tabel dalam sistem 
 
 ## Informasi Penting
 
-> **PERHATIAN:** File-file dalam folder ini mungkin belum sepenuhnya diperbarui.
-> Untuk dokumentasi terbaru dan paling akurat, gunakan:
-> - **`../DOKUMENTASI_TABEL_LENGKAP.md`** - Dokumentasi lengkap semua tabel
-> - **`../06_erd_sibesti_complete.sql`** - Struktur SQL lengkap
+Dokumentasi di folder ini diselaraskan dengan **struktur database saat ini** (migrasi Laravel terbaru).
+- **`../DOKUMENTASI_TABEL_LENGKAP.md`** – ringkasan lengkap semua tabel
+- **`../06_erd_sibesti_complete.sql`** – struktur SQL referensi (tanpa tabel `locations`)
 
-## Perubahan Utama Database
+## Perubahan Utama Database (Saat Ini)
 
 ### Tabel locations Dihapus
-- **Tabel `locations`** telah dihapus (migration `drop_locations_table`)
-- **users:** Kolom `location_id` dihapus, diganti `location_placement` (VARCHAR)
-- **planting_locations:** Kolom `location_id` dihapus
+- **Tabel `locations`** tidak ada lagi (migration `drop_locations_table`).
+- **users:** Tidak ada kolom `location_id`; hanya **location_placement** (VARCHAR).
+- **planting_locations:** Tidak ada kolom `location_id`.
 
-### Format Primary Key Baru
+### Format Primary Key
 - **Format Lama:** `id BIGINT AUTO_INCREMENT`
 - **Format Baru:** `{nama_tabel}_id VARCHAR(36)`
 
@@ -42,10 +41,10 @@ Setiap file menggunakan format yang konsisten dengan kolom:
 - **Ukuran**: Ukuran/precision untuk tipe data tertentu
 - **Keterangan**: Deskripsi, constraint, dan nilai default
 
-## Daftar Tabel
+## Daftar Tabel (34 tabel)
 
 ### Core & User Management
-- [users.md](users.md) - Tabel pengguna sistem
+- [users.md](users.md) - Tabel pengguna sistem (tanpa location_id)
 
 ### Penanaman
 - [plant_types.md](plant_types.md) - Tabel jenis tanaman
@@ -96,14 +95,15 @@ Setiap file menggunakan format yang konsisten dengan kolom:
 
 ## Catatan Penting
 
-- **Primary Key:** Semua tabel menggunakan VARCHAR(36) dengan format `{nama_tabel}_id`
-- **Timestamps:** Semua tabel memiliki `created_at` dan `updated_at`
-- **Foreign Key:** Menggunakan CASCADE DELETE atau SET NULL sesuai kebutuhan
-- **Sumber Kebenaran:** Laravel migrations di `database/migrations/`
+- **Primary Key:** Tabel utama menggunakan VARCHAR(36) dengan format `{nama_tabel}_id`
+- **Timestamps:** Tabel bisnis memiliki `created_at` dan `updated_at`
+- **Foreign Key:** CASCADE atau SET NULL sesuai migrasi
+- **Sumber kebenaran:** Laravel migrations di `database/migrations/`
+- **Tabel yang tidak ada:** `locations` (sudah dihapus)
 
 ## Informasi Aplikasi
 
 - **Database:** MySQL 8.0+
 - **Framework:** Laravel 10.x
-- **Tanggal Update:** Februari 2026
+- **Tanggal update:** Februari 2026
 - **Aplikasi:** SIBESTI (Sistem Informasi Benih Sertifikasi)

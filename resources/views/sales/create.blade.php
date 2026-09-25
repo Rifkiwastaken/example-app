@@ -58,6 +58,7 @@
                         <input type="text" class="form-control @error('buyer_contact') is-invalid @enderror" 
                                id="buyer_contact" name="buyer_contact" value="{{ old('buyer_contact') }}" 
                                placeholder="Contoh: 08123456789">
+                        <small class="text-muted">Pastikan nomor dapat dihubungi melalui WhatsApp.</small>
                         @error('buyer_contact')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -146,6 +147,25 @@
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
+                        <label for="planned_gps" class="form-label">Lokasi GPS rencana tanam</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control @error('planned_gps') is-invalid @enderror"
+                                   id="planned_gps" name="planned_gps" value="{{ old('planned_gps') }}"
+                                   placeholder="Contoh: -0.947083, 100.417206">
+                            <button type="button" class="btn btn-outline-secondary" id="btnAmbilGps">Ambil GPS</button>
+                        </div>
+                        <div id="gps-map" class="mt-2 rounded border" style="height: 240px; min-height: 240px;"></div>
+                        <small class="text-muted d-block">Klik peta untuk menandai lokasi, atau ketik koordinat (lintang, bujur). Tombol Ambil GPS memakai lokasi perangkat jika diizinkan.</small>
+                        <small id="gps-status" class="text-muted d-block"></small>
+                        @error('planned_gps')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
                         <label for="estimated_planting_area" class="form-label">Estimasi Luas Tanam (Hektar)</label>
                         <input type="number" step="0.01" class="form-control @error('estimated_planting_area') is-invalid @enderror" 
                                id="estimated_planting_area" name="estimated_planting_area" value="{{ old('estimated_planting_area') }}" 
@@ -160,13 +180,41 @@
 
             <!-- Bagian C: Rincian Item -->
             <h5 class="mb-3 mt-4">Bagian C: Rincian Item (Benih yang Dibeli)</h5>
-            <div id="items-container">
-                <!-- Items will be added here dynamically -->
+            <div class="mb-3">
+                <label class="form-label">Pilih tanaman</label>
+                <select id="plant_id" name="plant_id" class="form-select" required>
+                    <option value="">Pilih tanaman</option>
+                    @foreach($plants ?? [] as $plant)
+                        <option value="{{ $plant->getKey() }}" {{ old('plant_id') == $plant->getKey() ? 'selected' : '' }}>
+                            {{ $plant->displayName() }}{{ $plant->type?->category ? ' ('.$plant->type->category.')' : '' }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
-            <button type="button" class="btn btn-success btn-sm mb-4" onclick="addItemRow()">
-                <i class="fas fa-plus me-2"></i>Tambah Item Benih
-            </button>
-
+            <div class="table-responsive mb-2">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>No label seri</th>
+                            <th>Kuantitas</th>
+                            <th>Lokasi gudang</th>
+                            <th>Rak penyimpanan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fefo-body">
+                        <tr><td colspan="5" class="text-muted text-center">Pilih benih untuk menampilkan stok kemasan (FEFO).</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="mb-4">
+                <strong>Total jual:</strong> <span id="total-qty">0</span>
+                &nbsp;·&nbsp;
+                <strong>Total biaya:</strong> Rp <span id="total-cost">0</span>
+            </div>
+            @error('packaging_ids')
+                <div class="alert alert-danger">{{ $message }}</div>
+            @enderror
             @error('items')
                 <div class="alert alert-danger">{{ $message }}</div>
             @enderror
@@ -247,434 +295,158 @@
     </div>
 </div>
 
+@push('styles')
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+@endpush
 @push('scripts')
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-@php
-$inventoryTypesArray = $inventoryTypes->map(function($type) {
-    return [
-        'id' => $type->inventory_type_id,
-        'name' => $type->name,
-        'sku' => $type->sku,
-        'unit' => $type->unit,
-        'estimated_value_per_unit' => $type->estimated_value_per_unit !== null ? (float) $type->estimated_value_per_unit : null
-    ];
-})->values()->toArray();
-@endphp
-const inventoryTypes = @json($inventoryTypesArray);
+let gpsMap, gpsMarker;
 
-let itemRowCount = 0;
-
-function addItemRow() {
-    itemRowCount++;
-    const container = document.getElementById('items-container');
-    const row = document.createElement('div');
-    row.className = 'item-row mb-3 p-3 border rounded';
-    row.id = `item-row-${itemRowCount}`;
-    
-    row.innerHTML = `
-        <div class="row mb-3">
-            <div class="col-md-4">
-                <label class="form-label">Pilih Benih (Tipe Inventaris) <span class="text-danger">*</span></label>
-                <select class="form-select inventory-type-select" name="items[${itemRowCount}][inventory_type_id]" 
-                        id="inventory-type-select-${itemRowCount}"
-                        onchange="loadWarehousesAndLots(${itemRowCount}, this.value)" required>
-                    <option value="">Pilih Benih</option>
-                    ${inventoryTypes.map(type => 
-                        `<option value="${type.id}">${type.name}</option>`
-                    ).join('')}
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Pilih Lokasi Gudang <span class="text-danger">*</span></label>
-                <select class="form-select warehouse-select" name="items[${itemRowCount}][warehouse_id]" 
-                        id="warehouse-select-${itemRowCount}"
-                        onchange="loadBins(${itemRowCount}, this.value)" required disabled>
-                    <option value="">Pilih tipe benih terlebih dahulu</option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Pilih Bin <span class="text-danger">*</span></label>
-                <select class="form-select bin-select" name="items[${itemRowCount}][bin_id]" 
-                        id="bin-select-${itemRowCount}" 
-                        onchange="loadBinLots(${itemRowCount}, this.value)" required disabled>
-                    <option value="">Pilih gudang terlebih dahulu</option>
-                </select>
-            </div>
-        </div>
-        <div class="row mb-3">
-            <div class="col-md-4">
-                <label class="form-label">Satuan Jual (Opsional)</label>
-                <select class="form-select" 
-                        name="items[${itemRowCount}][package_unit_type]" 
-                        id="package-unit-type-${itemRowCount}"
-                        onchange="toggleCustomPackageUnit(${itemRowCount})">
-                    <option value="">Pilih Satuan</option>
-                    <option value="satuan">Satuan (per kg/pcs)</option>
-                    <option value="kantong">Kantong</option>
-                    <option value="ikat">Ikat</option>
-                    <option value="gentong">Gentong</option>
-                    <option value="custom">Isi Sendiri</option>
-                </select>
-                <small class="text-muted">Pilih satuan kemasan</small>
-            </div>
-            <div class="col-md-4" id="custom-unit-container-${itemRowCount}" style="display: none;">
-                <label class="form-label">Nama Satuan Custom</label>
-                <input type="text" class="form-control" 
-                       name="items[${itemRowCount}][package_unit_custom]" 
-                       id="package-unit-custom-${itemRowCount}"
-                       placeholder="Contoh: karung, dus, dll"
-                       onchange="togglePackageFields(${itemRowCount})">
-                <small class="text-muted">Ketik nama satuan</small>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Nilai Satuan Jual (Opsional)</label>
-                <input type="number" step="0.01" class="form-control" 
-                       name="items[${itemRowCount}][package_value]" 
-                       id="package-value-${itemRowCount}" 
-                       placeholder="Contoh: 25"
-                       onchange="calculateQuantityFromPackage(${itemRowCount})"
-                       disabled>
-                <small class="text-muted">Nilai per satuan dalam kg</small>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Jumlah Satuan Jual (Opsional)</label>
-                <input type="number" step="0.01" class="form-control" 
-                       name="items[${itemRowCount}][package_quantity]" 
-                       id="package-quantity-${itemRowCount}" 
-                       placeholder="Contoh: 5"
-                       onchange="calculateQuantityFromPackage(${itemRowCount})"
-                       disabled>
-                <small class="text-muted">Jumlah kemasan yang dibeli</small>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-3">
-                <label class="form-label">Total Jual <span class="text-danger">*</span></label>
-                <div class="input-group">
-                    <input type="number" step="0.01" class="form-control quantity-input" 
-                           name="items[${itemRowCount}][quantity]" 
-                           id="quantity-${itemRowCount}" 
-                           readonly required>
-                    <span class="input-group-text unit-display" id="unit-${itemRowCount}">-</span>
-                </div>
-                <small class="text-muted stock-info" id="stock-info-${itemRowCount}"></small>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Harga Satuan (Rp) <span class="text-danger">*</span></label>
-                <input type="number" step="0.01" class="form-control unit-price-input" 
-                       name="items[${itemRowCount}][unit_price]" 
-                       id="unit-price-${itemRowCount}" 
-                       readonly required>
-                <small class="text-muted">Otomatis dari data stok</small>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Subtotal (Rp)</label>
-                <input type="text" class="form-control subtotal-display" 
-                       id="subtotal-${itemRowCount}" value="0" readonly>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">&nbsp;</label>
-                <button type="button" class="btn btn-danger w-100" onclick="removeItemRow(${itemRowCount})">
-                    <i class="fas fa-trash me-2"></i>Hapus Item
-                </button>
-            </div>
-        </div>
-    `;
-    
-    container.appendChild(row);
-}
-
-function removeItemRow(rowId) {
-    const row = document.getElementById(`item-row-${rowId}`);
-    if (row) {
-        row.remove();
-        calculateTotal();
-    }
-}
-
-function loadWarehousesAndLots(rowId, inventoryTypeId) {
-    const warehouseSelect = document.getElementById(`warehouse-select-${rowId}`);
-    const binSelect = document.getElementById(`bin-select-${rowId}`);
-    const unitDisplay = document.getElementById(`unit-${rowId}`);
-    
-    // Update unit display
-    const inventoryType = inventoryTypes.find(t => t.id == inventoryTypeId);
-    if (inventoryType) {
-        unitDisplay.textContent = inventoryType.unit;
-    }
-    
-    // Reset selects
-    warehouseSelect.innerHTML = '<option value="">Memuat...</option>';
-    warehouseSelect.disabled = true;
-    binSelect.innerHTML = '<option value="">Pilih gudang terlebih dahulu</option>';
-    binSelect.disabled = true;
-    
-    if (!inventoryTypeId) {
-        warehouseSelect.innerHTML = '<option value="">Pilih tipe benih terlebih dahulu</option>';
-        return;
-    }
-    
-    // Load warehouses and lots
-    fetch(`/api/inventory-types/${encodeURIComponent(inventoryTypeId)}/details`)
-        .then(response => {
-            if (!response.ok) return response.json().then(data => Promise.reject(new Error(data.message || 'Gagal memuat data')));
-            return response.json();
-        })
-        .then(data => {
-            if (data.success && data.first_lot) {
-                // Populate warehouse dropdown (all warehouses or just first)
-                const warehouses = data.warehouses && data.warehouses.length > 0
-                    ? data.warehouses
-                    : [{ warehouse_id: data.first_lot.warehouse_id, warehouse_name: data.first_lot.warehouse_name || 'Gudang' }];
-                
-                warehouseSelect.innerHTML = '<option value="">-- Pilih Gudang --</option>' + 
-                    warehouses.map(w => 
-                        `<option value="${w.warehouse_id || ''}">${(w.warehouse_name || 'Gudang').trim() || 'Gudang'}</option>`
-                    ).join('');
-                warehouseSelect.disabled = false;
-
-                // Harga Satuan = nilai per unit dari data stok benih (tipe inventaris)
-                const unitPriceInput = document.getElementById(`unit-price-${rowId}`);
-                const val = data.inventory_type && data.inventory_type.estimated_value_per_unit != null
-                    ? parseFloat(data.inventory_type.estimated_value_per_unit)
-                    : null;
-                if (unitPriceInput && !isNaN(val)) {
-                    unitPriceInput.value = val;
-                }
-                if (typeof calculateSubtotal === 'function') {
-                    calculateSubtotal(rowId);
-                } else if (typeof calculateTotal === 'function') {
-                    calculateTotal();
-                }
-
-                // Auto-select first warehouse and load its bins
-                const firstWarehouseId = data.first_lot.warehouse_id;
-                if (firstWarehouseId) {
-                    warehouseSelect.value = firstWarehouseId;
-                    loadBins(rowId, firstWarehouseId, data.first_lot.bin_id);
-                }
-            } else {
-                warehouseSelect.innerHTML = '<option value="">Tidak ada stok tersedia</option>';
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            warehouseSelect.innerHTML = '<option value="">Error memuat data</option>';
-        });
-}
-
-function loadBins(rowId, warehouseId, preselectedBinId = null) {
-    const binSelect = document.getElementById(`bin-select-${rowId}`);
-    
-    binSelect.innerHTML = '<option value="">Memuat...</option>';
-    binSelect.disabled = true;
-    
-    if (!warehouseId) {
-        binSelect.innerHTML = '<option value="">Pilih gudang terlebih dahulu</option>';
-        return;
-    }
-    
-    fetch(`{{ route('sales.get-bins') }}?warehouse_id=${warehouseId}`)
-        .then(response => response.json())
-        .then(bins => {
-            binSelect.innerHTML = '<option value="">Pilih Bin</option>';
-            bins.forEach(bin => {
-                const option = document.createElement('option');
-                option.value = bin.id;
-                option.textContent = `${bin.name}${bin.internal_id ? ' (' + bin.internal_id + ')' : ''}`;
-                if (preselectedBinId && bin.id == preselectedBinId) {
-                    option.selected = true;
-                }
-                binSelect.appendChild(option);
-            });
-            binSelect.disabled = false;
-            
-            if (preselectedBinId) {
-                loadBinLots(rowId, preselectedBinId);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            binSelect.innerHTML = '<option value="">Error memuat data</option>';
-        });
-}
-
-function loadBinLots(rowId, binId) {
-    const stockInfo = document.getElementById(`stock-info-${rowId}`);
-    const unitPriceInput = document.getElementById(`unit-price-${rowId}`);
-    const unitDisplay = document.getElementById(`unit-${rowId}`);
-    
-    if (!binId) {
-        stockInfo.textContent = '';
-        return;
-    }
-    
-    stockInfo.textContent = 'Memuat informasi stok...';
-    stockInfo.className = 'text-muted small';
-    
-    // Fetch lots in this bin for FIFO calculation
-    fetch(`{{ route('sales.get-bin-lots') }}?bin_id=${binId}`)
-        .then(response => response.json())
-        .then(lots => {
-            if (lots.length > 0) {
-                // Filter out expired lots
-                const validLots = lots.filter(lot => lot.status !== 'kadaluarsa');
-                
-                if (validLots.length === 0) {
-                    stockInfo.textContent = 'Bin ini hanya memiliki stok benih yang sudah kadaluarsa.';
-                    stockInfo.className = 'text-danger small';
-                    unitDisplay.textContent = '-';
-                    return;
-                }
-                
-                // Calculate total available stock from valid lots (FIFO)
-                const totalStock = validLots.reduce((sum, lot) => sum + parseFloat(lot.current_stock), 0);
-                const unit = validLots[0].stock_unit || 'kg';
-                
-                stockInfo.textContent = `Stok tersedia: ${totalStock.toFixed(2)} ${unit} (FIFO: ${validLots.length} lot)`;
-                stockInfo.className = 'text-muted small';
-                unitDisplay.textContent = unit;
-
-                // Harga satuan sudah diisi dari data stok benih saat pilih tipe inventaris; jika belum terisi, pakai nilai per unit dari data tipe
-                const inventoryTypeSelect = document.getElementById(`inventory-type-select-${rowId}`);
-                const inventoryTypeId = inventoryTypeSelect ? inventoryTypeSelect.value : null;
-                const inventoryType = inventoryTypeId ? inventoryTypes.find(t => t.id == inventoryTypeId) : null;
-                if (unitPriceInput && inventoryType && inventoryType.estimated_value_per_unit != null && (unitPriceInput.value === '' || unitPriceInput.value == null)) {
-                    unitPriceInput.value = parseFloat(inventoryType.estimated_value_per_unit);
-                }
-                if (typeof calculateSubtotal === 'function') {
-                    calculateSubtotal(rowId);
-                } else if (typeof calculateTotal === 'function') {
-                    calculateTotal();
-                }
-
-                // Store lots data for FIFO processing during submission
-                document.getElementById(`bin-select-${rowId}`).dataset.lots = JSON.stringify(validLots);
-            } else {
-                stockInfo.textContent = 'Tidak ada stok tersedia di bin ini.';
-                stockInfo.className = 'text-danger small';
-                unitDisplay.textContent = '-';
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            stockInfo.textContent = 'Error memuat informasi stok';
-            stockInfo.className = 'text-danger small';
-        });
-}
-
-function toggleCustomPackageUnit(rowId) {
-    const packageUnitTypeSelect = document.getElementById(`package-unit-type-${rowId}`);
-    const customUnitContainer = document.getElementById(`custom-unit-container-${rowId}`);
-    const packageValueInput = document.getElementById(`package-value-${rowId}`);
-    const packageQuantityInput = document.getElementById(`package-quantity-${rowId}`);
-    
-    const selectedType = packageUnitTypeSelect.value;
-    
-    if (selectedType === 'custom') {
-        // Show custom input field
-        customUnitContainer.style.display = 'block';
-        packageValueInput.disabled = false;
-        packageQuantityInput.disabled = false;
-    } else if (selectedType) {
-        // Hide custom input field
-        customUnitContainer.style.display = 'none';
-        packageValueInput.disabled = false;
-        packageQuantityInput.disabled = false;
-        
-        // If "satuan" is selected, set default values
-        if (selectedType === 'satuan') {
-            packageValueInput.value = 1;
-            packageValueInput.disabled = true;
-        }
-        
-        togglePackageFields(rowId);
+function onReady(fn) {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fn);
     } else {
-        // No selection
-        customUnitContainer.style.display = 'none';
-        packageValueInput.disabled = true;
-        packageQuantityInput.disabled = true;
-        packageValueInput.value = '';
-        packageQuantityInput.value = '';
+        fn();
     }
 }
 
-function togglePackageFields(rowId) {
-    const packageUnitTypeSelect = document.getElementById(`package-unit-type-${rowId}`);
-    const packageValueInput = document.getElementById(`package-value-${rowId}`);
-    const packageQuantityInput = document.getElementById(`package-quantity-${rowId}`);
-    const quantityInput = document.getElementById(`quantity-${rowId}`);
-    
-    const selectedType = packageUnitTypeSelect.value;
-    
-    if (selectedType) {
-        // Enable fields if satuan jual is selected
-        packageValueInput.disabled = false;
-        packageQuantityInput.disabled = false;
-        
-        // If "satuan" is selected, set default values
-        if (selectedType === 'satuan') {
-            packageValueInput.value = 1;
-            packageValueInput.disabled = true;
+onReady(function() {
+    const plantSelect = document.getElementById('plant_id');
+    if (plantSelect) {
+        plantSelect.addEventListener('change', loadFefoPackagings);
+        if (plantSelect.value) {
+            loadFefoPackagings();
         }
-    } else {
-        // Disable and clear fields if satuan jual is empty
-        packageValueInput.disabled = true;
-        packageQuantityInput.disabled = true;
-        packageValueInput.value = '';
-        packageQuantityInput.value = '';
-        quantityInput.value = '';
     }
-}
-
-function calculateQuantityFromPackage(rowId) {
-    const packageQuantityInput = document.getElementById(`package-quantity-${rowId}`);
-    const packageValueInput = document.getElementById(`package-value-${rowId}`);
-    const packageUnitTypeSelect = document.getElementById(`package-unit-type-${rowId}`);
-    const quantityInput = document.getElementById(`quantity-${rowId}`);
-    
-    const packageQuantity = parseFloat(packageQuantityInput.value) || 0;
-    const packageValue = parseFloat(packageValueInput.value) || 0;
-    const packageUnitType = packageUnitTypeSelect.value;
-    
-    // Only calculate if all required fields are provided
-    if (packageQuantity > 0 && packageValue > 0 && packageUnitType) {
-        // Calculate total quantity: package_quantity × package_value
-        const totalQuantity = packageQuantity * packageValue;
-        quantityInput.value = totalQuantity.toFixed(2);
-        
-        // Trigger subtotal calculation
-        calculateSubtotal(rowId);
-    } else if (packageUnitType && (packageQuantity === 0 || packageValue === 0)) {
-        // Clear total if any field is empty
-        quantityInput.value = '';
+    initGpsMap();
+    const gpsInput = document.getElementById('planned_gps');
+    if (gpsInput) {
+        gpsInput.addEventListener('change', syncGpsFromInput);
+        gpsInput.addEventListener('blur', syncGpsFromInput);
     }
-}
-
-function calculateSubtotal(rowId) {
-    const quantity = parseFloat(document.getElementById(`quantity-${rowId}`).value) || 0;
-    const unitPrice = parseFloat(document.getElementById(`unit-price-${rowId}`).value) || 0;
-    const subtotal = quantity * unitPrice;
-    
-    document.getElementById(`subtotal-${rowId}`).value = subtotal.toLocaleString('id-ID');
-    calculateTotal();
-}
-
-function calculateTotal() {
-    let total = 0;
-    document.querySelectorAll('.subtotal-display').forEach(subtotal => {
-        const value = parseFloat(subtotal.value.replace(/[^\d]/g, '')) || 0;
-        total += value;
-    });
-    
-    document.getElementById('total_amount_display').value = 'Rp ' + total.toLocaleString('id-ID');
-    document.getElementById('total_amount').value = total;
-}
-
-// Add first row on page load
-document.addEventListener('DOMContentLoaded', function() {
-    addItemRow();
+    const gpsBtn = document.getElementById('btnAmbilGps');
+    if (gpsBtn) gpsBtn.addEventListener('click', captureGps);
 });
+
+function parseGps(value) {
+    if (!value) return null;
+    const parts = String(value).split(/[,\s]+/).filter(Boolean);
+    if (parts.length < 2) return null;
+    const lat = parseFloat(parts[0]);
+    const lng = parseFloat(parts[1]);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+    return { lat, lng };
+}
+
+function initGpsMap() {
+    const el = document.getElementById('gps-map');
+    if (!el || typeof L === 'undefined') return;
+    const existing = parseGps(document.getElementById('planned_gps')?.value);
+    const start = existing ? [existing.lat, existing.lng] : [-0.947083, 100.417206];
+    gpsMap = L.map('gps-map').setView(start, existing ? 14 : 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(gpsMap);
+    if (existing) {
+        gpsMarker = L.marker(start).addTo(gpsMap);
+    }
+    gpsMap.on('click', function (e) {
+        setGps(e.latlng.lat, e.latlng.lng, true);
+    });
+    setTimeout(function () { gpsMap.invalidateSize(); }, 250);
+    if (existing) {
+        setGpsStatus('Koordinat tersimpan: ' + existing.lat.toFixed(6) + ', ' + existing.lng.toFixed(6), false);
+    }
+}
+
+function setGpsStatus(message, isError) {
+    const el = document.getElementById('gps-status');
+    if (!el) return;
+    el.textContent = message || '';
+    el.classList.toggle('text-danger', !!isError);
+    el.classList.toggle('text-success', !isError && !!message);
+}
+
+function syncGpsFromInput() {
+    const parsed = parseGps(document.getElementById('planned_gps')?.value);
+    if (parsed) setGps(parsed.lat, parsed.lng, false);
+}
+
+function setGps(lat, lng, writeInput) {
+    if (writeInput !== false) {
+        document.getElementById('planned_gps').value = lat.toFixed(6) + ', ' + lng.toFixed(6);
+    }
+    if (!gpsMap) return;
+    if (gpsMarker) gpsMarker.setLatLng([lat, lng]);
+    else gpsMarker = L.marker([lat, lng]).addTo(gpsMap);
+    gpsMap.setView([lat, lng], 14);
+    setGpsStatus('Koordinat tersimpan: ' + lat.toFixed(6) + ', ' + lng.toFixed(6), false);
+}
+
+function captureGps() {
+    const btn = document.getElementById('btnAmbilGps');
+    if (!navigator.geolocation) {
+        setGpsStatus('GPS perangkat tidak didukung. Klik peta atau isi koordinat secara manual.', true);
+        return;
+    }
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Mengambil...';
+    }
+    setGpsStatus('Meminta izin lokasi perangkat...', false);
+    navigator.geolocation.getCurrentPosition(function (pos) {
+        setGps(pos.coords.latitude, pos.coords.longitude, true);
+        if (btn) { btn.disabled = false; btn.textContent = 'Ambil GPS'; }
+    }, function () {
+        if (btn) { btn.disabled = false; btn.textContent = 'Ambil GPS'; }
+        setGpsStatus('Lokasi perangkat tidak tersedia (butuh HTTPS/izin). Klik peta atau ketik koordinat, misalnya -0.947083, 100.417206.', true);
+    }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+}
+
+function loadFefoPackagings() {
+    const plantId = document.getElementById('plant_id').value;
+    const body = document.getElementById('fefo-body');
+    if (!plantId) {
+        body.innerHTML = '<tr><td colspan="5" class="text-muted text-center">Pilih benih untuk menampilkan stok kemasan (FEFO).</td></tr>';
+        updateSaleTotals();
+        return;
+    }
+    body.innerHTML = '<tr><td colspan="5" class="text-muted text-center">Memuat stok kemasan...</td></tr>';
+    fetch('{{ url("sales/plants") }}/' + plantId + '/packagings')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.packagings || data.packagings.length === 0) {
+                body.innerHTML = '<tr><td colspan="5" class="text-muted text-center">Tidak ada kemasan siap salur untuk benih ini.</td></tr>';
+                updateSaleTotals();
+                return;
+            }
+            body.innerHTML = data.packagings.map(function (pkg) {
+                return '<tr>' +
+                    '<td><input type="checkbox" class="pkg-check" name="packaging_ids[]" value="' + pkg.id + '" data-qty="' + pkg.quantity + '" data-price="' + pkg.unit_price + '" onchange="updateSaleTotals()"></td>' +
+                    '<td>' + pkg.no_label_seri + '</td>' +
+                    '<td>' + pkg.quantity + ' ' + pkg.unit + '</td>' +
+                    '<td>' + pkg.warehouse + '</td>' +
+                    '<td>' + pkg.rack + '</td>' +
+                    '</tr>';
+            }).join('');
+            updateSaleTotals();
+        })
+        .catch(function () {
+            body.innerHTML = '<tr><td colspan="5" class="text-danger text-center">Gagal memuat stok kemasan.</td></tr>';
+        });
+}
+
+function updateSaleTotals() {
+    let qty = 0;
+    let cost = 0;
+    document.querySelectorAll('.pkg-check:checked').forEach(function (el) {
+        const q = parseFloat(el.dataset.qty || 0);
+        const p = parseFloat(el.dataset.price || 0);
+        qty += q;
+        cost += q * p;
+    });
+    document.getElementById('total-qty').textContent = qty.toLocaleString('id-ID', {minimumFractionDigits: 2});
+    document.getElementById('total-cost').textContent = cost.toLocaleString('id-ID');
+}
 </script>
 @endpush
 @endsection

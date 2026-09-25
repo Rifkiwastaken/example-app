@@ -7,38 +7,36 @@ Tabel untuk menyimpan data perawatan/pengobatan tanaman
 
 | Nama Atribut | Tipe Data | Ukuran | Keterangan |
 |--------------|-----------|--------|------------|
-| **id** | BIGINT | - | Primary Key, Auto Increment |
-| planting_location_id | BIGINT | - | Foreign Key → planting_locations.id (NOT NULL) |
-| treatment_type | VARCHAR | 50 | Tipe perawatan: 'Blight', 'Pupuk', 'Jamur', dll (NOT NULL) |
-| product_detail | VARCHAR | 50 | Detail produk (NULL) |
-| opt_institution | VARCHAR | 50 | Institusi OPT (NULL) |
-| application_method | VARCHAR | 50 | Metode aplikasi: 'Granul', 'Semprot', 'Lainnya' (NOT NULL) |
-| withholding_period_days | INT | - | Periode penahanan dalam hari (NULL) |
-| technician | VARCHAR | 50 | Teknisi (NULL) |
-| description | TEXT | - | Deskripsi perawatan (NULL) |
-| treatment_date | DATE | - | Tanggal perawatan (NOT NULL) |
-| treatment_location | VARCHAR | 50 | Lokasi perawatan: 'batang', 'daun', 'pohon' (NULL) |
-| amount_applied | DECIMAL | 10,2 | Jumlah yang diaplikasikan (NULL) |
-| unit_measurement | VARCHAR | 50 | Satuan pengukuran (NULL) |
-| total_cost | DECIMAL | 10,2 | Total biaya dalam Rp (NULL) |
-| record_expense | BOOLEAN | - | Catat sebagai pengeluaran (NOT NULL) |
-| keywords | VARCHAR | 50 | Kata kunci (NULL) |
-| nutrient_name | VARCHAR | 50 | Nama nutrisi (NULL) |
-| institution_source | VARCHAR | 50 | Sumber institusi (NULL) |
-| responsible_person_id | BIGINT | - | Foreign Key → users.id (NULL) |
-| attachment_id | BIGINT | - | Foreign Key → attachments.id (NULL) |
-| created_at | TIMESTAMP | - | Tanggal dibuat (NOT NULL) |
-| updated_at | TIMESTAMP | - | Tanggal diupdate (NOT NULL) |
+| **treatment_id** | VARCHAR | 36 | Primary Key |
+| planting_location_id | VARCHAR | 36 | Foreign Key → planting_locations.planting_location_id |
+| planting_id | VARCHAR | 36 | Foreign Key → plantings.planting_id |
+| responsible_person_id | VARCHAR | 36 | Foreign Key → users.user_id |
+| treatment_type | VARCHAR | 50 | |
+| treatment_name | VARCHAR | 50 | |
+| product_detail | TEXT | | |
+| application_method | VARCHAR | 50 | |
+| withholding_period_days | INT | | |
+| technician | VARCHAR | 50 | |
+| description | TEXT | | |
+| treatment_date | DATE | | |
+| treatment_location | VARCHAR | 50 | |
+| amount_applied | DECIMAL | 15,2 | |
+| unit_measurement | VARCHAR | 50 | |
+| total_cost | DECIMAL | 15,2 | |
+| keywords | VARCHAR | 50 | |
+| institution_source | VARCHAR | 50 | |
+| created_at | TIMESTAMP | | |
+| updated_at | TIMESTAMP | | |
 
 ## Relasi
 - Many-to-One dengan: `planting_locations` (planting_location_id, CASCADE DELETE), `users` (responsible_person_id), `attachments` (attachment_id)
 - One-to-Many dengan: `expenses` (treatment_id)
 
 ## Index
-- PRIMARY KEY: `id`
-- FOREIGN KEY: `planting_location_id` → `planting_locations.id` (CASCADE DELETE)
-- FOREIGN KEY: `responsible_person_id` → `users.id`
-- FOREIGN KEY: `attachment_id` → `attachments.id`
+- PRIMARY KEY: `treatment_id`
+- FOREIGN KEY: `planting_location_id` → `planting_locations.planting_location_id`
+- FOREIGN KEY: `planting_id` → `plantings.planting_id`
+- FOREIGN KEY: `responsible_person_id` → `users.user_id`
 
 
 

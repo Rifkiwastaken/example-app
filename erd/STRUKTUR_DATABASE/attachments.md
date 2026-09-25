@@ -7,30 +7,32 @@ Tabel untuk menyimpan attachment/lampiran
 
 | Nama Atribut | Tipe Data | Ukuran | Keterangan |
 |--------------|-----------|--------|------------|
-| **id** | BIGINT | - | Primary Key, Auto Increment |
-| planting_location_id | BIGINT | - | Foreign Key → planting_locations.id (NOT NULL) |
-| title | VARCHAR | 50 | Judul attachment (NOT NULL) |
-| description | TEXT | - | Deskripsi (NULL) |
-| attachment_date | DATE | - | Tanggal attachment (NOT NULL) |
-| file_path | VARCHAR | 50 | Path file (NOT NULL) |
-| file_name | VARCHAR | 50 | Nama file (NULL) |
-| file_size | BIGINT | - | Ukuran file dalam bytes (NULL) |
-| mime_type | VARCHAR | 50 | Tipe MIME (NULL) |
-| created_by | BIGINT | - | Foreign Key → users.id (NOT NULL) |
-| edited_at | TIMESTAMP | - | Tanggal diedit (NULL) |
-| edited_by | BIGINT | - | Foreign Key → users.id (NULL) |
-| created_at | TIMESTAMP | - | Tanggal dibuat (NOT NULL) |
-| updated_at | TIMESTAMP | - | Tanggal diupdate (NOT NULL) |
+| **attachment_id** | VARCHAR | 36 | Primary Key |
+| planting_location_id | VARCHAR | 36 | Foreign Key → planting_locations.planting_location_id |
+| planting_id | VARCHAR | 36 | Foreign Key → plantings.planting_id |
+| created_by | VARCHAR | 36 | Foreign Key → users.user_id |
+| edited_by | VARCHAR | 36 | Foreign Key → users.user_id |
+| title | VARCHAR | 50 | |
+| description | TEXT | | |
+| attachment_date | DATE | | |
+| file_path | VARCHAR | 50 | |
+| file_name | VARCHAR | 50 | |
+| file_size | INT | | |
+| mime_type | VARCHAR | 50 | |
+| edited_at | TIMESTAMP | | |
+| created_at | TIMESTAMP | | |
+| updated_at | TIMESTAMP | | |
 
 ## Relasi
 - Many-to-One dengan: `planting_locations` (planting_location_id, CASCADE DELETE), `users` (created_by, CASCADE DELETE), `users` (edited_by, SET NULL ON DELETE)
 - One-to-Many dengan: `treatments` (attachment_id), `nutrients` (attachment_id)
 
 ## Index
-- PRIMARY KEY: `id`
-- FOREIGN KEY: `planting_location_id` → `planting_locations.id` (CASCADE DELETE)
-- FOREIGN KEY: `created_by` → `users.id` (CASCADE DELETE)
-- FOREIGN KEY: `edited_by` → `users.id` (SET NULL ON DELETE)
+- PRIMARY KEY: `attachment_id`
+- FOREIGN KEY: `planting_location_id` → `planting_locations.planting_location_id`
+- FOREIGN KEY: `planting_id` → `plantings.planting_id`
+- FOREIGN KEY: `created_by` → `users.user_id`
+- FOREIGN KEY: `edited_by` → `users.user_id`
 
 
 

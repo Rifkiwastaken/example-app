@@ -3,71 +3,72 @@
 ' Use case 13: Mengakses Dashboard
 ' Aktor: Admin/Kepala Sek, Petugas BBI, Penangkar/Kepala Satgas, Petugas Gudang
 !theme plain
+skinparam backgroundColor white
 skinparam activity {
     BackgroundColor #E1F5FE
     BorderColor #01579B
     FontSize 11
 }
 skinparam swimlane {
-    BackgroundColor #F5F5F5
-    BorderColor #424242
-    TitleBackgroundColor #BBDEFB
-    TitleBorderColor #1976D2
+    BackgroundColor White
+    BorderColor #CCCCCC
+    TitleBackgroundColor White
+    TitleBorderColor #999999
 }
 
 title Activity Diagram - Mengakses Dashboard
 
-|#LightBlue|User|
+|#White|User|
 start
 :Masuk ke halaman dashboard;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Validasi role pengguna;
 :Load data statistik berdasarkan role;
 
 if (Role pengguna?) then (Admin)
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Load grafik tren produksi (12 bulan terakhir);
     :Load pie chart komposisi stok;
     :Load grafik tren pendapatan (12 bulan terakhir);
     :Load data tabel produksi, stok, dan pendapatan;
     :Load data cuaca;
 elseif (Admin/Kepala Satgas/Penangkar) then
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Load statistik tugas (upcoming tasks);
     :Load notifikasi tugas;
     :Load notifikasi catatan;
 else (Semua User)
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Load notifikasi benih yang mendekati kadaluarsa;
 end
 
 if (Role Admin atau Petugas Gudang?) then (Ya)
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Load notifikasi benih di bin yang kadaluarsa;
     :Load notifikasi stok benih rendah;
 end
 
 if (Role Admin?) then (Ya)
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Load notifikasi sertifikasi yang melewati masa edar;
 end
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Menampilkan dashboard dengan semua data yang relevan;
 
-|#LightBlue|User|
+|#White|User|
 :Lihat dashboard dengan statistik dan grafik;
 :Lihat notifikasi yang relevan;
 
 if (Ada filter?) then (Ya)
-    |#LightBlue|User|
+    |#White|User|
     :Pilih filter (tanaman, tipe inventory);
     :Submit filter;
-    |#LightGreen|Sistem|
+    |#White|Sistem|
     :Update data berdasarkan filter;
     :Menampilkan dashboard dengan data terfilter;
-    |#LightBlue|User|
+    |#White|User|
     :Lihat dashboard dengan data terfilter;
 endif
 

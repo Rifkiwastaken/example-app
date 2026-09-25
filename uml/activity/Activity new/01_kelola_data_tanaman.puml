@@ -3,44 +3,45 @@
 ' Use case 01: Mengelola data tanaman
 ' Aktor: Admin/Kepala Sek, Penangkar/Kepala Satgas
 !theme plain
+skinparam backgroundColor white
 skinparam activity {
     BackgroundColor #E1F5FE
     BorderColor #01579B
     FontSize 11
 }
 skinparam swimlane {
-    BackgroundColor #F5F5F5
-    BorderColor #424242
-    TitleBackgroundColor #BBDEFB
-    TitleBorderColor #1976D2
+    BackgroundColor White
+    BorderColor #CCCCCC
+    TitleBackgroundColor White
+    TitleBorderColor #999999
 }
 
 title Activity Diagram - Mengelola data tanaman
 
-|#LightBlue|User|
+|#White|User|
 start
 :Masuk ke halaman kelola tanaman;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Validasi role pengguna;
 :Query data tanaman dari database;
 :Load data tipe tanaman terkait;
 :Menampilkan daftar tanaman;
 
-|#LightBlue|User|
+|#White|User|
 :Lihat daftar tanaman;
 :Klik tombol tambah tanaman;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Tampilkan form tambah tanaman;
 :Load data tipe tanaman;
 :Load data lokasi penanaman;
 
-|#LightBlue|User|
+|#White|User|
 :Isi form data tanaman\n(nama, varietas, tipe tanaman, lokasi);
 :Submit form;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Validasi data;
 :Check tipe tanaman terdaftar;
 :Check planting_location terdaftar;
@@ -50,12 +51,12 @@ if (Data valid?) then (Ya)
     :Generate plant_id (VARCHAR 36);
     :Tampilkan pesan sukses;
     :Redirect ke halaman detail tanaman;
-    |#LightBlue|User|
+    |#White|User|
     :Lihat pesan tanaman berhasil ditambahkan;
 else (Tidak)
     :Tampilkan pesan error;
     :Kembali ke form;
-    |#LightBlue|User|
+    |#White|User|
     :Lihat form dengan pesan error;
 endif
 

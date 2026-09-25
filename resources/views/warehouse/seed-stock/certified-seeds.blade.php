@@ -47,13 +47,17 @@
                     @forelse($certifiedSeeds as $seed)
                     <tr>
                         <td>
-                            <strong>{{ $seed->certification->plant->name }}</strong>
+                            @php
+                                $plant = $seed->plant ?? $seed->harvest?->plant;
+                                $location = $seed->plantingLocation ?? $seed->harvest?->location;
+                            @endphp
+                            <strong>{{ $plant?->name ?? '-' }}</strong>
                         </td>
                         <td>
-                            {{ $seed->certification->plant->variety ?: '-' }}
+                            {{ $plant?->variety ?: '-' }}
                         </td>
                         <td>
-                            {{ $seed->certification->plantingLocation->name }}
+                            {{ $location?->name ?? '-' }}
                         </td>
                         <td>
                             {{ $seed->report_number_bpsb ?: '-' }}

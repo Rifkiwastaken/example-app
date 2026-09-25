@@ -8,7 +8,6 @@ use App\Models\Planting;
 use App\Models\PlantingLoss;
 use App\Models\Task;
 use App\Models\PlantingLocationNote;
-use App\Models\PlantingLocationPhoto;
 use App\Jobs\SendTaskNotificationJob;
 use App\Jobs\SendNoteNotificationJob;
 use App\Models\Treatment;
@@ -16,27 +15,26 @@ use App\Models\Nutrient;
 use App\Models\Expense;
 use App\Models\Attachment;
 use App\Models\User;
-use App\Models\Harvest;
+use App\Models\PlantingField;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class PlantingLocationController extends Controller
 {
     public function index(Request $request)
     {
         $user = auth()->user();
-        $query = PlantingLocation::with(['landManagerUsers', 'landWorkerUsers']);
+        $query = PlantingLocation::with(['assignedUsers', 'landWorkerUsers', 'plantings.seedSource.plant.type']);
         
-        // Filter: Admin melihat semua; non-admin hanya lokasi yang ditugaskan (manager atau worker)
+        // Filter: Admin melihat semua; non-admin hanya lokasi penempatan
         if (!$user->isAdmin()) {
-            $query->where(function($q) use ($user) {
-                $q->whereHas('landManagerUsers', function($q) use ($user) {
-                    $q->where('users.user_id', $user->user_id);
-                })->orWhereHas('landWorkerUsers', function($q) use ($user) {
-                    $q->where('users.user_id', $user->user_id);
-                });
-            });
+            if ($user->placement_location_id) {
+                $query->where('planting_location_id', $user->placement_location_id);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
         }
         
         // Search by name
@@ -48,32 +46,14 @@ class PlantingLocationController extends Controller
         // Filter by assignment (user) - for admin filter dropdown
         if ($request->filled('assignment')) {
             $userId = $request->input('assignment');
-            $query->where(function($q) use ($userId) {
-                $q->whereHas('landManagerUsers', function($q) use ($userId) {
-                    $q->where('users.user_id', $userId);
-                })->orWhereHas('landWorkerUsers', function($q) use ($userId) {
-                    $q->where('users.user_id', $userId);
-                });
+            $query->whereHas('assignedUsers', function($q) use ($userId) {
+                $q->where('users.user_id', $userId);
             });
         }
         
         $plantingLocations = $query->orderBy('name')->paginate(15)->withQueryString();
         
-        // Get all users who are assigned to any planting location (as manager or worker)
-        // Use a more efficient query with distinct user IDs from pivot tables
-        $managerUserIds = DB::table('user_planting_location_land_manager')
-            ->distinct()
-            ->pluck('user_id');
-        
-        $workerUserIds = DB::table('user_planting_location_land_worker')
-            ->distinct()
-            ->pluck('user_id');
-        
-        $allAssignedUserIds = $managerUserIds->merge($workerUserIds)->unique();
-        
-        $assignedUsers = $allAssignedUserIds->isNotEmpty() 
-            ? User::whereIn('user_id', $allAssignedUserIds)->orderBy('name')->get()
-            : collect();
+        $assignedUsers = User::whereNotNull('placement_location_id')->orderBy('name')->get();
         
         return view('planting/planting-locations/index', compact('plantingLocations', 'assignedUsers'));
     }
@@ -103,18 +83,22 @@ class PlantingLocationController extends Controller
             
             $data = $request->validate([
                 'name' => 'required|string|max:255',
-                'location_summary' => 'nullable|string|max:255',
+                'location_summary' => 'required|string|max:255',
+                'province' => 'required|string|max:100',
+                'district' => 'required|string|max:100',
+                'village' => 'required|string|max:100',
+                'koordinat_gps' => ['nullable', 'string', 'max:100', 'regex:/^-?\d{1,3}(\.\d+)?\s*,\s*-?\d{1,3}(\.\d+)?$/'],
                 'administrative_address' => 'nullable|string',
                 'google_maps_link' => 'nullable|url|max:255',
                 'primary_photo' => 'nullable|image|max:5120',
                 'location_type' => 'required|in:lapangan,sawah,greenhouse,grow_room,padang_rumput,petak_ternak,lainnya',
                 'location_type_custom' => 'nullable|string|max:255',
-                'planting_format' => 'required|in:ditanam_dalam_petak,cover_crop,row_crop,lainnya',
+                'planting_format' => 'nullable|in:ditanam_dalam_petak,cover_crop,row_crop,lainnya',
                 'planting_format_custom' => 'nullable|string|max:255',
                 'num_beds' => 'nullable|integer|min:0',
                 'bed_length_m' => 'nullable|numeric|min:0',
                 'bed_width_m' => 'nullable|numeric|min:0',
-                'map_size' => 'nullable|string|max:255',
+                'map_size' => 'required|string|max:255',
                 'light_condition' => 'nullable|string|max:255',
                 'light_condition_custom' => 'nullable|string|max:255',
                 'land_status' => 'nullable|string|max:255',
@@ -127,10 +111,24 @@ class PlantingLocationController extends Controller
                 'soil_type_custom' => 'nullable|string|max:255',
                 'elevation_masl' => 'nullable|integer',
                 'description' => 'nullable|string',
-                'land_manager_user_ids' => 'nullable|array',
-                'land_manager_user_ids.*' => 'nullable|exists:users,user_id',
                 'land_worker_user_ids' => 'nullable|array',
                 'land_worker_user_ids.*' => 'nullable|exists:users,user_id',
+                'land_worker_roles' => 'nullable|array',
+                'land_worker_roles.*' => 'nullable|in:petugas_lapangan,penangkar',
+                'fields' => 'nullable|array',
+                'fields.*.kode_lahan' => 'nullable|string|max:20',
+                'fields.*.luas_ha' => 'nullable|numeric|min:0.01|max:999.99',
+                'fields.*.panjang_m' => 'nullable|numeric|min:0|max:99999.99',
+                'fields.*.lebar_m' => 'nullable|numeric|min:0|max:99999.99',
+                'fields.*.status_lahan' => 'nullable|in:Digunakan,Bera,Persiapan',
+                'fields.*.koordinat_gps' => ['nullable', 'string', 'max:100', 'regex:/^-?\d{1,3}(\.\d+)?\s*,\s*-?\d{1,3}(\.\d+)?$/'],
+                'fields.*.peta_lahan' => 'nullable|string',
+            ], [
+                'name.required' => 'Nama lokasi penanaman wajib diisi.',
+                'location_summary.required' => 'Alamat wajib diisi.',
+                'map_size.required' => 'Luas lokasi penanaman wajib diisi.',
+                'koordinat_gps.regex' => 'Koordinat GPS harus berformat latitude,longitude. Contoh: -0.9471,100.4172',
+                'fields.*.koordinat_gps.regex' => 'Koordinat GPS lahan harus berformat latitude,longitude.',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()->back()
@@ -139,7 +137,7 @@ class PlantingLocationController extends Controller
         }
 
         try {
-            if ($data['planting_format'] === 'lainnya') {
+            if (($data['planting_format'] ?? null) === 'lainnya') {
                 $customFormat = trim((string) $request->input('planting_format_custom'));
                 if ($customFormat === '') {
                     return back()
@@ -169,6 +167,7 @@ class PlantingLocationController extends Controller
             $data['soil_type'] = $this->resolveSelectValue($request, 'soil_type');
             $data['light_condition'] = $this->resolveSelectValue($request, 'light_condition', $data['light_condition'] ?? null);
             $data['elevation_masl'] = $request->filled('elevation_masl') ? $data['elevation_masl'] : null;
+            $data['administrative_address'] = $this->composedAdministrativeAddress($data);
 
             unset(
                 $data['land_status_custom'],
@@ -177,9 +176,15 @@ class PlantingLocationController extends Controller
                 $data['soil_type_custom'],
                 $data['light_condition_custom'],
                 $data['primary_photo'],
-                $data['land_manager_user_ids'],
-                $data['land_worker_user_ids']
+                $data['land_worker_user_ids'],
+                $data['land_worker_roles'],
+                $data['fields']
             );
+
+            $data['koordinat_gps'] = $this->normalizedGps($data['koordinat_gps'] ?? null);
+            if (empty($data['google_maps_link']) && !empty($data['koordinat_gps'])) {
+                $data['google_maps_link'] = 'https://www.google.com/maps?q=' . $data['koordinat_gps'];
+            }
 
             if ($request->hasFile('primary_photo')) {
                 $data['primary_photo_path'] = $request->file('primary_photo')->store('planting-location', 'public');
@@ -187,24 +192,11 @@ class PlantingLocationController extends Controller
 
             $loc = PlantingLocation::create($data);
 
-            // Sync land manager and worker users
-            $landManagerUserIds = $request->input('land_manager_user_ids', []);
-            $landWorkerUserIds = $request->input('land_worker_user_ids', []);
-            
-            // Ensure arrays are not null and filter out empty values (user_id is string/UUID)
-            if (!is_array($landManagerUserIds)) {
-                $landManagerUserIds = [];
-            }
-            if (!is_array($landWorkerUserIds)) {
-                $landWorkerUserIds = [];
-            }
-            $landManagerUserIds = array_values(array_filter($landManagerUserIds, fn($id) => !empty(trim((string) $id))));
-            $landWorkerUserIds = array_values(array_filter($landWorkerUserIds, fn($id) => !empty(trim((string) $id))));
-
-            $loc->landManagerUsers()->sync($landManagerUserIds);
-            $loc->landWorkerUsers()->sync($landWorkerUserIds);
+            $this->storeNestedFields($request, $loc);
 
             return redirect()->route('planting-locations.show', $loc)->with('success', 'Lokasi penanaman berhasil ditambahkan');
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             \Log::error('Error creating planting location: ' . $e->getMessage(), [
                 'exception' => $e,
@@ -228,7 +220,7 @@ class PlantingLocationController extends Controller
         }
         
         // Load planting location with relationships
-        $plantingLocation->load(['landManagerUsers', 'landWorkerUsers']);
+        $plantingLocation->load(['landWorkerUsers']);
         
         return view('planting/planting-locations/show', compact(
             'plantingLocation'
@@ -249,7 +241,7 @@ class PlantingLocationController extends Controller
         }
         
         $users = User::orderBy('name')->get();
-        $plantingLocation->load(['landManagerUsers', 'landWorkerUsers']);
+        $plantingLocation->load(['landWorkerUsers', 'fields']);
 
         return view('planting/planting-locations/edit', compact('plantingLocation', 'users'));
     }
@@ -269,18 +261,22 @@ class PlantingLocationController extends Controller
         
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'location_summary' => 'nullable|string|max:255',
+            'location_summary' => 'required|string|max:255',
+            'province' => 'required|string|max:100',
+            'district' => 'required|string|max:100',
+            'village' => 'required|string|max:100',
+            'koordinat_gps' => ['nullable', 'string', 'max:100', 'regex:/^-?\d{1,3}(\.\d+)?\s*,\s*-?\d{1,3}(\.\d+)?$/'],
             'administrative_address' => 'nullable|string',
             'google_maps_link' => 'nullable|url|max:255',
             'primary_photo' => 'nullable|image|max:5120',
             'location_type' => 'required|in:lapangan,sawah,greenhouse,grow_room,padang_rumput,petak_ternak,lainnya',
             'location_type_custom' => 'nullable|string|max:255',
-            'planting_format' => 'required|in:ditanam_dalam_petak,cover_crop,row_crop,lainnya',
+            'planting_format' => 'nullable|in:ditanam_dalam_petak,cover_crop,row_crop,lainnya',
             'planting_format_custom' => 'nullable|string|max:255',
             'num_beds' => 'nullable|integer|min:0',
             'bed_length_m' => 'nullable|numeric|min:0',
             'bed_width_m' => 'nullable|numeric|min:0',
-            'map_size' => 'nullable|string|max:255',
+            'map_size' => 'required|string|max:255',
             'light_condition' => 'nullable|string|max:255',
             'light_condition_custom' => 'nullable|string|max:255',
             'land_status' => 'nullable|string|max:255',
@@ -293,13 +289,25 @@ class PlantingLocationController extends Controller
             'soil_type_custom' => 'nullable|string|max:255',
             'elevation_masl' => 'nullable|integer',
             'description' => 'nullable|string',
-            'land_manager_user_ids' => 'nullable|array',
-            'land_manager_user_ids.*' => 'exists:users,user_id',
             'land_worker_user_ids' => 'nullable|array',
             'land_worker_user_ids.*' => 'exists:users,user_id',
-        ]);
+                'land_worker_roles' => 'nullable|array',
+                'land_worker_roles.*' => 'nullable|in:petugas_lapangan,penangkar',
+                'fields' => 'nullable|array',
+                'fields.*.kode_lahan' => 'nullable|string|max:20',
+                'fields.*.luas_ha' => 'nullable|numeric|min:0.01|max:999.99',
+                'fields.*.panjang_m' => 'nullable|numeric|min:0|max:99999.99',
+                'fields.*.lebar_m' => 'nullable|numeric|min:0|max:99999.99',
+                'fields.*.status_lahan' => 'nullable|in:Digunakan,Bera,Persiapan',
+                'fields.*.koordinat_gps' => ['nullable', 'string', 'max:100', 'regex:/^-?\d{1,3}(\.\d+)?\s*,\s*-?\d{1,3}(\.\d+)?$/'],
+                'fields.*.peta_lahan' => 'nullable|string',
+            ], [
+                'name.required' => 'Nama lokasi penanaman wajib diisi.',
+                'location_summary.required' => 'Alamat wajib diisi.',
+                'map_size.required' => 'Luas lokasi penanaman wajib diisi.',
+            ]);
 
-        if ($data['planting_format'] === 'lainnya') {
+        if (($data['planting_format'] ?? null) === 'lainnya') {
             $customFormat = trim((string) $request->input('planting_format_custom'));
             if ($customFormat === '') {
                 return back()
@@ -329,6 +337,7 @@ class PlantingLocationController extends Controller
         $data['soil_type'] = $this->resolveSelectValue($request, 'soil_type');
         $data['light_condition'] = $this->resolveSelectValue($request, 'light_condition', $data['light_condition'] ?? null);
         $data['elevation_masl'] = $request->filled('elevation_masl') ? $data['elevation_masl'] : null;
+        $data['administrative_address'] = $this->composedAdministrativeAddress($data);
 
         unset(
             $data['land_status_custom'],
@@ -337,9 +346,15 @@ class PlantingLocationController extends Controller
             $data['soil_type_custom'],
             $data['light_condition_custom'],
             $data['primary_photo'],
-            $data['land_manager_user_ids'],
-            $data['land_worker_user_ids']
+            $data['land_worker_user_ids'],
+            $data['land_worker_roles'],
+            $data['fields']
         );
+
+        $data['koordinat_gps'] = $this->normalizedGps($data['koordinat_gps'] ?? null);
+        if (empty($data['google_maps_link']) && !empty($data['koordinat_gps'])) {
+            $data['google_maps_link'] = 'https://www.google.com/maps?q=' . $data['koordinat_gps'];
+        }
 
         if ($request->hasFile('primary_photo')) {
             if ($plantingLocation->primary_photo_path) {
@@ -351,22 +366,7 @@ class PlantingLocationController extends Controller
 
         $plantingLocation->update($data);
 
-        // Sync land manager and worker users
-        $landManagerUserIds = $request->input('land_manager_user_ids', []);
-        $landWorkerUserIds = $request->input('land_worker_user_ids', []);
-        
-        // Ensure arrays are not null and filter out empty values (user_id is string/UUID)
-        if (!is_array($landManagerUserIds)) {
-            $landManagerUserIds = [];
-        }
-        if (!is_array($landWorkerUserIds)) {
-            $landWorkerUserIds = [];
-        }
-        $landManagerUserIds = array_values(array_filter($landManagerUserIds, fn($id) => !empty(trim((string) $id))));
-        $landWorkerUserIds = array_values(array_filter($landWorkerUserIds, fn($id) => !empty(trim((string) $id))));
-
-        $plantingLocation->landManagerUsers()->sync($landManagerUserIds);
-        $plantingLocation->landWorkerUsers()->sync($landWorkerUserIds);
+        $this->storeNestedFields($request, $plantingLocation);
 
         return redirect()->route('planting-locations.show', $plantingLocation)->with('success', 'Lokasi penanaman diperbarui');
     }
@@ -401,6 +401,160 @@ class PlantingLocationController extends Controller
         return $value ?? $default;
     }
 
+    protected function normalizedGps(?string $value): ?string
+    {
+        if ($value === null || trim($value) === '') {
+            return null;
+        }
+
+        $parts = array_map('trim', explode(',', $value));
+        if (count($parts) < 2) {
+            return null;
+        }
+
+        return $parts[0] . ',' . $parts[1];
+    }
+
+    protected function composedAdministrativeAddress(array $data): ?string
+    {
+        $parts = array_filter([
+            ($data['village'] ?? null) ? 'Desa/Kelurahan ' . $data['village'] : null,
+            ($data['district'] ?? null) ? 'Kec. ' . $data['district'] : null,
+            $data['province'] ?? null,
+        ]);
+
+        return $parts === [] ? ($data['administrative_address'] ?? null) : implode(', ', $parts);
+    }
+
+    protected function storeNestedFields(Request $request, PlantingLocation $location): void
+    {
+        $rows = $request->input('fields', []);
+        if (! is_array($rows) || $rows === []) {
+            return;
+        }
+
+        $errors = [];
+        $seenCodes = [];
+
+        foreach ($rows as $index => $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $kode = strtoupper(trim((string) ($row['kode_lahan'] ?? '')));
+            $luas = $row['luas_ha'] ?? null;
+            $status = $row['status_lahan'] ?? '';
+            $gps = $row['koordinat_gps'] ?? null;
+            $peta = $row['peta_lahan'] ?? null;
+
+            $isEmpty = $kode === ''
+                && ($luas === null || $luas === '')
+                && $status === ''
+                && (empty($gps) || trim((string) $gps) === '')
+                && (empty($peta) || trim((string) $peta) === '');
+
+            if ($isEmpty) {
+                continue;
+            }
+
+            if ($kode === '') {
+                $errors["fields.$index.kode_lahan"] = 'Kode lahan wajib diisi.';
+            }
+            if ($luas === null || $luas === '') {
+                $errors["fields.$index.luas_ha"] = 'Luas lahan wajib diisi.';
+            }
+            if ($status === '') {
+                $errors["fields.$index.status_lahan"] = 'Status lahan wajib dipilih.';
+            }
+
+            if ($kode !== '') {
+                if (isset($seenCodes[$kode])) {
+                    $errors["fields.$index.kode_lahan"] = 'Kode lahan tidak boleh duplikat pada form ini.';
+                }
+                $seenCodes[$kode] = true;
+
+                $exists = PlantingField::where('planting_location_id', $location->planting_location_id)
+                    ->where('kode_lahan', $kode)
+                    ->exists();
+                if ($exists) {
+                    $errors["fields.$index.kode_lahan"] = 'Kode lahan ini sudah dipakai di lokasi ini.';
+                }
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        foreach ($rows as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $kode = strtoupper(trim((string) ($row['kode_lahan'] ?? '')));
+            $luas = $row['luas_ha'] ?? null;
+            $status = $row['status_lahan'] ?? '';
+            if ($kode === '' || $luas === null || $luas === '' || $status === '') {
+                continue;
+            }
+
+            PlantingField::create([
+                'planting_location_id' => $location->planting_location_id,
+                'kode_lahan' => $kode,
+                'luas_ha' => $luas,
+                'panjang_m' => ($row['panjang_m'] ?? '') === '' ? null : $row['panjang_m'],
+                'lebar_m' => ($row['lebar_m'] ?? '') === '' ? null : $row['lebar_m'],
+                'status_lahan' => $status,
+                'koordinat_gps' => $this->normalizedGps($row['koordinat_gps'] ?? null),
+                'peta_lahan' => $this->normalizedNestedPolygon($row['peta_lahan'] ?? null, 'peta_lahan'),
+            ]);
+        }
+    }
+
+    protected function normalizedNestedPolygon(?string $raw, string $field): ?array
+    {
+        if ($raw === null || trim($raw) === '') {
+            return null;
+        }
+
+        $points = json_decode($raw, true);
+        if (! is_array($points)) {
+            throw ValidationException::withMessages([
+                $field => 'Data peta lahan tidak valid.',
+            ]);
+        }
+
+        $normalized = [];
+        foreach ($points as $point) {
+            $lat = is_array($point) ? ($point['lat'] ?? $point[0] ?? null) : null;
+            $lng = is_array($point) ? ($point['lng'] ?? $point[1] ?? null) : null;
+            if (! is_numeric($lat) || ! is_numeric($lng)) {
+                continue;
+            }
+            $lat = (float) $lat;
+            $lng = (float) $lng;
+            if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
+                continue;
+            }
+            $normalized[] = [
+                'lat' => round($lat, 6),
+                'lng' => round($lng, 6),
+            ];
+        }
+
+        if (count($normalized) === 0) {
+            return null;
+        }
+
+        if (count($normalized) !== 4) {
+            throw ValidationException::withMessages([
+                $field => 'Peta lahan harus terdiri dari tepat 4 titik batas.',
+            ]);
+        }
+
+        return $normalized;
+    }
+
     // Store new planting in this location
     public function storePlanting(Request $request, PlantingLocation $plantingLocation)
     {
@@ -415,108 +569,57 @@ class PlantingLocationController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk menambahkan penanaman.');
         }
         
-        // Valid harvest unit values from ENUM
-        $validHarvestUnits = ['ikat','barel','tandan','gantang','lusin','gram','batang','kilogram','kiloliter','liter','mililiter','satuan','ton'];
-        
         try {
-            // Auto-generate planting_batch_number if not provided or empty
-            $plantingBatchNumber = trim($request->input('planting_batch_number', ''));
-            if (empty($plantingBatchNumber)) {
-                $year = date('Y');
-                $plantingCount = Planting::whereYear('planted_at', $year)->count() + 1;
-                $plantingBatchNumber = 'TANAM-' . $year . '-' . str_pad($plantingCount, 3, '0', STR_PAD_LEFT);
-                
-                // Ensure uniqueness by checking if batch number already exists
-                while (Planting::where('planting_batch_number', $plantingBatchNumber)->exists()) {
-                    $plantingCount++;
-                    $plantingBatchNumber = 'TANAM-' . $year . '-' . str_pad($plantingCount, 3, '0', STR_PAD_LEFT);
-                }
-                
-                // Merge the generated batch number back to request
-                $request->merge(['planting_batch_number' => $plantingBatchNumber]);
-            }
-            
             $data = $request->validate([
-                'plant_id' => 'required|exists:plants,plant_id',
-                'planting_location_id' => 'nullable|exists:planting_locations,planting_location_id',
-                'planting_batch_number' => 'required|string|max:255|unique:plantings,planting_batch_number',
-            'planted_at' => 'required|date',
-            'estimated_harvest_date' => 'nullable|date|after_or_equal:planted_at',
-            'area_ha' => 'nullable|numeric|min:0',
-            'planting_format' => 'nullable|string|in:rumpun,batang,lainnya',
-            'planting_format_custom' => 'nullable|string|max:255',
-            'quantity_planted' => 'required|numeric|min:0',
-            'bed_label' => 'nullable|string|max:255',
-            'days_to_emerge' => 'nullable|integer|min:0',
-            'spacing_between_plants' => 'nullable|numeric|min:0',
-            'spacing_between_rows' => 'nullable|numeric|min:0',
-            'sowing_depth' => 'nullable|numeric|min:0',
-            'avg_height' => 'nullable|numeric|min:0',
-            'start_method' => 'nullable|string|max:255',
-            'germination_stage' => 'nullable|string|max:255',
-            'seeds_per_hole' => 'nullable|integer|min:1',
-            'light_profile' => 'nullable|string|max:255',
-            'soil_condition' => 'nullable|string|max:255',
-            'planting_detail' => 'nullable|string',
-            'pruning_detail' => 'nullable|string',
-            'perennial' => 'boolean',
-            'days_to_flower' => 'nullable|integer|min:0',
-            'days_to_harvest' => 'nullable|integer|min:0',
-            'harvest_window_days' => 'nullable|integer|min:0',
-            'expected_loss_rate' => 'nullable|numeric|min:0|max:100',
-            'harvest_unit' => 'nullable|string|in:' . implode(',', $validHarvestUnits),
-            'expected_yield_per_hectare' => 'nullable|numeric|min:0',
-            'notes' => 'nullable|string',
-        ]);
+                'plant_id' => 'required|exists:plant_varieties,seed_varieties_id',
+                'seed_source_id' => 'required|exists:plant_seed_source,seed_source_id',
+                'planting_field_id' => 'required|exists:planting_fields,id',
+                'planting_batch_number' => 'required|string|max:255|unique:planting_production,planting_batch_number',
+                'planted_at' => 'required|date',
+                'planting_amount' => 'required|numeric|min:0.01',
+                'estimated_harvest_date' => 'required|date|after_or_equal:planted_at',
+                'target_kelas' => 'nullable|in:BS,FS,SS,ES',
+                'description' => 'nullable|string',
+                'file' => 'nullable|file|max:10240',
+            ], [
+                'planting_batch_number.required' => 'Nomor batch tanam wajib diisi.',
+                'planting_batch_number.unique' => 'Nomor batch tanaman sudah digunakan.',
+                'planting_amount.required' => 'Jumlah benih yang ditanam wajib diisi.',
+            ]);
 
-        $plant = Plant::findOrFail($data['plant_id']);
-        
-        // Auto-fill from plant type if available and field is not provided
-        if ($plant->type) {
-            $data['days_to_harvest'] = $data['days_to_harvest'] ?? $plant->type->days_to_harvest;
-            $data['spacing_between_plants'] = $data['spacing_between_plants'] ?? $plant->type->spacing_between_plants;
-            $data['spacing_between_rows'] = $data['spacing_between_rows'] ?? $plant->type->spacing_between_rows;
-            $data['sowing_depth'] = $data['sowing_depth'] ?? $plant->type->sowing_depth;
-            $data['days_to_emerge'] = $data['days_to_emerge'] ?? $plant->type->days_to_emerge;
-            
-            // Get harvest_unit from plant type if available, otherwise use default 'kilogram'
-            $harvestUnitFromType = $plant->type->harvest_unit ?? null;
-            
-            // Validate harvest_unit from type is valid, otherwise use default
-            if ($harvestUnitFromType && in_array($harvestUnitFromType, $validHarvestUnits)) {
-                $data['harvest_unit'] = $data['harvest_unit'] ?? $harvestUnitFromType;
-            } else {
-                $data['harvest_unit'] = $data['harvest_unit'] ?? 'kilogram';
-            }
-        } else {
-            // If no plant type, set default harvest_unit
-            $data['harvest_unit'] = $data['harvest_unit'] ?? 'kilogram';
+        $field = \App\Models\PlantingField::findOrFail($data['planting_field_id']);
+        if ($field->planting_location_id !== $plantingLocation->planting_location_id) {
+            return back()->withErrors(['planting_field_id' => 'Lahan tidak termasuk lokasi penanaman ini.'])->withInput();
         }
+        $seedSource = \App\Models\SeedSource::findOrFail($data['seed_source_id']);
+        if ($seedSource->seed_varieties_id !== $data['plant_id']) {
+            return back()->withErrors(['seed_source_id' => 'Benih sumber tidak sesuai dengan tanaman yang dipilih.'])->withInput();
+        }
+        if ((float) $seedSource->quantity_kg <= 0) {
+            return back()->withErrors(['seed_source_id' => 'Benih sumber ini tidak tersedia.'])->withInput();
+        }
+        if ((float) $seedSource->quantity_kg < (float) $data['planting_amount']) {
+            return back()->withErrors(['planting_amount' => 'Jumlah benih yang ditanam melebihi sisa benih sumber.'])->withInput();
+        }
+        $plant = \App\Models\Plant::with('satuanPanen')->find($data['plant_id']);
+        $data['satuan_panen_id'] = $plant?->satuan_panen_id;
+        unset($data['plant_id']);
+        $file = $request->file('file');
+        if ($file) {
+            $data['file_path'] = $file->store('planting-production', 'public');
+            $data['file_name'] = $file->getClientOriginalName();
+        }
+        $data['status'] = Planting::STATUS_PERENCANAAN;
+        $data['is_completed'] = false;
 
-        // Set planting_location_id from route parameter
-        $data['planting_location_id'] = $plantingLocation->planting_location_id;
-        
-        // Handle planting_format_custom
-        if (isset($data['planting_format']) && $data['planting_format'] === 'lainnya') {
-            $customFormat = trim((string) $request->input('planting_format_custom'));
-            if ($customFormat === '') {
-                return back()
-                    ->withErrors(['planting_format_custom' => 'Format tanam lainnya wajib diisi.'])
-                    ->withInput();
-            }
-            $data['planting_format_custom'] = $customFormat;
-        } else {
-            $data['planting_format_custom'] = null;
-        }
-        
-            // Handle perennial checkbox
-            $data['perennial'] = $request->has('perennial') ? true : false;
-            
-            $planting = Planting::create($data);
+        $planting = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $seedSource) {
+            $seedSource->decrement('quantity_kg', $data['planting_amount']);
+            return Planting::create($data);
+        });
             
             // Redirect to current plantings page
             return redirect()->route('planting-locations.plantings.index', $plantingLocation)
-                ->with('success', 'Penanaman berhasil ditambahkan');
+                ->with('success', 'Produksi penanaman berhasil ditambahkan');
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()->back()
                 ->withErrors($e->errors())
@@ -549,7 +652,7 @@ class PlantingLocationController extends Controller
         }
         
         $data = $request->validate([
-            'planting_id' => 'required|exists:plantings,planting_id',
+            'planting_id' => 'required|exists:planting_production,planting_production_id',
             'loss_date' => 'required|date',
             'loss_amount' => 'required|numeric|min:0.01',
             'loss_reason' => 'nullable|string|max:255',
@@ -557,16 +660,6 @@ class PlantingLocationController extends Controller
         ]);
 
         $planting = Planting::findOrFail($data['planting_id']);
-        
-        // Validate that loss amount doesn't exceed available plants
-        $totalLosses = $planting->losses()->sum('loss_amount');
-        $availablePlants = $planting->quantity_planted - $totalLosses;
-        
-        if ($data['loss_amount'] > $availablePlants) {
-            return back()
-                ->withErrors(['loss_amount' => 'Jumlah kehilangan tidak boleh melebihi tanaman yang tersedia (' . number_format($availablePlants, 0) . ' tanaman).'])
-                ->withInput();
-        }
 
         try {
             $loss = PlantingLoss::create($data);
@@ -649,25 +742,24 @@ class PlantingLocationController extends Controller
         
         $data['association'] = 'penanaman';
 
-        // Handle assigned_to - check if "semua_user" is selected
-        // Note: assigned_to is VARCHAR(36) for single user ID
-        // For "semua_user", we store null and the collaborators field stores all user IDs
-        if ($request->filled('assigned_to') && $request->assigned_to === 'semua_user') {
-            // Get all users related to this planting location (land managers, land workers, and admins)
-            $landManagers = $plantingLocation->landManagerUsers;
-            $landWorkers = $plantingLocation->landWorkerUsers;
-            $locationUsers = $landManagers->merge($landWorkers)->unique('user_id');
-            $adminUsers = \App\Models\User::where('role', 'admin')->get();
-            $allUsers = $locationUsers->merge($adminUsers)->unique('user_id');
-            // Store null for assigned_to (indicates all users)
-            // Store user IDs in collaborators field (which is cast to array)
+        // Siapkan daftar user di lokasi (pekerja lahan) + admin
+        $landWorkers = $plantingLocation->landWorkerUsers;
+        $locationUsers = $landWorkers->unique('user_id');
+        $adminUsers = \App\Models\User::where('role', 'admin')->get();
+        $allUsers = $locationUsers->merge($adminUsers)->unique('user_id');
+
+        // Handle assigned_to:
+        // - Jika dipilih user tertentu -> hanya user itu yang ditugaskan
+        // - Jika dipilih "semua_user" -> semua user di lokasi + admin
+        // - Jika dikosongkan -> otomatis dianggap "semua user"
+        if ($request->filled('assigned_to') && $request->assigned_to !== 'semua_user') {
+            // Penugasan ke satu user
+            $data['assigned_to'] = $request->assigned_to;
+            $data['collaborators'] = null;
+        } else {
+            // "semua_user" atau kosong -> semua user
             $data['assigned_to'] = null;
             $data['collaborators'] = $allUsers->pluck('user_id')->toArray();
-        } elseif ($request->filled('assigned_to') && $request->assigned_to !== 'semua_user') {
-            // Single user assignment - validate and keep as is (will be stored as single ID)
-            $data['assigned_to'] = $request->assigned_to;
-        } else {
-            $data['assigned_to'] = null;
         }
 
         // Handle created_by - default to current user if not provided
@@ -688,30 +780,33 @@ class PlantingLocationController extends Controller
         if ($actionType === 'save_template') {
             $templateData = [
                 'name' => $data['title'],
+                'title' => $data['title'],
                 'description' => $data['description'] ?? '',
                 'association' => 'penanaman',
                 'is_active' => true,
-                'tasks_list' => [[
-                    'title' => $data['title'],
-                    'description' => $data['description'] ?? '',
-                    'task_report' => $data['task_report'] ?? '',
-                    'checklist' => $data['checklist'] ?? [],
-                    'association' => $data['association'],
-                    'new_status' => $data['new_status'],
-                    'new_priority' => $data['new_priority'],
-                    'repeats' => $data['repeats'] ?? '',
-                    'hours_spent' => $data['hours_spent'] ?? null,
-                    'task_color' => $data['task_color'] ?? '#28a745',
-                ]],
+                'checklist' => isset($data['checklist']) && is_array($data['checklist']) ? $data['checklist'] : [],
+                'attachments' => isset($data['attachments']) && is_array($data['attachments']) ? $data['attachments'] : [],
             ];
 
-            \App\Models\TaskTemplate::create($templateData);
-            
-            return redirect()->route('planting-locations.show', $plantingLocation)
-                ->with('success', 'Template laporan berhasil disimpan');
+            try {
+                if (! \Illuminate\Support\Facades\Schema::hasTable('task_templates')) {
+                    return redirect()->back()->with('error', 'Template tugas tidak tersedia.');
+                }
+                \App\Models\TaskTemplate::create($templateData);
+                return redirect()->route('planting-locations.show', $plantingLocation)
+                    ->with('success', 'Template laporan berhasil disimpan');
+            } catch (\Throwable $e) {
+                \Log::error('Save task as template failed', [
+                    'planting_location' => $plantingLocation->planting_location_id,
+                    'data' => $templateData,
+                    'exception' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['error' => 'Gagal menyimpan template: ' . $e->getMessage()]);
+            }
         }
-
-        $data['planting_location_id'] = $plantingLocation->planting_location_id;
         
         $task = Task::create($data);
         
@@ -738,13 +833,13 @@ class PlantingLocationController extends Controller
                 if ($planting) {
                     return redirect()->route('planting-locations.plantings.reports', [$plantingLocation, $planting])
                         ->with('success', 'Tugas berhasil ditambahkan')
-                        ->with('fill_task_id', $task->task_id);
+                        ->with('fill_task_id', $task->planting_task_id);
                 }
             }
             
             return redirect()->route('planting-locations.show', $plantingLocation)
                 ->with('success', 'Tugas berhasil ditambahkan')
-                ->with('fill_task_id', $task->task_id);
+                ->with('fill_task_id', $task->planting_task_id);
         }
         
         // Check if request comes from planting reports page
@@ -766,6 +861,9 @@ class PlantingLocationController extends Controller
     // API: Get task template
     public function getTaskTemplate($templateId)
     {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('task_templates')) {
+            abort(404);
+        }
         $template = \App\Models\TaskTemplate::findOrFail($templateId);
         return response()->json($template);
     }
@@ -803,8 +901,8 @@ class PlantingLocationController extends Controller
             'new_status' => 'required|in:selesai,dalam_progress,tidak_selesai',
         ]);
 
-        // Verify task belongs to this planting location
-        if ($task->planting_location_id !== $plantingLocation->planting_location_id) {
+        // Verify task belongs to this planting location via planting
+        if (!$task->planting_id || !$task->planting || $task->planting->planting_location_id !== $plantingLocation->planting_location_id) {
             return redirect()->route('planting-locations.show', $plantingLocation)
                 ->with('error', 'Tugas tidak ditemukan.');
         }
@@ -828,8 +926,8 @@ class PlantingLocationController extends Controller
                 ], 403);
             }
 
-            // Verify task belongs to this planting location
-            if ($task->planting_location_id !== $plantingLocation->planting_location_id) {
+            // Verify task belongs to this planting location via planting
+            if (!$task->planting_id || !$task->planting || $task->planting->planting_location_id !== $plantingLocation->planting_location_id) {
                 return response()->json([
                     'error' => 'Tugas tidak ditemukan.'
                 ], 404);
@@ -846,7 +944,7 @@ class PlantingLocationController extends Controller
                     $assignedUser = $task->assignedUser ? ['id' => $task->assignedUser->user_id, 'name' => $task->assignedUser->name] : null;
                 } catch (\Exception $e) {
                     // If relationship fails, set to null
-                    \Log::warning('Failed to load assignedUser for task ' . $task->task_id . ': ' . $e->getMessage());
+                    \Log::warning('Failed to load assignedUser for task ' . $task->planting_task_id . ': ' . $e->getMessage());
                     $assignedUser = null;
                 }
             }
@@ -869,7 +967,7 @@ class PlantingLocationController extends Controller
 
             return response()->json([
                 'task' => [
-                    'id' => $task->task_id,
+                    'id' => $task->planting_task_id,
                     'title' => $task->title,
                     'description' => $task->description,
                     'task_report' => $task->task_report,
@@ -923,17 +1021,17 @@ class PlantingLocationController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk mengedit laporan ini.');
         }
 
-        // Verify task belongs to this planting location
-        if ($task->planting_location_id !== $plantingLocation->planting_location_id) {
+        // Verify task belongs to this planting location via planting
+        if (!$task->planting_id || !$task->planting || $task->planting->planting_location_id !== $plantingLocation->planting_location_id) {
             abort(404, 'Tugas tidak ditemukan.');
         }
 
         try {
-            $task->load(['assignedUser', 'createdByUser', 'lastEditedByUser', 'plantingLocation', 'planting.plant']);
+            $task->load(['assignedUser', 'createdByUser', 'lastEditedByUser', 'planting.plant']);
 
             return response()->json([
                 'task' => [
-                    'id' => $task->task_id,
+                    'id' => $task->planting_task_id,
                     'title' => $task->title ?? '',
                     'description' => $task->description ?? '',
                     'task_report' => $task->task_report ?? '',
@@ -971,8 +1069,8 @@ class PlantingLocationController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk mengedit laporan ini.');
         }
 
-        // Verify task belongs to this planting location
-        if ($task->planting_location_id !== $plantingLocation->planting_location_id) {
+        // Verify task belongs to this planting location via planting
+        if (!$task->planting_id || !$task->planting || $task->planting->planting_location_id !== $plantingLocation->planting_location_id) {
             abort(404, 'Tugas tidak ditemukan.');
         }
 
@@ -1059,8 +1157,8 @@ class PlantingLocationController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk menghapus laporan ini.');
         }
 
-        // Verify task belongs to this planting location
-        if ($task->planting_location_id !== $plantingLocation->planting_location_id) {
+        // Verify task belongs to this planting location via planting
+        if (!$task->planting_id || !$task->planting || $task->planting->planting_location_id !== $plantingLocation->planting_location_id) {
             abort(404, 'Tugas tidak ditemukan.');
         }
 
@@ -1080,14 +1178,19 @@ class PlantingLocationController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk mengisi laporan ini.');
         }
 
-        // Both admin, kepala_satuan_tugas, and penangkar can fill report
+        // Both admin, kepala_satuan_tugas, and penangkar can fill report (dengan batasan penugasan)
         if (!$user->isAdmin() && !$user->canAddDataInPelaporan($plantingLocation)) {
             abort(403, 'Anda tidak memiliki izin untuk mengisi laporan ini.');
         }
 
-        // Verify task belongs to this planting location
-        if ($task->planting_location_id !== $plantingLocation->planting_location_id) {
+        // Verify task belongs to this planting location via planting
+        if (!$task->planting_id || !$task->planting || $task->planting->planting_location_id !== $plantingLocation->planting_location_id) {
             abort(404, 'Tugas tidak ditemukan.');
+        }
+
+        // Jika tugas ditugaskan ke user tertentu, hanya user tersebut (atau admin) yang boleh mengisi laporan
+        if (!empty($task->assigned_to) && $user->user_id !== $task->assigned_to && !$user->isAdmin()) {
+            abort(403, 'Laporan ini hanya dapat diisi oleh user yang ditugaskan.');
         }
 
         $data = $request->validate([
@@ -1191,7 +1294,6 @@ class PlantingLocationController extends Controller
             'planting_id' => 'nullable',
         ]);
 
-        $data['planting_location_id'] = $plantingLocation->planting_location_id;
         $data['user_id'] = auth()->user()->user_id;
         
         // Handle planting_id - save to link note to specific planting
@@ -1205,10 +1307,9 @@ class PlantingLocationController extends Controller
         // Handle assigned_to - now single select, convert to array
         if ($request->has('assigned_to') && $request->assigned_to) {
             if ($request->assigned_to === 'all') {
-                // Get all users related to this planting location (land managers, land workers, and admins)
-                $landManagers = $plantingLocation->landManagerUsers;
+                // Get all users related to this planting location (land workers and admins)
                 $landWorkers = $plantingLocation->landWorkerUsers;
-                $locationUsers = $landManagers->merge($landWorkers)->unique('user_id');
+                $locationUsers = $landWorkers->unique('user_id');
                 $adminUsers = \App\Models\User::where('role', 'admin')->get();
                 $allUsers = $locationUsers->merge($adminUsers)->unique('user_id');
                 $data['assigned_to'] = $allUsers->pluck('user_id')->toArray();
@@ -1264,13 +1365,13 @@ class PlantingLocationController extends Controller
             abort(403, 'Anda tidak memiliki akses ke lokasi penanaman ini.');
         }
         
-        // Verify note belongs to this planting location
-        if ($note->planting_location_id !== $plantingLocation->planting_location_id) {
+        // Verify note belongs to this planting location (via planting)
+        if (!$note->planting_id || !$note->planting || $note->planting->planting_location_id !== $plantingLocation->planting_location_id) {
             abort(404, 'Catatan tidak ditemukan.');
         }
         
         // Load relationships
-        $note->load(['user', 'plantingLocation']);
+        $note->load(['user', 'planting.plantingLocation']);
         
         // Get assigned users
         $assignedUsers = $note->assignedUsers();
@@ -1287,14 +1388,14 @@ class PlantingLocationController extends Controller
         if (request()->expectsJson()) {
             return response()->json([
                 'note' => [
-                    'id' => $note->planting_location_note_id,
+                    'id' => $note->planting_note_id,
                     'title' => $note->title,
                     'description' => $note->description,
                     'note_date' => $note->note_date->format('d M Y'),
                     'keywords' => $note->keywords,
                     'attachment_path' => $note->attachment_path,
                     'user' => $note->user ? ['id' => $note->user->user_id, 'name' => $note->user->name] : null,
-                    'planting_location' => $note->plantingLocation ? ['id' => $note->plantingLocation->planting_location_id, 'name' => $note->plantingLocation->name] : null,
+                    'planting_location' => $note->planting?->plantingLocation ? ['id' => $note->planting->plantingLocation->planting_location_id, 'name' => $note->planting->plantingLocation->name] : null,
                     'assigned_users' => $assignedUsers->map(function($u) {
                         return ['id' => $u->user_id, 'name' => $u->name];
                     })->values(),
@@ -1317,8 +1418,8 @@ class PlantingLocationController extends Controller
             abort(403, 'Anda tidak memiliki akses ke lokasi penanaman ini.');
         }
         
-        // Verify note belongs to this planting location
-        if ($note->planting_location_id !== $plantingLocation->planting_location_id) {
+        // Verify note belongs to this planting location (via planting)
+        if (!$note->planting_id || !$note->planting || $note->planting->planting_location_id !== $plantingLocation->planting_location_id) {
             abort(404, 'Catatan tidak ditemukan.');
         }
         
@@ -1341,67 +1442,6 @@ class PlantingLocationController extends Controller
             ->with('success', 'Catatan telah ditandai sebagai sudah dibaca');
     }
 
-    // Store photo for this location
-    public function storePhoto(Request $request, PlantingLocation $plantingLocation)
-    {
-        $user = auth()->user();
-        
-        // Check if user has access
-        if (!$user->isAssignedToPlantingLocation($plantingLocation)) {
-            abort(403, 'Anda tidak memiliki akses ke lokasi penanaman ini.');
-        }
-        
-        // Both kepala_satuan_tugas and penangkar can add photos (in pelaporan)
-        if (!$user->canAddDataInPelaporan($plantingLocation)) {
-            abort(403, 'Anda tidak memiliki izin untuk menambahkan foto.');
-        }
-        
-        $request->validate([
-            'photos' => 'required|array',
-            'photos.*' => 'image|max:5120', // 5MB per photo
-            'description' => 'nullable|string|max:255',
-            'taken_at' => 'nullable|date',
-            'planting_id' => 'nullable',
-        ]);
-        
-        // Handle planting_id - save to link photo to specific planting
-        $plantingId = null;
-        if ($request->filled('planting_id') && $request->planting_id !== 'umum' && $request->planting_id !== '') {
-            $planting = $plantingLocation->plantings()->find($request->planting_id);
-            $plantingId = $planting ? $planting->planting_id : null;
-        }
-
-        foreach ($request->file('photos') as $photo) {
-            $filePath = $photo->store('planting-location-photos', 'public');
-            
-            PlantingLocationPhoto::create([
-                'planting_location_id' => $plantingLocation->planting_location_id,
-                'planting_id' => $plantingId,
-                'file_path' => $filePath,
-                'file_name' => $photo->getClientOriginalName(),
-                'file_size' => $photo->getSize(),
-                'mime_type' => $photo->getMimeType(),
-                'description' => $request->description,
-                'taken_at' => $request->taken_at,
-            ]);
-        }
-        
-        // Check if request comes from planting reports page
-        $fromPlantingReports = $request->input('from_planting_reports', false);
-        $plantingIdForRedirect = $request->input('planting_id_for_redirect');
-        
-        if ($fromPlantingReports && $plantingIdForRedirect) {
-            $planting = \App\Models\Planting::find($plantingIdForRedirect);
-            if ($planting) {
-                return redirect(route('planting-locations.plantings.reports', [$plantingLocation, $planting]) . '#foto-subtab')
-                    ->with('success', 'Foto berhasil diunggah');
-            }
-        }
-        
-        return redirect()->route('planting-locations.show', $plantingLocation)
-            ->with('success', 'Foto berhasil diunggah');
-    }
-
     public function storeAttachment(Request $request, PlantingLocation $plantingLocation)
     {
         $user = auth()->user();
@@ -1418,25 +1458,21 @@ class PlantingLocationController extends Controller
         
         $request->validate([
             'title' => 'required|string|max:255',
+            'attachment_type' => 'nullable|string|max:255',
+            'plant_type' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'attachment_date' => 'required|date',
             'file' => 'required|file|max:10240', // 10MB max
-            'planting_id' => 'nullable',
         ]);
 
         $file = $request->file('file');
-        $filePath = $file->store('planting-location-attachments', 'public');
-        
-        // Handle planting_id - save to link attachment to specific planting
-        $plantingId = null;
-        if ($request->filled('planting_id') && $request->planting_id !== 'umum' && $request->planting_id !== '') {
-            $planting = $plantingLocation->plantings()->find($request->planting_id);
-            $plantingId = $planting ? $planting->planting_id : null;
-        }
-        
+        $filePath = $file->store('attachments', 'public');
+
         Attachment::create([
+            'module' => Attachment::MODULE_LOCATION,
             'planting_location_id' => $plantingLocation->planting_location_id,
-            'planting_id' => $plantingId,
+            'seed_varieties_id' => null,
+            'stock_id' => null,
             'title' => $request->title,
             'description' => $request->description,
             'attachment_date' => $request->attachment_date,
@@ -1454,12 +1490,12 @@ class PlantingLocationController extends Controller
         if ($fromPlantingReports && $plantingIdForRedirect) {
             $planting = \App\Models\Planting::find($plantingIdForRedirect);
             if ($planting) {
-                return redirect(route('planting-locations.plantings.reports', [$plantingLocation, $planting]) . '#lampiran-subtab')
+                return redirect(route('planting-locations.attachments.index', $plantingLocation))
                     ->with('success', 'Lampiran berhasil ditambahkan');
             }
         }
-        
-        return redirect()->to(route('planting-locations.show', $plantingLocation) . '?subtab=lampiran#pelaporan')
+
+        return redirect()->route('planting-locations.attachments.index', $plantingLocation)
             ->with('success', 'Lampiran berhasil ditambahkan');
     }
 
@@ -1472,12 +1508,18 @@ class PlantingLocationController extends Controller
             abort(403, 'Anda tidak memiliki akses ke lokasi penanaman ini.');
         }
         
+        if ($attachment->planting_location_id !== $plantingLocation->planting_location_id) {
+            abort(404, 'Lampiran tidak ditemukan.');
+        }
+        
         if (!$user->canAddDataInPelaporan($plantingLocation)) {
             abort(403, 'Anda tidak memiliki izin untuk mengedit lampiran.');
         }
         
         $request->validate([
             'title' => 'required|string|max:255',
+            'attachment_type' => 'nullable|string|max:255',
+            'plant_type' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'attachment_date' => 'required|date',
             'file' => 'nullable|file|max:10240', // 10MB max
@@ -1485,10 +1527,10 @@ class PlantingLocationController extends Controller
 
         $data = [
             'title' => $request->title,
+            'attachment_type' => $request->attachment_type,
+            'plant_type' => $request->plant_type,
             'description' => $request->description,
             'attachment_date' => $request->attachment_date,
-            'edited_at' => now(),
-            'edited_by' => $user->user_id,
         ];
 
         if ($request->hasFile('file')) {
@@ -1513,12 +1555,12 @@ class PlantingLocationController extends Controller
         if ($fromPlantingReports && $plantingId) {
             $planting = \App\Models\Planting::find($plantingId);
             if ($planting) {
-                return redirect(route('planting-locations.plantings.reports', [$plantingLocation, $planting]) . '#lampiran-subtab')
+                return redirect(route('planting-locations.attachments.index', $plantingLocation))
                     ->with('success', 'Lampiran berhasil diperbarui');
             }
         }
-        
-        return redirect()->to(route('planting-locations.show', $plantingLocation) . '?subtab=lampiran#pelaporan')
+
+        return redirect()->route('planting-locations.attachments.index', $plantingLocation)
             ->with('success', 'Lampiran berhasil diperbarui');
     }
 
@@ -1529,6 +1571,10 @@ class PlantingLocationController extends Controller
         // Check if user has access
         if (!$user->isAssignedToPlantingLocation($plantingLocation)) {
             abort(403, 'Anda tidak memiliki akses ke lokasi penanaman ini.');
+        }
+        
+        if ($attachment->planting_location_id !== $plantingLocation->planting_location_id) {
+            abort(404, 'Lampiran tidak ditemukan.');
         }
         
         if (!$user->canAddDataInPelaporan($plantingLocation)) {
@@ -1542,7 +1588,7 @@ class PlantingLocationController extends Controller
         
         $attachment->delete();
         
-        return redirect()->to(route('planting-locations.show', $plantingLocation) . '?subtab=lampiran#pelaporan')
+        return redirect()->route('planting-locations.attachments.index', $plantingLocation)
             ->with('success', 'Lampiran berhasil dihapus');
     }
 
@@ -1555,26 +1601,29 @@ class PlantingLocationController extends Controller
             abort(403, 'Anda tidak memiliki akses ke lokasi penanaman ini.');
         }
         
-        $attachment->load(['creator', 'editor']);
+        if ($attachment->planting_location_id !== $plantingLocation->planting_location_id) {
+            abort(404, 'Lampiran tidak ditemukan.');
+        }
+        
+        $attachment->load(['creator']);
         
         return response()->json([
-            'id' => $attachment->attachment_id,
+            'id' => $attachment->getKey(),
             'title' => $attachment->title,
+            'attachment_type' => $attachment->attachment_type,
+            'plant_type' => $attachment->plant_type,
             'description' => $attachment->description,
-            'attachment_date' => $attachment->attachment_date->format('Y-m-d'),
+            'attachment_date' => $attachment->attachment_date?->format('Y-m-d'),
             'file_path' => $attachment->file_path,
             'file_name' => $attachment->file_name,
             'created_by' => $attachment->created_by,
-            'edited_at' => $attachment->edited_at ? $attachment->edited_at->toISOString() : null,
-            'edited_by' => $attachment->edited_by,
+            'edited_at' => null,
+            'edited_by' => null,
             'creator' => $attachment->creator ? [
                 'id' => $attachment->creator->user_id,
                 'name' => $attachment->creator->name,
             ] : null,
-            'editor' => $attachment->editor ? [
-                'id' => $attachment->editor->user_id,
-                'name' => $attachment->editor->name,
-            ] : null,
+            'editor' => null,
         ]);
     }
 
@@ -1593,22 +1642,13 @@ class PlantingLocationController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk menandai penanaman sebagai gagal.');
         }
         
-        // Create a harvest record with zero quantity to mark as failed
-        Harvest::create([
-            'plant_id' => $planting->plant_id,
-            'planting_id' => $planting->planting_id,
-            'planting_location_id' => $plantingLocation->planting_location_id,
-            'harvested_at' => now(),
-            'batch_no' => 'FAILED-' . date('Y') . '-' . str_pad($planting->planting_id, 3, '0', STR_PAD_LEFT),
-            'quantity' => 0,
-            'unit' => 'kg',
-            'quality' => 'Gagal Panen',
-            'note' => 'Tanaman ditandai sebagai gagal panen',
-        ]);
-        
         // Mark planting as completed so it no longer appears in the active "Penanaman" list
         // Record will still appear in "Riwayat Penanaman" > "Gagal panen"
-        $planting->update(['is_completed' => true]);
+        $planting->update([
+            'is_completed' => true,
+            'completed_at' => now(),
+            'description' => trim(($planting->description ? $planting->description."\n" : '').'Ditandai sebagai gagal panen.'),
+        ]);
         
         return redirect()->route('planting-locations.plantings.index', $plantingLocation)
             ->with('success', 'Penanaman ditandai sebagai gagal panen dan tidak lagi ditampilkan di daftar penanaman aktif.');
@@ -1658,8 +1698,6 @@ class PlantingLocationController extends Controller
         } else {
             $data['planting_id'] = null; // "Umum" = applies to all plantings
         }
-
-        $data['planting_location_id'] = $plantingLocation->planting_location_id;
         
         // Handle file upload
         if ($request->hasFile('attachment')) {
@@ -1680,7 +1718,7 @@ class PlantingLocationController extends Controller
                 'expense_type' => 'perawatan',
                 'expense_date' => $treatment->treatment_date,
                 'responsible_person_id' => $treatment->responsible_person_id,
-                'treatment_id' => $treatment->treatment_id,
+                'planting_treatment_id' => $treatment->planting_treatment_id,
                 'planting_id' => $treatment->planting_id,
             ]);
         }
@@ -1710,10 +1748,15 @@ class PlantingLocationController extends Controller
             abort(403, 'Anda tidak memiliki akses ke lokasi penanaman ini.');
         }
         
+        // Treatment must belong to this location via planting
+        if (!$treatment->planting_id || !$treatment->planting || $treatment->planting->planting_location_id !== $plantingLocation->planting_location_id) {
+            abort(404, 'Data perawatan tidak ditemukan.');
+        }
+        
         $treatment->load(['planting.plant', 'responsiblePerson', 'editor']);
         
         return response()->json([
-            'id' => $treatment->treatment_id,
+            'id' => $treatment->planting_treatment_id,
             'treatment_name' => $treatment->treatment_name,
             'treatment_type' => $treatment->treatment_type,
             'treatment_date' => $treatment->treatment_date->format('Y-m-d'),
@@ -1757,6 +1800,11 @@ class PlantingLocationController extends Controller
         // Check if user has access
         if (!$user->isAssignedToPlantingLocation($plantingLocation)) {
             abort(403, 'Anda tidak memiliki akses ke lokasi penanaman ini.');
+        }
+        
+        // Treatment must belong to this location via planting
+        if (!$treatment->planting_id || !$treatment->planting || $treatment->planting->planting_location_id !== $plantingLocation->planting_location_id) {
+            abort(404, 'Data perawatan tidak ditemukan.');
         }
         
         if (!$user->canAddDataInPelaporan($plantingLocation)) {
@@ -1808,11 +1856,17 @@ class PlantingLocationController extends Controller
             $data['attachment'] = $file->storeAs('treatments/attachments', $filename, 'public');
         }
 
+        $oldDate = $treatment->treatment_date?->format('Y-m-d');
+        $oldCost = $treatment->total_cost;
         $treatment->update($data);
         
-        // Update expense if total_cost changed
+        // Update expense if total_cost changed (cari expense dengan nilai LAMA sebelum update)
         if ($treatment->total_cost && $treatment->total_cost > 0) {
-            $expense = Expense::where('treatment_id', $treatment->treatment_id)->first();
+            $expense = Expense::where('planting_id', $treatment->planting_id)
+                ->where('expense_type', 'perawatan')
+                ->when($oldDate, fn($q) => $q->where('expense_date', $oldDate))
+                ->when($oldCost !== null, fn($q) => $q->where('amount', $oldCost))
+                ->first();
             if ($expense) {
                 $expense->update([
                     'expense_name' => $treatment->treatment_name,
@@ -1822,13 +1876,12 @@ class PlantingLocationController extends Controller
                 ]);
             } else {
                 Expense::create([
-                    'planting_location_id' => $plantingLocation->planting_location_id,
                     'expense_name' => $treatment->treatment_name,
                     'amount' => $treatment->total_cost,
                     'expense_type' => 'perawatan',
                     'expense_date' => $treatment->treatment_date,
                     'responsible_person_id' => $treatment->responsible_person_id,
-                    'treatment_id' => $treatment->treatment_id,
+                    'planting_id' => $treatment->planting_id,
                 ]);
             }
         }
@@ -1858,12 +1911,21 @@ class PlantingLocationController extends Controller
             abort(403, 'Anda tidak memiliki akses ke lokasi penanaman ini.');
         }
         
+        // Treatment must belong to this location via planting
+        if (!$treatment->planting_id || !$treatment->planting || $treatment->planting->planting_location_id !== $plantingLocation->planting_location_id) {
+            abort(404, 'Data perawatan tidak ditemukan.');
+        }
+        
         if (!$user->canAddDataInPelaporan($plantingLocation)) {
             abort(403, 'Anda tidak memiliki izin untuk menghapus data perawatan.');
         }
         
-        // Delete associated expense
-        Expense::where('treatment_id', $treatment->treatment_id)->delete();
+        // Hapus expense terkait (cari via planting_id + tipe perawatan + tanggal + amount)
+        Expense::where('planting_id', $treatment->planting_id)
+            ->where('expense_type', 'perawatan')
+            ->where('expense_date', $treatment->treatment_date)
+            ->where('amount', $treatment->total_cost)
+            ->delete();
         
         // Delete attachment file if exists
         if ($treatment->attachment && Storage::disk('public')->exists($treatment->attachment)) {
@@ -1914,8 +1976,6 @@ class PlantingLocationController extends Controller
         } else {
             $data['planting_id'] = null; // "Umum" = applies to all plantings
         }
-
-        $data['planting_location_id'] = $plantingLocation->planting_location_id;
         
         // Handle file upload
         if ($request->hasFile('attachment')) {
@@ -1933,7 +1993,7 @@ class PlantingLocationController extends Controller
                 'amount' => $nutrient->total_cost,
                 'expense_type' => 'nutrisi',
                 'expense_date' => $nutrient->application_date,
-                'nutrient_id' => $nutrient->nutrient_id,
+                'planting_nutrient_id' => $nutrient->planting_nutrient_id,
                 'planting_id' => $nutrient->planting_id,
             ]);
         }
@@ -1963,10 +2023,15 @@ class PlantingLocationController extends Controller
             abort(403, 'Anda tidak memiliki akses ke lokasi penanaman ini.');
         }
         
+        // Nutrient must belong to this location via planting
+        if (!$nutrient->planting_id || !$nutrient->planting || $nutrient->planting->planting_location_id !== $plantingLocation->planting_location_id) {
+            abort(404, 'Catatan nutrisi tidak ditemukan.');
+        }
+        
         $nutrient->load(['planting.plant', 'editor', 'responsiblePerson']);
         
         return response()->json([
-            'id' => $nutrient->nutrient_id,
+            'id' => $nutrient->planting_nutrient_id,
             'nutrient_name' => $nutrient->nutrient_name,
             'product_applied' => $nutrient->product_applied,
             'application_date' => $nutrient->application_date->format('Y-m-d'),
@@ -2004,6 +2069,11 @@ class PlantingLocationController extends Controller
         // Check if user has access
         if (!$user->isAssignedToPlantingLocation($plantingLocation)) {
             abort(403, 'Anda tidak memiliki akses ke lokasi penanaman ini.');
+        }
+        
+        // Nutrient must belong to this location via planting
+        if (!$nutrient->planting_id || !$nutrient->planting || $nutrient->planting->planting_location_id !== $plantingLocation->planting_location_id) {
+            abort(404, 'Catatan nutrisi tidak ditemukan.');
         }
         
         if (!$user->canAddDataInPelaporan($plantingLocation)) {
@@ -2048,11 +2118,17 @@ class PlantingLocationController extends Controller
             $data['attachment'] = $file->store('nutrient-attachments', 'public');
         }
 
+        $oldDate = $nutrient->application_date?->format('Y-m-d');
+        $oldCost = $nutrient->total_cost;
         $nutrient->update($data);
         
-        // Update expense if total_cost changed
+        // Update expense if total_cost changed (cari expense dengan nilai LAMA sebelum update)
         if ($nutrient->total_cost && $nutrient->total_cost > 0) {
-            $expense = Expense::where('nutrient_id', $nutrient->nutrient_id)->first();
+            $expense = Expense::where('planting_id', $nutrient->planting_id)
+                ->where('expense_type', 'nutrisi')
+                ->when($oldDate, fn($q) => $q->where('expense_date', $oldDate))
+                ->when($oldCost !== null, fn($q) => $q->where('amount', $oldCost))
+                ->first();
             if ($expense) {
                 $expense->update([
                     'expense_name' => $nutrient->product_applied,
@@ -2061,12 +2137,11 @@ class PlantingLocationController extends Controller
                 ]);
             } else {
                 Expense::create([
-                    'planting_location_id' => $plantingLocation->planting_location_id,
                     'expense_name' => $nutrient->product_applied,
                     'amount' => $nutrient->total_cost,
                     'expense_type' => 'nutrisi',
                     'expense_date' => $nutrient->application_date,
-                    'nutrient_id' => $nutrient->nutrient_id,
+                    'planting_id' => $nutrient->planting_id,
                 ]);
             }
         }
@@ -2096,12 +2171,21 @@ class PlantingLocationController extends Controller
             abort(403, 'Anda tidak memiliki akses ke lokasi penanaman ini.');
         }
         
+        // Nutrient must belong to this location via planting
+        if (!$nutrient->planting_id || !$nutrient->planting || $nutrient->planting->planting_location_id !== $plantingLocation->planting_location_id) {
+            abort(404, 'Catatan nutrisi tidak ditemukan.');
+        }
+        
         if (!$user->canAddDataInPelaporan($plantingLocation)) {
             abort(403, 'Anda tidak memiliki izin untuk menghapus data nutrisi.');
         }
         
-        // Delete associated expense
-        Expense::where('nutrient_id', $nutrient->nutrient_id)->delete();
+        // Hapus expense terkait (cari via planting_id + tipe nutrisi + tanggal + amount)
+        Expense::where('planting_id', $nutrient->planting_id)
+            ->where('expense_type', 'nutrisi')
+            ->where('expense_date', $nutrient->application_date)
+            ->where('amount', $nutrient->total_cost)
+            ->delete();
         
         $nutrient->delete();
         
@@ -2151,11 +2235,9 @@ class PlantingLocationController extends Controller
                 'retreat_date' => 'nullable|date',
                 'total_cost' => 'required|numeric|min:0',
                 'keywords' => 'nullable|string|max:255',
-                'planting_id' => 'nullable|exists:plantings,planting_id',
+                'planting_id' => 'nullable|exists:planting_production,planting_production_id',
                 'unit_measurement' => 'nullable|string|max:255',
             ]);
-
-            $data['planting_location_id'] = $plantingLocation->planting_location_id;
             
             // Handle file upload
             if ($request->hasFile('attachment')) {
@@ -2166,15 +2248,14 @@ class PlantingLocationController extends Controller
             
             $treatment = Treatment::create($data);
             
-            // Create expense
+            // Create expense (hanya planting_id, lokasi dari planting)
             Expense::create([
-                'planting_location_id' => $plantingLocation->planting_location_id,
                 'expense_name' => $treatment->treatment_name,
                 'amount' => $treatment->total_cost,
                 'expense_type' => 'perawatan',
                 'expense_date' => $treatment->treatment_date,
                 'responsible_person_id' => $treatment->responsible_person_id,
-                'treatment_id' => $treatment->treatment_id,
+                'planting_id' => $treatment->planting_id,
             ]);
             
             return redirect()->to(route('planting-locations.show', $plantingLocation) . '?tab=pengeluaran')
@@ -2194,11 +2275,9 @@ class PlantingLocationController extends Controller
                 'institution_source' => 'nullable|string|max:255',
                 'responsible_person_id' => 'nullable|exists:users,user_id',
                 'attachment' => 'nullable|file|max:10240',
-                'planting_id' => 'nullable|exists:plantings,planting_id',
+                'planting_id' => 'nullable|exists:planting_production,planting_production_id',
                 'description' => 'nullable|string',
             ]);
-
-            $data['planting_location_id'] = $plantingLocation->planting_location_id;
             
             // Handle file upload
             if ($request->hasFile('attachment')) {
@@ -2208,14 +2287,13 @@ class PlantingLocationController extends Controller
             
             $nutrient = Nutrient::create($data);
             
-            // Create expense
+            // Create expense (hanya planting_id, lokasi dari planting)
             Expense::create([
-                'planting_location_id' => $plantingLocation->planting_location_id,
                 'expense_name' => $nutrient->product_applied,
                 'amount' => $nutrient->total_cost,
                 'expense_type' => 'nutrisi',
                 'expense_date' => $nutrient->application_date,
-                'nutrient_id' => $nutrient->nutrient_id,
+                'planting_id' => $nutrient->planting_id,
             ]);
             
             return redirect()->to(route('planting-locations.show', $plantingLocation) . '?tab=pengeluaran')
@@ -2233,11 +2311,11 @@ class PlantingLocationController extends Controller
                 'description' => 'nullable|string',
             ]);
 
-            // Handle planting_id validation manually
+            // Handle planting_id validation manually (gunakan planting_id sebagai kunci utama)
             $plantingId = null;
             if (isset($data['planting_id']) && $data['planting_id'] !== '' && $data['planting_id'] !== null && $data['planting_id'] !== '0') {
-                $plantingId = (int)$data['planting_id'];
-                if (!Planting::where('id', $plantingId)->exists()) {
+                $plantingId = $data['planting_id'];
+                if (!Planting::whereKey($plantingId)->exists()) {
                     return redirect()->back()
                         ->withInput()
                         ->withErrors(['planting_id' => 'Asosiasi penanaman yang dipilih tidak valid.']);
@@ -2245,7 +2323,6 @@ class PlantingLocationController extends Controller
             }
 
             $expenseData = [
-                'planting_location_id' => $plantingLocation->planting_location_id,
                 'expense_name' => $data['work_name'],
                 'work_name' => $data['work_name'],
                 'work_date' => !empty($data['work_date']) ? $data['work_date'] : null,
@@ -2256,6 +2333,7 @@ class PlantingLocationController extends Controller
                 'expense_date' => !empty($data['work_date']) ? $data['work_date'] : now()->toDateString(),
                 'planting_id' => $plantingId,
                 'description' => !empty($data['description']) ? $data['description'] : null,
+                'responsible_person_id' => $user->user_id,
             ];
 
             \Log::info('Creating expense', ['expense_data' => $expenseData]);
@@ -2283,11 +2361,11 @@ class PlantingLocationController extends Controller
                 'description' => 'nullable|string',
             ]);
 
-            // Handle planting_id validation manually
+            // Handle planting_id validation manually (gunakan planting_id sebagai kunci utama)
             $plantingId = null;
             if (isset($data['planting_id']) && $data['planting_id'] !== '' && $data['planting_id'] !== null && $data['planting_id'] !== '0') {
-                $plantingId = (int)$data['planting_id'];
-                if (!Planting::where('id', $plantingId)->exists()) {
+                $plantingId = $data['planting_id'];
+                if (!Planting::whereKey($plantingId)->exists()) {
                     return redirect()->back()
                         ->withInput()
                         ->withErrors(['planting_id' => 'Asosiasi penanaman yang dipilih tidak valid.']);
@@ -2295,7 +2373,6 @@ class PlantingLocationController extends Controller
             }
 
             $expenseData = [
-                'planting_location_id' => $plantingLocation->planting_location_id,
                 'expense_name' => $data['expense_name'],
                 'work_name' => $data['expense_name'],
                 'work_date' => !empty($data['work_date']) ? $data['work_date'] : null,
@@ -2306,6 +2383,7 @@ class PlantingLocationController extends Controller
                 'expense_date' => !empty($data['work_date']) ? $data['work_date'] : now()->toDateString(),
                 'planting_id' => $plantingId,
                 'description' => !empty($data['description']) ? $data['description'] : null,
+                'responsible_person_id' => $user->user_id,
             ];
 
             \Log::info('Creating expense (lainnya)', ['expense_data' => $expenseData]);
@@ -2366,8 +2444,11 @@ class PlantingLocationController extends Controller
                 abort(403, 'Anda tidak memiliki akses ke lokasi penanaman ini.');
             }
             
-            // Verify expense belongs to this planting location
-            if ($expense->planting_location_id !== $plantingLocation->planting_location_id) {
+            // Verify expense belongs to this planting location (via planting)
+            $expenseLocationId = $expense->planting && $expense->planting->planting_location_id
+                ? $expense->planting->planting_location_id
+                : null;
+            if ($expenseLocationId !== $plantingLocation->planting_location_id) {
                 if (request()->expectsJson()) {
                     return response()->json(['error' => 'Pengeluaran tidak ditemukan.'], 404);
                 }
@@ -2375,7 +2456,7 @@ class PlantingLocationController extends Controller
             }
             
             // Load relationships safely
-            $expense->load(['treatment', 'nutrient', 'responsiblePerson', 'editor']);
+            $expense->load(['planting.plant', 'responsiblePerson', 'editor']);
             
             // Load planting with plant relationship if exists - use try-catch to handle any errors
             $plantingName = null;
@@ -2436,8 +2517,6 @@ class PlantingLocationController extends Controller
                     'id' => $expense->responsiblePerson->user_id,
                     'name' => $expense->responsiblePerson->name ?? '-',
                 ] : null,
-                'treatment_id' => $expense->treatment_id ?? null,
-                'nutrient_id' => $expense->nutrient_id ?? null,
                 'edited_at' => $expense->edited_at ? (method_exists($expense->edited_at, 'toISOString') ? $expense->edited_at->toISOString() : (is_string($expense->edited_at) ? $expense->edited_at : $expense->edited_at->format('c'))) : null,
                 'edited_by' => $expense->edited_by ?? null,
                 'editor' => ($expense->editor && $expense->editor->user_id) ? [
@@ -2484,7 +2563,7 @@ class PlantingLocationController extends Controller
             'work_description' => 'nullable|string',
             'worker_name' => 'nullable|string|max:255',
             'amount' => 'required|numeric|min:0',
-            'planting_id' => 'nullable|exists:plantings,planting_id',
+            'planting_id' => 'nullable|exists:planting_production,planting_production_id',
             'description' => 'nullable|string',
         ]);
 
@@ -2538,11 +2617,7 @@ class PlantingLocationController extends Controller
         
         // Load all plantings (no year/month filter)
         $allPlantings = $plantingLocation->plantings()
-            ->with(['plant', 'plant.type', 'harvest.certification', 'harvests' => function($query) {
-                $query->orderBy('harvested_at', 'desc');
-            }, 'losses' => function($query) {
-                $query->orderBy('loss_date', 'desc');
-            }])
+            ->with(['plant.satuanTanam', 'plant.satuanPanen', 'plant.type', 'seedSource.plant', 'field', 'postHarvests.stock', 'postHarvests.certificationReports'])
             ->whereNotNull('planted_at')
             ->orderBy('planted_at', 'desc')
             ->get();
@@ -2553,19 +2628,17 @@ class PlantingLocationController extends Controller
         // - Mencatat kehilangan tidak mengubah status planting, penanaman tetap aktif
         // - Jika user memilih "Simpan dan Lanjutkan Penanaman", is_completed = false, jadi tetap aktif
         // - Jika user memilih "Simpan dan Selesaikan Panen", is_completed = true, jadi tidak aktif
-        $activePlantings = $allPlantings->filter(function($planting) {
-            // Only check is_completed status
-            // If is_completed = false, planting is still active regardless of harvests or losses
-            return !$planting->is_completed;
-        });
+        $activePlantings = $allPlantings->filter(fn ($planting) => ! $planting->is_completed);
         
-        // Get all plants for dropdown
-        $allPlants = \App\Models\Plant::with('type')->orderBy('name')->get();
+        $plantingLocation->load('fields');
+        $seedSources = \App\Models\SeedSource::with('variety.type')->orderBy('origin_lot_number')->get();
+        $allPlants = \App\Models\Plant::with(['type', 'satuanTanam', 'satuanPanen', 'satuanStok'])->orderBy('name')->get();
         
         return view('planting.planting-locations.current-plantings', compact(
             'plantingLocation',
             'activePlantings',
-            'allPlants'
+            'allPlants',
+            'seedSources'
         ));
     }
 
@@ -2581,150 +2654,97 @@ class PlantingLocationController extends Controller
             abort(403, 'Anda tidak memiliki akses ke lokasi penanaman ini.');
         }
         
-        // Load all plantings (no year/month filter)
-        // Load all harvests first, then filter in collection
-        $allPlantings = $plantingLocation->plantings()
+        $postHarvests = \App\Models\PlantingPostHarvest::whereHas('planting.field', function ($q) use ($plantingLocation) {
+                $q->where('planting_location_id', $plantingLocation->planting_location_id);
+            })
             ->with([
-                'plant', 
-                'plant.type', 
-                'harvests' => function($query) {
-                    $query->orderBy('harvested_at', 'desc');
-                },
-                'losses' => function($query) {
-                    $query->orderBy('loss_date', 'desc');
-                }
+                'planting.plant',
+                'planting.field',
+                'planting.seedSource.variety',
+                'planting.satuanPanen',
+                'certificationReports.packagings',
+                'stock.packagings',
+                'stock.labels.packagings',
             ])
-            ->whereNotNull('planted_at')
-            ->orderBy('planted_at', 'desc')
+            ->orderByDesc('created_at')
+            ->get()
+            ->filter(function ($item) {
+                if (! $item->isLulus() || $item->isCertified()) {
+                    return true;
+                }
+
+                return (bool) $item->planting?->is_completed;
+            })
+            ->values();
+
+        $completedPlantings = $plantingLocation->plantings()
+            ->with(['plant', 'plant.type', 'seedSource', 'field'])
+            ->where('is_completed', true)
+            ->orderByDesc('completed_at')
+            ->orderByDesc('planted_at')
             ->get();
-        
-        // Telah dipanen (sudah ada harvest dengan quantity > 0)
-        // Filter plantings that have at least one harvest with quantity > 0
-        $harvestedPlantings = $allPlantings->filter(function($planting) {
-            if (!$planting->harvests || $planting->harvests->isEmpty()) {
-                return false;
-            }
-            // Check if there's at least one harvest with quantity > 0
-            return $planting->harvests->where('quantity', '>', 0)->count() > 0;
-        });
-        
-        // Kehilangan (ada losses)
-        $lossPlantings = $allPlantings->filter(function($planting) {
-            return $planting->losses && $planting->losses->count() > 0;
-        });
-        
-        // Gagal panen (harvest dengan quantity = 0 atau null)
-        $failedPlantings = $allPlantings->filter(function($planting) {
-            // Check hasOne relationship first
-            if ($planting->harvest) {
-                return $planting->harvest->quantity == 0 || $planting->harvest->quantity === null;
-            }
-            // Check hasMany relationship
-            if ($planting->harvests && $planting->harvests->count() > 0) {
-                $latestHarvest = $planting->harvests->first();
-                return $latestHarvest && ($latestHarvest->quantity == 0 || $latestHarvest->quantity === null);
-            }
-            return false;
-        });
-        
+
         return view('planting.planting-locations.planting-history', compact(
             'plantingLocation',
-            'harvestedPlantings',
-            'lossPlantings',
-            'failedPlantings'
+            'postHarvests',
+            'completedPlantings'
         ));
     }
 
     /**
-     * Show harvest detail page
+     * Riwayat sertifikat label benih yang sudah dilabel di lokasi ini,
+     * termasuk aksi sertifikasi ulang.
      */
-    public function harvestDetail(PlantingLocation $plantingLocation, Planting $planting, Harvest $harvest)
+    public function labelCertificates(PlantingLocation $plantingLocation)
     {
         $user = auth()->user();
-        
-        // Check if user has access to this planting location
         if (!$user->isAssignedToPlantingLocation($plantingLocation)) {
             abort(403, 'Anda tidak memiliki akses ke lokasi penanaman ini.');
         }
-        
-        // Verify that this planting belongs to this planting location
-        if ($planting->planting_location_id != $plantingLocation->planting_location_id) {
-            abort(404, 'Penanaman tidak ditemukan di lokasi penanaman ini.');
-        }
-        
-        // Verify that this harvest belongs to this planting
-        if ($harvest->planting_id != $planting->planting_id) {
-            abort(404, 'Data panen tidak ditemukan untuk penanaman ini.');
-        }
-        
-        // Load planting with relationships
-        $planting->load(['plant', 'plant.type']);
-        
-        // Load tasks for this planting OR general tasks (planting_id = null)
-        $tasks = $plantingLocation->tasks()
-            ->where(function($query) use ($planting) {
-                $query->where('planting_id', $planting->planting_id)
-                      ->orWhereNull('planting_id');
+
+        $stocks = \App\Models\Stock::query()
+            ->whereHas('postHarvest.planting.field', function ($q) use ($plantingLocation) {
+                $q->where('planting_location_id', $plantingLocation->planting_location_id);
             })
-            ->with(['assignedUser', 'planting.plant'])
-            ->orderBy('due_date', 'desc')
+            ->whereHas('labels')
+            ->with([
+                'plant.type',
+                'plant.satuanStok',
+                'labels',
+                'packagings',
+                'postHarvest.planting.field',
+                'postHarvest.planting.seedSource.plant',
+                'certificationReport',
+            ])
+            ->orderByDesc('created_at')
             ->get();
-        
-        // Load treatments for this planting OR general treatments (planting_id = null)
-        $treatments = $plantingLocation->treatments()
-            ->where(function($query) use ($planting) {
-                $query->where('planting_id', $planting->planting_id)
-                      ->orWhereNull('planting_id');
-            })
-            ->with(['plantingLocation', 'planting.plant', 'responsiblePerson'])
-            ->orderBy('treatment_date', 'desc')
-            ->get();
-        
-        // Load nutrients for this planting OR general nutrients (planting_id = null)
-        $nutrients = $plantingLocation->nutrients()
-            ->where(function($query) use ($planting) {
-                $query->where('planting_id', $planting->planting_id)
-                      ->orWhereNull('planting_id');
-            })
-            ->with(['plantingLocation', 'planting.plant'])
-            ->orderBy('application_date', 'desc')
-            ->get();
-        
-        // Load notes for this planting location
-        $notes = $plantingLocation->notes()
-            ->with('user')
-            ->orderBy('note_date', 'desc')
-            ->get();
-        
-        // Load expenses for this planting OR general expenses (planting_id = null)
-        $expenses = $plantingLocation->expenses()
-            ->where(function($query) use ($planting) {
-                $query->where('planting_id', $planting->planting_id)
-                      ->orWhereNull('planting_id');
-            })
-            ->with(['treatment', 'nutrient'])
-            ->orderBy('expense_date', 'desc')
-            ->get();
-        
-        // Calculate total expenses by type
-        $totalTreatmentCost = $expenses->where('expense_type', 'perawatan')->sum('amount');
-        $totalNutrientCost = $expenses->where('expense_type', 'nutrisi')->sum('amount');
-        $totalOtherExpenses = $expenses->whereIn('expense_type', ['upah_pekerja', 'lainnya'])->sum('amount');
-        $totalExpenses = $expenses->sum('amount');
-        
-        return view('planting.planting-locations.harvest-detail', compact(
+
+        return view('planting.planting-locations.label-certificates', compact(
             'plantingLocation',
-            'planting',
-            'harvest',
-            'tasks',
-            'treatments',
-            'nutrients',
-            'notes',
-            'expenses',
-            'totalTreatmentCost',
-            'totalNutrientCost',
-            'totalOtherExpenses',
-            'totalExpenses'
+            'stocks'
+        ));
+    }
+
+    /**
+     * Show attachment page
+     */
+    public function attachments(PlantingLocation $plantingLocation)
+    {
+        $user = auth()->user();
+
+        if (!$user->isAssignedToPlantingLocation($plantingLocation)) {
+            abort(403, 'Anda tidak memiliki akses ke lokasi penanaman ini.');
+        }
+
+        $attachments = $plantingLocation->locationAttachments()
+            ->with(['creator'])
+            ->orderBy('attachment_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('planting.planting-locations.attachments', compact(
+            'plantingLocation',
+            'attachments'
         ));
     }
 
@@ -2740,13 +2760,11 @@ class PlantingLocationController extends Controller
             abort(403, 'Anda tidak memiliki akses ke lokasi penanaman ini.');
         }
         
-        // Load expenses
+        // Load expenses (melalui planting, lokasi dari planting)
         $expensesQuery = $plantingLocation->expenses()->with([
             'editor', 
             'responsiblePerson', 
             'planting.plant',
-            'treatment',
-            'nutrient'
         ]);
         
         // Filter by year if provided
@@ -2844,8 +2862,8 @@ class PlantingLocationController extends Controller
         // Load tasks for this planting OR general tasks (planting_id = null)
         $tasksQuery = $plantingLocation->tasks()
             ->where(function($query) use ($planting) {
-                $query->where('planting_id', $planting->planting_id)
-                      ->orWhereNull('planting_id');
+                $query->where('planting_tasks.planting_id', $planting->planting_id)
+                      ->orWhereNull('planting_tasks.planting_id');
             })
             ->with(['assignedUser', 'planting.plant']);
         
@@ -2872,8 +2890,8 @@ class PlantingLocationController extends Controller
         // Get available years for task filter (including general tasks)
         $existingYears = $plantingLocation->tasks()
             ->where(function($query) use ($planting) {
-                $query->where('planting_id', $planting->planting_id)
-                      ->orWhereNull('planting_id');
+                $query->where('planting_tasks.planting_id', $planting->planting_id)
+                      ->orWhereNull('planting_tasks.planting_id');
             })
             ->whereNotNull('due_date')
             ->selectRaw('YEAR(due_date) as year')
@@ -2912,67 +2930,62 @@ class PlantingLocationController extends Controller
         // Load treatments for this planting OR general treatments (planting_id = null)
         $treatments = $plantingLocation->treatments()
             ->where(function($query) use ($planting) {
-                $query->where('planting_id', $planting->planting_id)
-                      ->orWhereNull('planting_id');
+                $query->where('planting_treatments.planting_id', $planting->planting_id)
+                      ->orWhereNull('planting_treatments.planting_id');
             })
-            ->with(['plantingLocation', 'planting.plant', 'responsiblePerson', 'editor'])
+            ->with(['planting.plant', 'responsiblePerson', 'editor'])
             ->orderBy('treatment_date', 'desc')
             ->get();
         
         // Load nutrients for this planting OR general nutrients (planting_id = null)
         $nutrients = $plantingLocation->nutrients()
             ->where(function($query) use ($planting) {
-                $query->where('planting_id', $planting->planting_id)
-                      ->orWhereNull('planting_id');
+                $query->where('planting_nutrients.planting_id', $planting->planting_id)
+                      ->orWhereNull('planting_nutrients.planting_id');
             })
-            ->with(['plantingLocation', 'planting.plant', 'editor'])
+            ->with(['planting.plant', 'editor'])
             ->orderBy('application_date', 'desc')
             ->get();
         
         // Load notes for this planting OR general notes (planting_id = null)
         $notes = $plantingLocation->notes()
             ->where(function($query) use ($planting) {
-                $query->where('planting_id', $planting->planting_id)
-                      ->orWhereNull('planting_id');
+                $query->where('planting_notes.planting_id', $planting->planting_id)
+                      ->orWhereNull('planting_notes.planting_id');
             })
             ->with('user')
             ->orderBy('note_date', 'desc')
             ->get();
         
-        // Load photos for this planting OR general photos (planting_id = null)
-        $photos = $plantingLocation->photos()
-            ->where(function($query) use ($planting) {
-                $query->where('planting_id', $planting->planting_id)
-                      ->orWhereNull('planting_id');
-            })
-            ->orderBy('taken_at', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->get();
+        // Photos feature removed (planting_location_photos table dropped)
+        $photos = collect([]);
         
-        // Load attachments for this planting OR general attachments (planting_id = null)
+        // Lampiran kini unik per lokasi penanaman (tidak terhubung ke planting tertentu)
         $attachments = $plantingLocation->attachments()
-            ->where(function($query) use ($planting) {
-                $query->where('planting_id', $planting->planting_id)
-                      ->orWhereNull('planting_id');
-            })
             ->with(['creator', 'editor'])
             ->orderBy('attachment_date', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
+
+        // Load "pengeluaran lainnya" (upah_pekerja & lainnya) yang terkait dengan penanaman ini
+        $otherExpenses = $plantingLocation->expenses()
+            ->where('expenses.planting_id', $planting->planting_id)
+            ->whereIn('expense_type', ['upah_pekerja', 'lainnya'])
+            ->with(['responsiblePerson'])
+            ->orderBy('expense_date', 'desc')
+            ->get();
+        $totalOtherExpenses = $otherExpenses->sum('amount');
         
         // Get all users for task assignment
         $users = \App\Models\User::orderBy('name')->get();
         
-        // Get land managers and workers for this location
-        $landManagers = $plantingLocation->landManagerUsers()->orderBy('name')->get();
+        // Get land workers for this location (pekerja lahan dengan jabatan)
         $landWorkers = $plantingLocation->landWorkerUsers()->orderBy('name')->get();
-        $locationUsers = $landManagers->merge($landWorkers)->unique('id')->sortBy('name');
+        $locationUsers = $landWorkers->unique('user_id')->sortBy('name');
         
-        // Get task templates
-        $taskTemplates = \App\Models\TaskTemplate::where('association', 'penanaman')
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+        $taskTemplates = \Illuminate\Support\Facades\Schema::hasTable('task_templates')
+            ? \App\Models\TaskTemplate::where('association', 'penanaman')->where('is_active', true)->orderBy('name')->get()
+            : collect();
         
         // Get inventory types for treatment dropdown
         $inventoryTypes = \App\Models\InventoryType::orderBy('name')->get();
@@ -2988,8 +3001,8 @@ class PlantingLocationController extends Controller
         $allTasks = $plantingLocation->tasks()
             ->with(['planting.plant', 'assignedUser', 'createdByUser', 'lastEditedByUser'])
             ->where(function($query) use ($planting) {
-                $query->where('planting_id', $planting->planting_id)
-                      ->orWhereNull('planting_id');
+                $query->where('planting_tasks.planting_id', $planting->planting_id)
+                      ->orWhereNull('planting_tasks.planting_id');
             })
             ->orderBy('due_date', 'desc')
             ->orderBy('created_at', 'desc')
@@ -3015,7 +3028,9 @@ class PlantingLocationController extends Controller
             'taskTemplates',
             'inventoryTypes',
             'allPlantingsForLocation',
-            'allTasks'
+            'allTasks',
+            'otherExpenses',
+            'totalOtherExpenses'
         ));
     }
 }

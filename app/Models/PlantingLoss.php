@@ -12,6 +12,7 @@ class PlantingLoss extends Model
     use HasFactory;
     use HasCustomId;
 
+    protected $table = 'planting_rouging';
     protected $primaryKey = 'planting_loss_id';
     public $incrementing = false;
     protected $keyType = 'string';
@@ -31,7 +32,7 @@ class PlantingLoss extends Model
 
     public function planting(): BelongsTo
     {
-        return $this->belongsTo(Planting::class, 'planting_id', 'planting_id');
+        return $this->belongsTo(Planting::class, 'planting_id', 'planting_production_id');
     }
 }
 

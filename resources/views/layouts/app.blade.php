@@ -309,6 +309,103 @@
         .tab-content {
             background-color: #fff;
         }
+        .content-area,
+        .content-area p,
+        .content-area td,
+        .content-area th,
+        .content-area .card-body,
+        .content-area .form-label,
+        .content-area .form-text,
+        .content-area h1,
+        .content-area h2,
+        .content-area h3,
+        .content-area h4,
+        .content-area h5,
+        .content-area h6 {
+            color: #111827;
+        }
+        .content-area a:not(.btn):not(.nav-link):not(.dropdown-item):not(.page-link) {
+            color: #111827;
+        }
+        .content-area .text-white,
+        .content-area .text-white p,
+        .content-area .text-white td,
+        .content-area .text-white th,
+        .content-area .text-white .card-body,
+        .content-area .text-white h1,
+        .content-area .text-white h2,
+        .content-area .text-white h3,
+        .content-area .text-white h4,
+        .content-area .text-white h5,
+        .content-area .text-white h6,
+        .content-area .bg-success,
+        .content-area .bg-success .card-body,
+        .content-area .bg-success p,
+        .content-area .bg-success h1,
+        .content-area .bg-success h2,
+        .content-area .bg-success h3,
+        .content-area .bg-success h4,
+        .content-area .bg-success h5,
+        .content-area .bg-success h6,
+        .content-area .bg-primary,
+        .content-area .bg-primary .card-body,
+        .content-area .bg-primary p,
+        .content-area .bg-primary h1,
+        .content-area .bg-primary h2,
+        .content-area .bg-primary h3,
+        .content-area .bg-primary h4,
+        .content-area .bg-primary h5,
+        .content-area .bg-primary h6,
+        .content-area .bg-info,
+        .content-area .bg-info .card-body,
+        .content-area .bg-info p,
+        .content-area .bg-dark,
+        .content-area .bg-dark .card-body,
+        .content-area .bg-dark p,
+        .content-area .bg-dark h1,
+        .content-area .bg-dark h2,
+        .content-area .bg-dark h3,
+        .content-area .bg-dark h4,
+        .content-area .bg-dark h5,
+        .content-area .bg-dark h6,
+        .content-area .bg-danger,
+        .content-area .bg-danger .card-body,
+        .content-area .bg-danger p,
+        .content-area .bg-secondary,
+        .content-area .bg-secondary .card-body {
+            color: #fff !important;
+        }
+        .content-area .text-white-50,
+        .content-area .bg-success .text-white-50,
+        .content-area .bg-primary .text-white-50,
+        .content-area .bg-dark .text-white-50,
+        .content-area .bg-danger .text-white-50,
+        .content-area .bg-info .text-white-50 {
+            color: rgba(255, 255, 255, .75) !important;
+        }
+        .content-area .form-control::placeholder,
+        .content-area .form-select::placeholder,
+        .content-area textarea::placeholder,
+        .content-area input::placeholder {
+            color: #94a3b8 !important;
+            opacity: 1;
+        }
+        .data-pill {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: .2rem .7rem;
+            font-size: .78rem;
+            margin: .1rem;
+            background: #ecfdf5;
+            color: #111827 !important;
+            border: 1px solid #a7f3d0;
+            font-weight: 600;
+        }
+        .data-pill-muted {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
@@ -321,6 +418,7 @@
             }
         }
     </style>
+    @stack('styles')
 </head>
 <body>
     <!-- Sidebar -->
@@ -364,24 +462,6 @@
                     </div>
                 </li>
                 @endif
-                @if(auth()->user()->hasAccessTo('sertifikasi') || auth()->user()->isAdmin())
-                <li class="nav-item has-submenu {{ request()->routeIs('certifications.*') ? 'expanded' : '' }}">
-                    <a class="nav-link {{ request()->routeIs('certifications.*') ? 'active' : '' }}" href="#" onclick="toggleSubmenu(event, this)">
-                        <i class="fas fa-certificate nav-icon"></i>
-                        Sertifikasi
-                        <i class="fas fa-chevron-up chevron ms-auto"></i>
-                    </a>
-                    <div class="submenu {{ request()->routeIs('certifications.*') ? 'd-block' : 'd-none' }}">
-                        <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('certifications.index') || request()->routeIs('certifications.by-plant') || request()->routeIs('certifications.show') ? 'active' : '' }}" href="{{ route('certifications.index') }}">
-                                    Data Riwayat Sertifikasi
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </li>
-                @endif
                 @if(auth()->user()->hasAccessTo('gudang') || auth()->user()->isAdmin())
                 <li class="nav-item has-submenu {{ request()->routeIs('warehouse-locations.*') || request()->routeIs('seed-stock.*') ? 'expanded' : '' }}">
                     <a class="nav-link {{ request()->routeIs('warehouse-locations.*') || request()->routeIs('seed-stock.*') ? 'active' : '' }}" href="#" onclick="toggleSubmenu(event, this)">
@@ -398,7 +478,7 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('warehouse-locations.*') ? 'active' : '' }}" href="{{ route('warehouse-locations.index') }}">
-                                    Lokasi Gudang
+                                    Lokasi Penyimpanan
                                 </a>
                             </li>
                         </ul>
@@ -406,20 +486,72 @@
                 </li>
                 @endif
                 @if(auth()->user()->hasAccessTo('penjualan') || auth()->user()->isAdmin())
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('sales.*') ? 'active' : '' }}" href="{{ route('sales.index') }}">
+                <li class="nav-item has-submenu {{ request()->routeIs('sales.*') || request()->routeIs('seed-requests.*') ? 'expanded' : '' }}">
+                    <a class="nav-link {{ request()->routeIs('sales.*') || request()->routeIs('seed-requests.*') ? 'active' : '' }}" href="#" onclick="toggleSubmenu(event, this)">
                         <i class="fas fa-shopping-cart nav-icon"></i>
                         Pencatatan Penjualan
+                        <i class="fas fa-chevron-up chevron ms-auto"></i>
                     </a>
+                    <div class="submenu {{ request()->routeIs('sales.*') || request()->routeIs('seed-requests.*') ? 'd-block' : 'd-none' }}">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('seed-requests.*') ? 'active' : '' }}" href="{{ route('seed-requests.index') }}">
+                                    Permintaan Benih
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('sales.*') ? 'active' : '' }}" href="{{ route('sales.index') }}">
+                                    Riwayat Penjualan
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('expenses.*') ? 'active' : '' }}" href="{{ route('expenses.index') }}">
-                        <i class="fas fa-money-bill-wave nav-icon"></i>
-                        Pengeluaran
+                @endif
+                @if(auth()->user()->hasAccessTo('pelayanan_publik') || auth()->user()->isAdmin())
+                <li class="nav-item has-submenu {{ request()->routeIs('geowisata.*') || request()->routeIs('magang.*') ? 'expanded' : '' }}">
+                    <a class="nav-link {{ request()->routeIs('geowisata.*') || request()->routeIs('magang.*') ? 'active' : '' }}" href="#" onclick="toggleSubmenu(event, this)">
+                        <i class="fas fa-hands-helping nav-icon"></i>
+                        Pelayanan Publik
+                        <i class="fas fa-chevron-up chevron ms-auto"></i>
                     </a>
+                    <div class="submenu {{ request()->routeIs('geowisata.*') || request()->routeIs('magang.*') ? 'd-block' : 'd-none' }}">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('geowisata.*') ? 'active' : '' }}" href="{{ route('geowisata.index') }}">
+                                    Kunjungan Geowisata
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('magang.*') ? 'active' : '' }}" href="{{ route('magang.index') }}">
+                                    Pendaftaran Magang
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
                 @endif
                 @if(auth()->user()->isAdmin())
+                <li class="nav-item has-submenu {{ request()->routeIs('contents.*') ? 'expanded' : '' }}">
+                    <a class="nav-link {{ request()->routeIs('contents.*') ? 'active' : '' }}" href="#" onclick="toggleSubmenu(event, this)">
+                        <i class="fas fa-globe nav-icon"></i>
+                        Konten
+                        <i class="fas fa-chevron-up chevron ms-auto"></i>
+                    </a>
+                    <div class="submenu {{ request()->routeIs('contents.*') ? 'd-block' : 'd-none' }}">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('contents.index') || request()->routeIs('contents.create') || request()->routeIs('contents.edit') ? 'active' : '' }}" href="{{ route('contents.index') }}">Kelola Konten</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('contents.settings') ? 'active' : '' }}" href="{{ route('contents.settings') }}">Informasi Umum</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('contents.*') && request('jenis') === 'profil' ? 'active' : '' }}" href="{{ route('contents.index', ['jenis' => 'profil']) }}">Konten Profil</a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}">
                         <i class="fas fa-chart-line nav-icon"></i>
@@ -484,7 +616,7 @@
                                     $assignedLocationIds = array_unique(array_merge($managedIds, $workedIds));
                                     
                                     if (count($assignedLocationIds) > 0) {
-                                        $taskQuery->whereIn('planting_location_id', $assignedLocationIds);
+                                        $taskQuery->whereHas('planting', fn($q) => $q->whereIn('planting_location_id', $assignedLocationIds));
                                     } else {
                                         $taskQuery->whereRaw('1 = 0');
                                     }
@@ -509,7 +641,7 @@
                                     $assignedLocationIds = array_unique(array_merge($managedIds, $workedIds));
                                     
                                     if (count($assignedLocationIds) > 0) {
-                                        $noteQuery->whereIn('planting_location_id', $assignedLocationIds);
+                                        $noteQuery->whereHas('planting', fn($q) => $q->whereIn('planting_location_id', $assignedLocationIds));
                                     } else {
                                         $noteQuery->whereRaw('1 = 0');
                                     }
@@ -521,41 +653,25 @@
                         
                         // Get low stock notifications (for admin and petugas gudang)
                         if ($user->isAdmin() || $user->role === 'petugas_gudang') {
-                            $inventoryTypes = \App\Models\InventoryType::whereNotNull('low_stock_threshold')
-                                ->where('low_stock_threshold', '>', 0)
-                                ->with(['plant.type'])
-                                ->get();
-                            
-                            foreach ($inventoryTypes as $type) {
-                                $totalStock = $type->seeds()->sum('total_seed_quantity') ?? 0;
-                                $threshold = $type->low_stock_threshold ?? 0;
-                                $thresholdUnit = $type->low_stock_unit ?? 'kg';
-                                $stockUnit = $type->unit ?? 'kg';
-                                
-                                // Convert to kg for comparison
-                                $totalStockInKg = $totalStock;
-                                $thresholdInKg = $threshold;
-                                
-                                if ($stockUnit === 'ton') {
-                                    $totalStockInKg = $totalStock * 1000;
-                                } elseif ($stockUnit === 'gram') {
-                                    $totalStockInKg = $totalStock / 1000;
-                                }
-                                
-                                if ($thresholdUnit === 'ton') {
-                                    $thresholdInKg = $threshold * 1000;
-                                } elseif ($thresholdUnit === 'gram') {
-                                    $thresholdInKg = $threshold / 1000;
-                                }
-                                
-                                if ($totalStockInKg < $thresholdInKg) {
+                            $plantsLow = \App\Models\Plant::with('satuanStok')->whereNotNull('minimal_stok')->where('minimal_stok', '>', 0)->get();
+                            foreach ($plantsLow as $type) {
+                                $totalStock = (float) \App\Models\Stock::where('seed_varieties_id', $type->getKey())
+                                    ->where('status_stok', \App\Models\Stock::STATUS_SIAP)
+                                    ->sum('stok_saat_ini');
+                                $threshold = (float) $type->minimal_stok;
+                                $unit = $type->satuanStok?->code ?? $type->satuanStok?->name ?? '';
+                                if ($totalStock < $threshold) {
                                     $lowStockNotifications->push([
-                                        'id' => $type->inventory_type_id,
-                                        'name' => $type->plant->name ?? $type->name,
-                                        'variety' => $type->plant->variety ?? null,
+                                        'id' => $type->getKey(),
+                                        'inventory_type_id' => $type->getKey(),
+                                        'name' => $type->name,
+                                        'inventory_type_name' => $type->name,
+                                        'variety' => $type->variety,
                                         'current_stock' => $totalStock,
-                                        'stock_unit' => $stockUnit,
+                                        'stock_unit' => $unit,
                                         'threshold' => $threshold,
+                                        'threshold_unit' => $unit,
+                                        'difference' => abs($threshold - $totalStock),
                                         'notification_type' => 'low_stock',
                                     ]);
                                 }
@@ -563,17 +679,17 @@
                         }
                         
                         // Get expired bin stock notifications (for admin and petugas gudang)
-                        if ($user->isAdmin() || $user->role === 'petugas_gudang') {
+                        if (($user->isAdmin() || $user->role === 'petugas_gudang') && \Illuminate\Support\Facades\Schema::hasTable('warehouse_lots')) {
                             $today = \Carbon\Carbon::today();
                             $expiredLots = \App\Models\InventoryLot::with(['inventoryType', 'warehouse', 'bin'])
-                                ->whereNotNull('bin_id')
+                                ->whereNotNull('warehouse_bin_id')
                                 ->whereNotNull('expiry_date')
                                 ->where('expiry_date', '<', $today)
                                 ->where('current_stock', '>', 0)
                                 ->orderBy('expiry_date', 'asc')
                                 ->get()
                                 ->groupBy(function($lot) {
-                                    return $lot->warehouse_id . '-' . $lot->bin_id;
+                                    return $lot->warehouse_id . '-' . $lot->warehouse_bin_id;
                                 });
                             
                             foreach ($expiredLots as $lots) {
@@ -581,7 +697,7 @@
                                 $expiredBinStockNotifications->push([
                                     'warehouse_id' => $firstLot->warehouse_id,
                                     'warehouse_name' => $firstLot->warehouse->name ?? 'Gudang Tidak Diketahui',
-                                    'bin_id' => $firstLot->bin_id,
+                                    'bin_id' => $firstLot->warehouse_bin_id,
                                     'bin_name' => $firstLot->bin->name ?? 'Bin Tidak Diketahui',
                                     'expired_count' => $lots->count(),
                                     'notification_type' => 'expired_bin_stock',
@@ -589,37 +705,9 @@
                             }
                         }
                         
-                        // Get expiring seed notifications (for responsible person)
-                        $threeMonthsFromNow = \Carbon\Carbon::today()->addMonths(3);
-                        $today = \Carbon\Carbon::today();
-                        $inventoryTypeIds = \App\Models\InventoryType::where('responsible_person_id', $user->user_id)
-                            ->pluck('inventory_type_id')
-                            ->toArray();
-                        
-                        if (!empty($inventoryTypeIds)) {
-                            $expiringSeeds = \App\Models\InventoryTypeSeed::with(['inventoryType', 'plant.type', 'plantingLocation'])
-                                ->whereIn('inventory_type_id', $inventoryTypeIds)
-                                ->whereNotNull('expiry_date')
-                                ->where('expiry_date', '<=', $threeMonthsFromNow)
-                                ->orderBy('expiry_date', 'asc')
-                                ->get();
-                            
-                            foreach ($expiringSeeds as $seed) {
-                                $isExpired = $seed->expiry_date->isPast();
-                                $daysUntil = $isExpired ? $seed->expiry_date->diffInDays($today) : $today->diffInDays($seed->expiry_date);
-                                
-                                $expiringSeedNotifications->push([
-                                    'id' => $seed->inventory_type_seed_id,
-                                    'inventory_type_id' => $seed->inventory_type_id,
-                                    'name' => $seed->plant->name ?? $seed->inventoryType->name ?? 'Benih',
-                                    'variety' => $seed->plant->variety ?? null,
-                                    'expiry_date' => $seed->expiry_date->format('d M Y'),
-                                    'is_expired' => $isExpired,
-                                    'days_until' => $daysUntil,
-                                    'notification_type' => 'expiring_seed',
-                                ]);
-                            }
-                        }
+                        // Notifikasi benih kedaluwarsa per penanggung jawab tipe stok benih
+                        // dinonaktifkan karena kolom responsible_person_id sudah dihapus.
+                        // $expiringSeedNotifications dibiarkan kosong.
                         
                         $notificationCount = $taskNotifications->count() 
                             + $noteNotifications->count() 
@@ -746,13 +834,13 @@
                                         $isUrgent = $daysUntil <= 1;
                                     @endphp
                                     <li>
-                                        <a class="dropdown-item {{ $isUrgent ? 'text-danger' : '' }}" href="{{ route('planting-locations.show', $task->planting_location_id) }}">
+                                        <a class="dropdown-item {{ $isUrgent ? 'text-danger' : '' }}" href="{{ $task->plantingLocation ? route('planting-locations.show', $task->plantingLocation) : '#' }}">
                                             <div class="d-flex justify-content-between align-items-start">
                                                 <div class="flex-grow-1">
                                                     <strong><i class="fas fa-tasks me-1"></i>{{ Str::limit($task->title, 30) }}</strong>
                                                     <br>
                                                     <small class="text-muted">
-                                                        {{ $task->plantingLocation->name ?? 'Umum' }}
+                                                        {{ $task->plantingLocation?->name ?? 'Umum' }}
                                                     </small>
                                                 </div>
                                                 <div class="text-end ms-2">
@@ -779,13 +867,13 @@
                                 @foreach($noteNotifications->take($maxShow - $shownCount) as $note)
                                     @php $shownCount++; @endphp
                                     <li>
-                                        <a class="dropdown-item text-warning" href="{{ route('planting-locations.show', $note->planting_location_id) }}">
+                                        <a class="dropdown-item text-warning" href="{{ $note->plantingLocation ? route('planting-locations.show', $note->plantingLocation) : '#' }}">
                                             <div class="d-flex justify-content-between align-items-start">
                                                 <div class="flex-grow-1">
                                                     <strong><i class="fas fa-sticky-note me-1"></i>{{ Str::limit($note->title ?: 'Catatan', 30) }}</strong>
                                                     <br>
                                                     <small class="text-muted">
-                                                        {{ $note->plantingLocation->name ?? 'Umum' }}
+                                                        {{ $note->plantingLocation?->name ?? 'Umum' }}
                                                     </small>
                                                 </div>
                                                 <div class="text-end ms-2">

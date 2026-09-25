@@ -6,7 +6,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="mb-0">Riwayat Data Benih</h4>
-        <small class="text-muted">{{ $seed->plant->name }} - {{ $inventoryType->name }}</small>
+        <small class="text-muted">{{ $seed->plant?->name ?? 'Benih' }} - {{ $inventoryType->name }}</small>
     </div>
     <div>
         <a href="{{ route('seed-stock.show-seed-detail', ['inventoryType' => $inventoryType, 'seed' => $seed]) }}" class="btn btn-secondary">
@@ -29,14 +29,14 @@
     <div class="card-body">
         <div class="row">
             <div class="col-md-6">
-                <p><strong>Nama Benih:</strong> {{ $seed->plant->name }}</p>
-                <p><strong>Varietas:</strong> {{ $seed->plant->variety ?: '-' }}</p>
-                <p><strong>Lokasi Penanaman:</strong> {{ $seed->plantingLocation->name }}</p>
+                <p><strong>Nama Benih:</strong> {{ $seed->plant?->name ?? '-' }}</p>
+                <p><strong>Varietas:</strong> {{ $seed->plant?->variety ?: '-' }}</p>
+                <p><strong>Lokasi Penanaman:</strong> {{ $seed->plantingLocation?->name ?? $seed->planting_location?->name ?? '-' }}</p>
             </div>
             <div class="col-md-6">
                 <p><strong>Jumlah Benih Total:</strong> {{ number_format($seed->total_seed_quantity ?? $seed->quantity, 2) }} {{ $seed->total_seed_unit ?? 'kg' }}</p>
                 <p><strong>Tanggal Kadaluarsa:</strong> {{ $seed->expiry_date ? $seed->expiry_date->format('d M Y') : '-' }}</p>
-                <p><strong>Dibuat Oleh:</strong> {{ $seed->filledByUser->name ?? '-' }}</p>
+                <p><strong>Dibuat Oleh:</strong> {{ $seed->reporter_name ?? $seed->inspector_name ?? '-' }}</p>
             </div>
         </div>
     </div>
@@ -71,21 +71,23 @@
                                 <span class="badge bg-danger">Hapus</span>
                             @elseif($history->action == 'reduce_stock')
                                 <span class="badge bg-info">Kurangi Stok</span>
+                            @elseif($history->transaction_type)
+                                <span class="badge bg-secondary">{{ $history->transaction_type_label }}</span>
                             @else
-                                <span class="badge bg-secondary">{{ $history->action }}</span>
+                                <span class="badge bg-secondary">{{ $history->action ?? '-' }}</span>
                             @endif
                         </td>
-                        <td>{{ $history->description }}</td>
+                        <td>{{ $history->description ?? $history->notes ?? $history->reason ?? '-' }}</td>
                         <td>{{ $history->user->name ?? '-' }}</td>
                         <td>
-                            <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#historyDetailModal{{ $history->id }}">
+                            <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#historyDetailModal{{ $history->stock_history_id }}">
                                 <i class="fas fa-eye"></i> Detail
                             </button>
                         </td>
                     </tr>
 
                     <!-- Modal: Detail History -->
-                    <div class="modal fade" id="historyDetailModal{{ $history->id }}" tabindex="-1">
+                    <div class="modal fade" id="historyDetailModal{{ $history->stock_history_id }}" tabindex="-1">
                         <div class="modal-dialog modal-lg">
                             <div class="modal-content">
                                 <div class="modal-header">
@@ -106,12 +108,14 @@
                                             <span class="badge bg-danger">Hapus</span>
                                         @elseif($history->action == 'reduce_stock')
                                             <span class="badge bg-info">Kurangi Stok</span>
+                                        @elseif($history->transaction_type)
+                                            <span class="badge bg-secondary">{{ $history->transaction_type_label }}</span>
                                         @else
-                                            <span class="badge bg-secondary">{{ $history->action }}</span>
+                                            <span class="badge bg-secondary">{{ $history->action ?? '-' }}</span>
                                         @endif
                                     </div>
                                     <div class="mb-3">
-                                        <strong>Deskripsi:</strong> {{ $history->description }}
+                                        <strong>Deskripsi:</strong> {{ $history->description ?? $history->notes ?? $history->reason ?? '-' }}
                                     </div>
                                     <div class="mb-3">
                                         <strong>User:</strong> {{ $history->user->name ?? '-' }}

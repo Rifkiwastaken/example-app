@@ -86,25 +86,37 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label small">Kategori</label>
-                <select class="form-select form-select-sm" name="category">
+                <select class="form-select form-select-sm" name="category" id="filter_category">
                     <option value="">Semua Kategori</option>
                     @foreach($categories ?? [] as $cat)
                         <option value="{{ $cat }}" {{ ($category ?? '') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-3">
-                <label class="form-label small">Cari (Nama / SKU)</label>
-                <input type="text" class="form-control form-control-sm" name="search" value="{{ request('search', $search ?? '') }}" placeholder="Nama stok atau SKU...">
+            <div class="col-md-2">
+                <label class="form-label small">Nama tanaman</label>
+                <select class="form-select form-select-sm" name="plant_name" id="filter_plant_name" {{ empty($category) ? 'disabled' : '' }}>
+                    <option value="">Semua nama tanaman</option>
+                </select>
             </div>
-            <div class="col-md-3 d-flex align-items-end gap-2">
+            <div class="col-md-2">
+                <label class="form-label small">Varietas</label>
+                <select class="form-select form-select-sm" name="variety" id="filter_variety" {{ empty($plantName) ? 'disabled' : '' }}>
+                    <option value="">Semua varietas</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Cari struk / pembeli</label>
+                <input type="text" class="form-control form-control-sm" name="search" value="{{ request('search', $search ?? '') }}" placeholder="No. struk atau pembeli">
+            </div>
+            <div class="col-md-2 d-flex align-items-end gap-2">
                 <button type="submit" class="btn btn-primary btn-sm">
                     <i class="fas fa-search me-1"></i>Terapkan
                 </button>
                 <a href="{{ route('sales.index') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
             </div>
         </form>
-        @if(request()->hasAny(['date_from', 'date_to', 'category', 'search']))
+        @if(request()->hasAny(['date_from', 'date_to', 'category', 'plant_name', 'variety', 'search']))
             <p class="text-muted small mt-2 mb-0">
                 <i class="fas fa-info-circle me-1"></i>Menampilkan data sesuai filter periode dan kriteria. Dashboard di atas juga mengikuti filter.
             </p>
@@ -114,54 +126,43 @@
 
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-light py-3">
-        <h5 class="mb-0">Daftar Stok Benih</h5>
+        <h5 class="mb-0">Riwayat transaksi (struk terlama ke terbaru)</h5>
     </div>
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
                     <tr>
-                        <th>Nama Stok Benih</th>
-                        <th>Kategori</th>
-                        <th>SKU</th>
-                        <th>Total Penjualan</th>
-                        <th>Total Kuantitas Terjual</th>
-                        <th>Total Pendapatan</th>
-                        <th width="150">Aksi</th>
+                        <th>No. struk</th>
+                        <th>Tanggal</th>
+                        <th>Pembeli</th>
+                        <th>Nama tanaman-varietas</th>
+                        <th>Jumlah stok produk yang terjual</th>
+                        <th>Kuantitas</th>
+                        <th>Total</th>
+                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($inventoryTypes as $inventoryType)
+                    @forelse($receipts as $row)
                     <tr>
+                        <td><code>{{ $row->receipt_number }}</code></td>
+                        <td>{{ \Illuminate\Support\Carbon::parse($row->sale_date)->format('d M Y') }}</td>
+                        <td>{{ $row->buyer_name }}</td>
+                        <td>{{ $row->plant_names ?: '-' }}</td>
+                        <td>{{ number_format((int) ($row->product_count ?? 0), 0) }} produk</td>
+                        <td>{{ number_format((float) $row->total_quantity, 2) }}</td>
+                        <td>Rp {{ number_format((float) $row->total_amount, 0, ',', '.') }}</td>
                         <td>
-                            <strong>{{ $inventoryType->name }}</strong>
-                        </td>
-                        <td>{{ $inventoryType->category ?? '-' }}</td>
-                        <td><code>{{ $inventoryType->sku ?? '-' }}</code></td>
-                        <td>
-                            <span class="badge bg-primary">{{ $inventoryType->total_sales ?? 0 }} transaksi</span>
-                        </td>
-                        <td>
-                            <strong>{{ number_format($inventoryType->total_quantity_sold ?? 0, 2) }} {{ $inventoryType->unit ?? '' }}</strong>
-                        </td>
-                        <td>
-                            <strong>Rp {{ number_format($inventoryType->total_revenue ?? 0, 0, ',', '.') }}</strong>
-                        </td>
-                        <td>
-                            <a href="{{ route('sales.by-inventory-type', $inventoryType) }}" class="btn btn-sm btn-outline-info" title="Lihat Riwayat Penjualan">
-                                <i class="fas fa-eye"></i> Lihat Riwayat
-                            </a>
+                            <a href="{{ route('sales.show', $row->first_id) }}" class="btn btn-sm btn-outline-success">Detail penjualan</a>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="text-center py-4">
+                        <td colspan="8" class="text-center py-4">
                             <div class="text-muted">
-                                <i class="fas fa-box fa-3x mb-3"></i>
-                                <p>Belum ada stok benih yang memiliki riwayat penjualan.</p>
-                                <a href="{{ route('sales.create') }}" class="btn btn-success">
-                                    <i class="fas fa-plus me-2"></i>Catat Penjualan Pertama
-                                </a>
+                                <p>Belum ada transaksi penjualan.</p>
+                                <a href="{{ route('sales.create') }}" class="btn btn-success">Catat Penjualan Pertama</a>
                             </div>
                         </td>
                     </tr>
@@ -169,7 +170,55 @@
                 </tbody>
             </table>
         </div>
+        {{ $receipts->links() }}
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    const plants = @json($plantFilterData);
+    const selectedName = @json($plantName);
+    const selectedVariety = @json($variety);
+    const cat = document.getElementById('filter_category');
+    const nameSel = document.getElementById('filter_plant_name');
+    const varietySel = document.getElementById('filter_variety');
+    function unique(list) { return [...new Set(list.filter(Boolean))]; }
+    function fillSelect(el, values, placeholder, selected) {
+        el.innerHTML = '<option value="">' + placeholder + '</option>' + values.map(function (value) {
+            const isSelected = selected && String(value) === String(selected) ? ' selected' : '';
+            return '<option value="'+value+'"'+isSelected+'>'+value+'</option>';
+        }).join('');
+    }
+    function refreshNames(keepVariety) {
+        const names = unique(plants.filter(function (item) {
+            return !cat.value || item.category === cat.value;
+        }).map(function (item) { return item.name; }));
+        fillSelect(nameSel, names, 'Semua nama tanaman', selectedName);
+        nameSel.disabled = !cat.value;
+        if (!keepVariety) {
+            fillSelect(varietySel, [], 'Semua varietas', '');
+            varietySel.disabled = true;
+        }
+    }
+    function refreshVarieties() {
+        const varieties = unique(plants.filter(function (item) {
+            return (!cat.value || item.category === cat.value)
+                && (!nameSel.value || item.name === nameSel.value);
+        }).map(function (item) { return item.variety; }));
+        fillSelect(varietySel, varieties, 'Semua varietas', selectedVariety);
+        varietySel.disabled = !nameSel.value;
+    }
+    cat.addEventListener('change', function () { refreshNames(false); });
+    nameSel.addEventListener('change', refreshVarieties);
+    if (cat.value) {
+        refreshNames(true);
+        if (nameSel.value) {
+            refreshVarieties();
+        }
+    }
+})();
+</script>
+@endpush
 

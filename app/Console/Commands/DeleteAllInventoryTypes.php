@@ -4,10 +4,9 @@ namespace App\Console\Commands;
 
 use App\Models\InventoryType;
 use App\Models\InventoryTypeSeed;
-use App\Models\SeedHistory;
+use App\Models\StockHistory;
 use App\Models\InventoryNote;
 use App\Models\InventoryPhoto;
-use App\Models\InventoryTransaction;
 use App\Models\InventoryLot;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -78,15 +77,13 @@ class DeleteAllInventoryTypes extends Command
                 }
                 $inventoryType->photos()->delete();
 
-                // Delete transactions
-                $inventoryType->transactions()->delete();
+                // Delete stock histories (transaction-style) for this type
+                StockHistory::where('inventory_type_id', $inventoryType->inventory_type_id)->whereNotNull('transaction_type')->delete();
 
                 // Delete lots
                 $inventoryType->lots()->delete();
 
-                // Delete pivot table relationships
-                $inventoryType->warehouses()->detach();
-                $inventoryType->certificationReports()->detach();
+                $inventoryType->certificationReports()->update(['inventory_type_id' => null, 'quantity_added_to_stock' => null]);
 
                 // Delete inventory type
                 $inventoryType->delete();

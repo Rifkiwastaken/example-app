@@ -1,35 +1,41 @@
 @extends('layouts.app')
 
-@section('title', 'Detail Laporan Pemeriksaan - SIBESTI')
+@section('title', 'Detail Laporan Sertifikasi - SIBESTI')
 
 @section('content')
+@php
+    $plant = $report->plant;
+    $harvest = $report->harvest;
+    $planting = $report->postHarvest?->planting ?? $harvest?->planting;
+    $location = $report->planting_location ?? $harvest?->location;
+    $certification = $report->certification;
+    $backUrl = $plant
+        ? route('certifications.by-plant', $plant)
+        : route('certifications.index');
+@endphp
+
 <!-- Breadcrumbs -->
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{{ route('certifications.index') }}">Manajemen Sertifikasi</a></li>
-        <li class="breadcrumb-item"><a href="{{ route('certifications.show', $report->certification->harvest) }}">Kelola Sertifikasi</a></li>
-        <li class="breadcrumb-item active">Detail Laporan</li>
+        @if($plant)
+            <li class="breadcrumb-item"><a href="{{ route('certifications.by-plant', $plant) }}">{{ $plant->name }}</a></li>
+        @endif
+        <li class="breadcrumb-item active">Detail Sertifikasi</li>
     </ol>
 </nav>
 
 <!-- Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="mb-1">Detail {{ $report->report_type ?? 'Laporan Pemeriksaan Pertanaman' }}</h4>
-        <small class="text-muted">No. Laporan: {{ $report->report_number_bpsb ?: '-' }} | Tanggal: {{ $report->report_date->format('d M Y') }}</small>
+        <h4 class="mb-1">Detail Sertifikasi</h4>
+        <small class="text-muted d-block">{{ $report->report_type ?? 'Laporan Sertifikasi Benih' }}</small>
+        <small class="text-muted">No. Laporan: {{ $report->report_number_bpsb ?: '-' }} | Tanggal: {{ optional($report->report_date)->format('d M Y') ?: '-' }}</small>
     </div>
-    <a href="{{ route('certifications.show', $report->certification->harvest) }}" class="btn btn-outline-secondary">
+    <a href="{{ $backUrl }}" class="btn btn-outline-secondary">
         <i class="fas fa-arrow-left me-2"></i>Kembali
     </a>
 </div>
-
-@php
-    $harvest = $report->certification->harvest;
-    $plant = $harvest->plant ?? null;
-    $planting = $harvest->planting ?? null;
-    $location = $harvest->location ?? null;
-    $certification = $report->certification;
-@endphp
 
 <!-- Informasi Dasar -->
 <div class="card mb-4">
@@ -38,6 +44,12 @@
     </div>
     <div class="card-body">
         <div class="row">
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Jenis Sertifikasi</label>
+                    <p class="mb-0">{{ $report->report_type ?? 'Laporan Pemeriksaan Pertanaman' }}</p>
+                </div>
+            </div>
             <div class="col-md-6">
                 <div class="mb-3">
                     <label class="form-label fw-bold">Nomor Laporan BPSB</label>
@@ -45,7 +57,7 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-bold">Tanggal Laporan</label>
-                    <p class="mb-0">{{ $report->report_date->format('d M Y') }}</p>
+                    <p class="mb-0">{{ optional($report->report_date)->format('d M Y') ?: '-' }}</p>
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-bold">Musim Tanam</label>
@@ -56,6 +68,10 @@
                 <div class="mb-3">
                     <label class="form-label fw-bold">Fase Pemeriksaan</label>
                     <p class="mb-0"><span class="badge bg-info">{{ $report->inspection_phase }}</span></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tanggal Selesai Uji</label>
+                    <p class="mb-0">{{ $report->test_completed_at ? \Carbon\Carbon::parse($report->test_completed_at)->format('d M Y') : '-' }}</p>
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-bold">Petugas Pengawas Mutu (BPSB)</label>
@@ -137,7 +153,7 @@
                 </p>
             </div>
             <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">Nomor Batch Tanam</label>
+                <label class="form-label fw-bold">No. Induk</label>
                 <p class="mb-0">
                     @if($report->planting_batch_number)
                         <span class="badge bg-primary">{{ $report->planting_batch_number }}</span>
@@ -147,7 +163,7 @@
                 </p>
             </div>
             <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">Nomor Batch Panen</label>
+                <label class="form-label fw-bold">No. Lot</label>
                 <p class="mb-0">
                     @if($report->harvest_batch_number)
                         <span class="badge bg-success">{{ $report->harvest_batch_number }}</span>
@@ -242,7 +258,7 @@
                         {{ $report->expiry_date->format('d M Y') }}
                         @if($report->expiry_date->isPast())
                             <span class="badge bg-danger ms-2">Melewati Masa Edar</span>
-                        @elseif($report->expiry_date->diffInMonths(now()) <= 3)
+                        @elseif($report->isApproachingExpiry())
                             <span class="badge bg-warning ms-2">Mendekati Masa Edar</span>
                         @endif
                     @else
@@ -254,10 +270,45 @@
     </div>
 </div>
 
-<!-- Bagian D: Jumlah Benih yang Lulus Sertifikasi -->
+<!-- Bagian D: Informasi Benih -->
+<div class="card mb-4">
+    <div class="card-header bg-success text-white" style="background-color:#198754 !important;">
+        <h5 class="mb-0"><i class="fas fa-percentage me-2"></i>Bagian D: Informasi Benih</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Daya Berkecambah (%)</label>
+                <p class="mb-0">{{ $report->daya_berkecambah !== null ? number_format($report->daya_berkecambah, 2) . '%' : '-' }}</p>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">CVL (%)</label>
+                <p class="mb-0">{{ $report->cvl !== null ? number_format($report->cvl, 2) . '%' : '-' }}</p>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Kadar Air (%)</label>
+                <p class="mb-0">{{ $report->kadar_air !== null ? number_format($report->kadar_air, 2) . '%' : '-' }}</p>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Benih Murni (%)</label>
+                <p class="mb-0">{{ $report->benih_murni !== null ? number_format($report->benih_murni, 2) . '%' : '-' }}</p>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Kotoran Benih (%)</label>
+                <p class="mb-0">{{ $report->kotoran_benih !== null ? number_format($report->kotoran_benih, 2) . '%' : '-' }}</p>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Biji Gulma (%)</label>
+                <p class="mb-0">{{ $report->biji_gulma !== null ? number_format($report->biji_gulma, 2) . '%' : '-' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bagian E: Jumlah Benih yang Lulus Sertifikasi -->
 <div class="card mb-4">
     <div class="card-header bg-warning text-dark">
-        <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Bagian D: Jumlah Benih yang Lulus Sertifikasi</h5>
+        <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Bagian E: Jumlah Benih yang Lulus Sertifikasi</h5>
     </div>
     <div class="card-body">
         <div class="row">
@@ -295,14 +346,24 @@
                 <label class="form-label fw-bold">Pengisi Data</label>
                 <p class="mb-0">{{ $report->reporter_name ?: '-' }}</p>
             </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Isi per Kemasan</label>
+                <p class="mb-0">
+                    @if($report->package_content_per_pack !== null)
+                        {{ number_format($report->package_content_per_pack, 2) }} {{ $report->seed_unit ?? '-' }}
+                    @else
+                        -
+                    @endif
+                </p>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Bagian E: Kesimpulan & Lampiran -->
+<!-- Bagian F: Kesimpulan & Lampiran -->
 <div class="card mb-4">
     <div class="card-header bg-secondary text-white">
-        <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Bagian E: Kesimpulan & Lampiran</h5>
+        <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Bagian F: Kesimpulan & Lampiran</h5>
     </div>
     <div class="card-body">
         <div class="row">
@@ -332,11 +393,11 @@
 
 <!-- Tombol Lihat Data Panen Benih -->
 <div class="d-flex justify-content-between mb-4">
-    <a href="{{ route('certifications.show', $report->certification->harvest) }}" class="btn btn-outline-secondary">
+    <a href="{{ $backUrl }}" class="btn btn-outline-secondary">
         <i class="fas fa-arrow-left me-2"></i>Kembali
     </a>
     @if($harvest)
-        <button type="button" class="btn btn-success" onclick="viewHarvestDetail({{ $harvest->id }})">
+        <button type="button" class="btn btn-success" onclick="viewHarvestDetail({{ $harvest->getKey() }})">
             <i class="fas fa-seedling me-2"></i>Lihat Data Panen Benih
         </button>
     @endif
@@ -423,7 +484,7 @@ function viewHarvestDetail(harvestId) {
                                 <div class="mb-2"><strong>Lokasi Tanam:</strong> ${planting.bed_label || '-'}</div>
                             </div>
                             <div class="col-md-6">
-                                <div class="mb-2"><strong>Jumlah Tanam:</strong> ${planting.quantity_planted ? number_format(planting.quantity_planted, 0) + ' tanaman' : '-'}</div>
+                                <div class="mb-2"><strong>Jumlah Tanam:</strong> ${planting.planting_amount ? number_format(planting.planting_amount, 0) + ' tanaman' : '-'}</div>
                                 <div class="mb-2"><strong>Tanggal Tanam:</strong> ${planting.planted_at || '-'}</div>
                                 <div class="mb-2"><strong>Estimasi Panen:</strong> ${planting.estimated_harvest_date || '-'}</div>
                             </div>

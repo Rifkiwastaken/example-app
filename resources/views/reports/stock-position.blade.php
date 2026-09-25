@@ -28,34 +28,13 @@
                     <select name="warehouse_id" class="form-select">
                         <option value="">Semua Gudang</option>
                         @foreach($warehouses as $warehouse)
-                            <option value="{{ $warehouse->id }}" {{ request('warehouse_id') == $warehouse->id ? 'selected' : '' }}>
+                            <option value="{{ $warehouse->warehouse_id }}" {{ request('warehouse_id') == $warehouse->warehouse_id ? 'selected' : '' }}>
                                 {{ $warehouse->name }}
                             </option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Komoditas/Tanaman</label>
-                    <select name="plant_id" class="form-select">
-                        <option value="">Semua Komoditas</option>
-                        @foreach($plants as $plant)
-                            <option value="{{ $plant->id }}" {{ request('plant_id') == $plant->id ? 'selected' : '' }}>
-                                {{ $plant->name }} @if($plant->variety) - {{ $plant->variety }} @endif
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Tipe Inventaris</label>
-                    <select name="inventory_type_id" class="form-select">
-                        <option value="">Semua Tipe</option>
-                        @foreach($inventoryTypes as $type)
-                            <option value="{{ $type->id }}" {{ request('inventory_type_id') == $type->id ? 'selected' : '' }}>
-                                {{ $type->plant->name ?? ($type->name ?? 'N/A') }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+                @include('reports.partials._variety-scope-filter')
                 <div class="col-md-3 mb-3 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary me-2">
                         <i class="fas fa-search me-1"></i>Filter
@@ -84,7 +63,7 @@
         <div class="card bg-info text-white">
             <div class="card-body">
                 <h6 class="card-title">Total Stok</h6>
-                <h3 class="mb-0">{{ number_format($lots->sum('current_stock'), 2) }}</h3>
+                <h3 class="mb-0">{{ number_format($lots->sum('stok_saat_ini'), 2) }}</h3>
             </div>
         </div>
     </div>
@@ -127,9 +106,9 @@
                     <tr>
                         <th>No</th>
                         <th>Komoditas/Tanaman</th>
-                        <th>Batch/Produksi</th>
+                        <th>Nomor Lot Induk</th>
                         <th>Gudang</th>
-                        <th>Bin</th>
+                        <th>Rak Gudang</th>
                         <th>Stok Tersedia</th>
                         <th>Unit</th>
                         <th>Tanggal Kadaluarsa</th>
@@ -142,25 +121,25 @@
                         <tr>
                             <td>{{ $lots->firstItem() + $index }}</td>
                             <td>
-                                <strong>{{ $lot->inventoryType->plant->name ?? ($lot->inventoryType->name ?? 'N/A') }}</strong>
-                                @if($lot->inventoryType->plant && $lot->inventoryType->plant->variety)
-                                    <br><small class="text-muted">{{ $lot->inventoryType->plant->variety }}</small>
+                                <strong>{{ $lot->plant->name ?? 'N/A' }}</strong>
+                                @if($lot->plant?->variety)
+                                    <br><small class="text-muted">{{ $lot->plant->variety }}</small>
                                 @endif
                             </td>
                             <td>
-                                <code>{{ $lot->production_id ?? '-' }}</code>
+                                <code>{{ $lot->no_label_resmi }}</code>
                             </td>
-                            <td>{{ $lot->warehouse->name ?? '-' }}</td>
-                            <td>{{ $lot->bin->name ?? '-' }}</td>
+                            <td>{{ $lot->rack?->warehouse?->name ?? '-' }}</td>
+                            <td>{{ $lot->rack->name ?? '-' }}</td>
                             <td class="text-end">
-                                <strong>{{ number_format($lot->current_stock, 2) }}</strong>
+                                <strong>{{ number_format($lot->stok_saat_ini, 2) }}</strong>
                             </td>
-                            <td>{{ $lot->stock_unit ?? '-' }}</td>
+                            <td>{{ $lot->plant?->satuanStok?->code ?? '-' }}</td>
                             <td>
-                                @if($lot->expiry_date)
-                                    {{ $lot->expiry_date->format('d M Y') }}
+                                @if($lot->tgl_kedaluwarsa)
+                                    {{ $lot->tgl_kedaluwarsa->format('d M Y') }}
                                     @php
-                                        $daysRemaining = now()->diffInDays($lot->expiry_date, false);
+                                        $daysRemaining = now()->diffInDays($lot->tgl_kedaluwarsa, false);
                                     @endphp
                                     @if($daysRemaining < 0)
                                         <br><small class="text-danger">(Kadaluarsa)</small>
@@ -172,16 +151,15 @@
                                 @endif
                             </td>
                             <td>
-                                @if($lot->status === 'tersedia')
-                                    <span class="badge bg-success">Tersedia</span>
-                                @elseif($lot->status === 'segera_kadaluarsa')
-                                    <span class="badge bg-warning">Segera Kadaluarsa</span>
-                                @elseif($lot->status === 'kadaluarsa')
-                                    <span class="badge bg-danger">Kadaluarsa</span>
-                                @elseif($lot->status === 'habis')
-                                    <span class="badge bg-secondary">Habis</span>
+                                @php $displayStatus = $lot->displayStatus(); @endphp
+                                @if($displayStatus === 'aktif')
+                                    <span class="badge bg-success">{{ $lot->displayStatusLabel() }}</span>
+                                @elseif(in_array($displayStatus, ['mendekati_masa_edar', 'siap_stok', 'pelabelan'], true))
+                                    <span class="badge bg-warning">{{ $lot->displayStatusLabel() }}</span>
+                                @elseif($displayStatus === 'butuh_uji_ulang')
+                                    <span class="badge bg-info">{{ $lot->displayStatusLabel() }}</span>
                                 @else
-                                    <span class="badge bg-secondary">{{ $lot->status }}</span>
+                                    <span class="badge bg-danger">{{ $lot->displayStatusLabel() }}</span>
                                 @endif
                             </td>
                             <td class="text-end">
@@ -201,7 +179,7 @@
                 <tfoot class="table-light">
                     <tr>
                         <th colspan="5" class="text-end">Total:</th>
-                        <th class="text-end">{{ number_format($lots->sum('current_stock'), 2) }}</th>
+                        <th class="text-end">{{ number_format($lots->sum('stok_saat_ini'), 2) }}</th>
                         <th></th>
                         <th></th>
                         <th></th>
@@ -237,5 +215,6 @@ function exportExcel() {
 }
 </script>
 @endpush
+@include('reports.partials._variety-scope-scripts')
 @endsection
 

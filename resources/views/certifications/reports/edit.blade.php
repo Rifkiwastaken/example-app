@@ -6,7 +6,7 @@
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{{ route('certifications.index') }}">Manajemen Sertifikasi</a></li>
-        <li class="breadcrumb-item"><a href="{{ route('certifications.show', $certification->harvest) }}">Kelola Sertifikasi</a></li>
+        <li class="breadcrumb-item"><a href="{{ route('certifications.reports.create', $harvest) }}">Kelola Sertifikasi</a></li>
         <li class="breadcrumb-item active">Edit Laporan</li>
     </ol>
 </nav>
@@ -16,7 +16,7 @@
         <h4 class="mb-1">Edit Laporan Pemeriksaan</h4>
         <small class="text-muted">Tanaman: {{ $harvest->plant->type?->name ?: $harvest->plant->name }} - {{ $harvest->plant->variety ?: 'Tanpa Varietas' }}</small>
     </div>
-    <a href="{{ route('certifications.show', $certification->harvest) }}" class="btn btn-outline-secondary">
+    <a href="{{ route('certifications.reports.create', $harvest) }}" class="btn btn-outline-secondary">
         <i class="fas fa-arrow-left me-2"></i>Kembali
     </a>
 </div>
@@ -177,7 +177,7 @@
             </div>
 
             <div class="d-flex justify-content-between">
-                <a href="{{ route('certifications.show', $certification->harvest) }}" class="btn btn-secondary">
+                <a href="{{ route('certifications.reports.create', $harvest) }}" class="btn btn-secondary">
                     <i class="fas fa-times me-2"></i>Batal
                 </a>
                 <button type="submit" class="btn btn-success">

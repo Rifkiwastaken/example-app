@@ -26,7 +26,7 @@ class PlantingLossTest extends TestCase
     {
         // Menyiapkan data planting
         $planting = Planting::create([
-            'quantity_planted' => 100,
+            'planting_amount' => 100,
         ]);
 
         // Menyiapkan data planting loss untuk diuji
@@ -59,7 +59,7 @@ class PlantingLossTest extends TestCase
     {
         // Membuat planting dan planting loss
         $planting = Planting::create([
-            'quantity_planted' => 100,
+            'planting_amount' => 100,
         ]);
 
         $loss = PlantingLoss::create([

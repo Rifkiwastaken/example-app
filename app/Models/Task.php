@@ -6,13 +6,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\HasCustomId;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Task extends Model
 {
     use HasFactory;
     use HasCustomId;
 
-    protected $primaryKey = 'task_id';
+    protected $table = 'planting_report';
+
+    protected $primaryKey = 'planting_task_id';
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -31,9 +34,7 @@ class Task extends Model
         'start_time',
         'due_date',
         'due_time',
-        'template_id',
-        'series_id',
-        'planting_location_id',
+        'task_template_id',
         'planting_id',
         'task_color',
         'collaborators',
@@ -83,23 +84,7 @@ class Task extends Model
      */
     public function template(): BelongsTo
     {
-        return $this->belongsTo(TaskTemplate::class, 'template_id', 'task_template_id');
-    }
-
-    /**
-     * Get the series this task belongs to
-     */
-    public function series(): BelongsTo
-    {
-        return $this->belongsTo(TaskSeries::class, 'series_id', 'task_series_id');
-    }
-
-    /**
-     * Get the planting location this task is associated with
-     */
-    public function plantingLocation(): BelongsTo
-    {
-        return $this->belongsTo(PlantingLocation::class, 'planting_location_id', 'planting_location_id');
+        return $this->belongsTo(TaskTemplate::class, 'task_template_id', 'task_template_id');
     }
 
     /**
@@ -107,7 +92,13 @@ class Task extends Model
      */
     public function planting(): BelongsTo
     {
-        return $this->belongsTo(Planting::class, 'planting_id', 'planting_id');
+        return $this->belongsTo(Planting::class, 'planting_id', 'planting_production_id');
+    }
+
+    /** Lokasi penanaman melalui planting (setelah kolom planting_location_id dihapus). */
+    public function plantingLocation(): HasOneThrough
+    {
+        return $this->hasOneThrough(PlantingLocation::class, Planting::class, 'planting_production_id', 'planting_location_id', 'planting_id', 'planting_location_id');
     }
 
     /**

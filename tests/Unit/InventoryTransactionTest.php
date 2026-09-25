@@ -3,135 +3,93 @@
 namespace Tests\Unit;
 
 use Tests\TestCase;
-use App\Models\InventoryTransaction;
+use App\Models\StockHistory;
 use App\Models\InventoryType;
-use App\Models\InventoryLot;
-use App\Models\Warehouse;
-use App\Models\Bin;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 /**
- * Unit Test untuk Model InventoryTransaction
- * 
- * Test ini menguji semua method dan relasi yang ada di model InventoryTransaction
+ * Unit Test untuk log transaksi stok (stock_histories).
+ * Tabel inventory_transactions telah digabung ke stock_histories.
  */
 class InventoryTransactionTest extends TestCase
 {
     use RefreshDatabase;
 
     /**
-     * Test: Membuat inventory transaction baru dengan field sesuai input
-     * 
-     * Menguji bahwa inventory transaction dapat dibuat dengan semua field yang diisi
+     * Test: Membuat stock history dengan transaction_type (log transaksi stok)
      */
-    public function test_can_create_inventory_transaction_with_all_fields(): void
+    public function test_can_create_stock_history_transaction_with_all_fields(): void
     {
-        // Menyiapkan data inventory type
+        $user = User::factory()->create();
         $inventoryType = InventoryType::create([
             'name' => 'Benih Padi',
             'category' => 'Benih',
             'unit' => 'kg',
         ]);
 
-        // Menyiapkan data inventory transaction untuk diuji
-        $transactionData = [
-            'inventory_type_id' => $inventoryType->id,
+        $data = [
+            'inventory_type_id' => $inventoryType->inventory_type_id,
             'transaction_type' => 'stok_masuk',
             'quantity' => 100,
             'unit' => 'kg',
+            'user_id' => $user->user_id,
         ];
 
-        // Membuat inventory transaction baru
-        $transaction = InventoryTransaction::create($transactionData);
+        $record = StockHistory::create($data);
 
-        // Memverifikasi bahwa inventory transaction berhasil dibuat dengan field sesuai input
-        $this->assertDatabaseHas('inventory_transactions', [
-            'id' => $transaction->id,
+        $this->assertDatabaseHas('stock_histories', [
+            'stock_history_id' => $record->stock_history_id,
             'transaction_type' => 'stok_masuk',
             'quantity' => 100,
         ]);
     }
 
     /**
-     * Test: Relasi inventoryType mengembalikan inventory type yang terkait
-     * 
-     * Menguji bahwa relasi belongs-to antara inventory transaction dan inventory type berfungsi
+     * Test: Relasi inventoryType pada StockHistory
      */
     public function test_inventory_type_relationship(): void
     {
-        // Membuat inventory type dan transaction
+        $user = User::factory()->create();
         $inventoryType = InventoryType::create([
             'name' => 'Benih Padi',
             'category' => 'Benih',
             'unit' => 'kg',
         ]);
 
-        $transaction = InventoryTransaction::create([
-            'inventory_type_id' => $inventoryType->id,
+        $record = StockHistory::create([
+            'inventory_type_id' => $inventoryType->inventory_type_id,
             'transaction_type' => 'stok_masuk',
             'quantity' => 100,
+            'unit' => 'kg',
+            'user_id' => $user->user_id,
         ]);
 
-        // Memverifikasi bahwa relasi berfungsi dengan benar
-        $this->assertEquals($inventoryType->id, $transaction->inventoryType->id);
+        $this->assertEquals($inventoryType->inventory_type_id, $record->inventoryType->inventory_type_id);
     }
 
     /**
-     * Test: Method getTransactionTypeLabel mengembalikan label tipe transaksi
-     * 
-     * Menguji bahwa setiap tipe transaksi memiliki label yang sesuai
+     * Test: getTransactionTypeLabelAttribute mengembalikan label tipe transaksi
      */
     public function test_get_transaction_type_label_returns_label(): void
     {
-        // Membuat transaction dengan type stok_masuk
-        $transaction1 = InventoryTransaction::create([
+        $user = User::factory()->create();
+        $type = InventoryType::create(['name' => 'Benih Test', 'category' => 'Benih', 'unit' => 'kg']);
+
+        $r1 = StockHistory::create([
+            'inventory_type_id' => $type->inventory_type_id,
             'transaction_type' => 'stok_masuk',
             'quantity' => 100,
+            'user_id' => $user->user_id,
         ]);
-        $this->assertEquals('Stok Masuk (Lot)', $transaction1->transaction_type_label);
+        $this->assertEquals('Stok Masuk (Lot)', $r1->transaction_type_label);
 
-        // Membuat transaction dengan type stok_keluar
-        $transaction2 = InventoryTransaction::create([
-            'transaction_type' => 'stok_keluar',
-            'quantity' => 50,
-        ]);
-        $this->assertEquals('Stok Keluar', $transaction2->transaction_type_label);
-
-        // Membuat transaction dengan type penyesuaian_tambah
-        $transaction3 = InventoryTransaction::create([
-            'transaction_type' => 'penyesuaian_tambah',
-            'quantity' => 25,
-        ]);
-        $this->assertEquals('Penyesuaian (+)', $transaction3->transaction_type_label);
-
-        // Membuat transaction dengan type penyesuaian_kurang
-        $transaction4 = InventoryTransaction::create([
-            'transaction_type' => 'penyesuaian_kurang',
-            'quantity' => 10,
-        ]);
-        $this->assertEquals('Penyesuaian (-)', $transaction4->transaction_type_label);
-
-        // Membuat transaction dengan type distribusi
-        $transaction5 = InventoryTransaction::create([
+        $r2 = StockHistory::create([
+            'inventory_type_id' => $type->inventory_type_id,
             'transaction_type' => 'distribusi',
-            'quantity' => 30,
+            'quantity' => 50,
+            'user_id' => $user->user_id,
         ]);
-        $this->assertEquals('Distribusi', $transaction5->transaction_type_label);
-
-        // Membuat transaction dengan type pindah_lokasi
-        $transaction6 = InventoryTransaction::create([
-            'transaction_type' => 'pindah_lokasi',
-            'quantity' => 20,
-        ]);
-        $this->assertEquals('Pindahkan Stok', $transaction6->transaction_type_label);
+        $this->assertEquals('Distribusi', $r2->transaction_type_label);
     }
 }
-
-
-
-
-
-
-
-

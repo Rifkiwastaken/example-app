@@ -6,7 +6,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="mb-0">Lokasi Penanaman</h4>
     @if(auth()->user()->isAdmin() || auth()->user()->role === 'kepala_satuan_tugas')
-        <a href="{{ route('planting-locations.create') }}" class="btn btn-success">Lokasi Tanam</a>
+        <a href="{{ route('planting-locations.create') }}" class="btn btn-success">Tambahkan lokasi tanam</a>
     @endif
 </div>
 
@@ -58,7 +58,7 @@
                             <th>Nama</th>
                             <th>Tipe</th>
                             <th>Lokasi</th>
-                            <th>Penanggung Jawab Lahan</th>
+                            <th>Produksi Benih</th>
                             <th>Pekerja Lahan</th>
                             <th width="100">Aksi</th>
                         </tr>
@@ -72,7 +72,7 @@
                                             {{ strtoupper(substr($location->name, 0, 2)) }}
                                         </div>
                                         <div>
-                                            <a href="{{ route('planting-locations.show', $location) }}" class="text-decoration-none fw-bold">{{ $location->name }}</a>
+                                            <a href="{{ route('planting-locations.show', $location) }}" class="text-decoration-none fw-bold text-body">{{ $location->name }}</a>
                                             @if($location->internal_id)
                                                 <br><small class="text-muted">{{ $location->internal_id }}</small>
                                             @endif
@@ -90,42 +90,16 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if($location->landManagerUsers->count() > 0)
-                                        <div>
-                                            @foreach($location->landManagerUsers as $user)
-                                                <div class="mb-1">
-                                                    <small>
-                                                        <i class="fas fa-user me-1"></i>
-                                                        <strong>{{ $user->name }}</strong>
-                                                        @if($user->role)
-                                                            <span class="text-muted"> - {{ $user->role_label }}</span>
-                                                        @endif
-                                                    </small>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    @else
-                                        <span class="text-muted">-</span>
-                                    @endif
+                                    @foreach($location->productionVarietyLabels() as $label)
+                                        <span class="data-pill">{{ $label }}</span>
+                                    @endforeach
+                                    @if(empty($location->productionVarietyLabels()))<span class="text-muted">-</span>@endif
                                 </td>
                                 <td>
-                                    @if($location->landWorkerUsers->count() > 0)
-                                        <div>
-                                            @foreach($location->landWorkerUsers as $user)
-                                                <div class="mb-1">
-                                                    <small>
-                                                        <i class="fas fa-user me-1"></i>
-                                                        <strong>{{ $user->name }}</strong>
-                                                        @if($user->role)
-                                                            <span class="text-muted"> - {{ $user->role_label }}</span>
-                                                        @endif
-                                                    </small>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    @else
-                                        <span class="text-muted">-</span>
-                                    @endif
+                                    @foreach($location->workerNameLabels() as $name)
+                                        <span class="data-pill data-pill-muted">{{ $name }}</span>
+                                    @endforeach
+                                    @if(empty($location->workerNameLabels()))<span class="text-muted">-</span>@endif
                                 </td>
                                 <td>
                                     <div class="btn-group">

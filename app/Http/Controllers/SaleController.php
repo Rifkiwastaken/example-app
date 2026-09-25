@@ -2,17 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Sale;
 use App\Models\SaleItem;
-use App\Models\InventoryType;
-use App\Models\InventoryLot;
-use App\Models\InventoryTransaction;
 use App\Models\Warehouse;
 use App\Models\Bin;
+use App\Models\Plant;
+use App\Models\PlantType;
 use App\Models\PlantingLocation;
+use App\Models\Stock;
+use App\Models\StockPackaging;
+use App\Support\SeedCertificate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class SaleController extends Controller
@@ -25,105 +27,161 @@ class SaleController extends Controller
         $dateFrom = $request->filled('date_from') ? Carbon::parse($request->date_from)->startOfDay() : null;
         $dateTo = $request->filled('date_to') ? Carbon::parse($request->date_to)->endOfDay() : null;
         $category = $request->filled('category') ? $request->category : null;
+        $plantName = $request->filled('plant_name') ? $request->plant_name : null;
+        $variety = $request->filled('variety') ? $request->variety : null;
         $search = $request->filled('search') ? trim($request->search) : null;
 
-        // Dashboard: total transaksi, kuantitas terjual, pendapatan (sesuai filter periode)
-        $salesQuery = Sale::query();
+        // Dashboard: total transaksi, kuantitas terjual, pendapatan (data di sale_items)
+        $baseQuery = SaleItem::query();
         if ($dateFrom) {
-            $salesQuery->where('sale_date', '>=', $dateFrom);
+            $baseQuery->where('sale_date', '>=', $dateFrom);
         }
         if ($dateTo) {
-            $salesQuery->where('sale_date', '<=', $dateTo);
+            $baseQuery->where('sale_date', '<=', $dateTo);
         }
-        $saleIds = $salesQuery->pluck('sale_id');
+        $saleIds = (clone $baseQuery)->select('receipt_number')->distinct()->pluck('receipt_number');
 
         $totalTransactions = $saleIds->count();
-        $totalQuantitySold = SaleItem::whereIn('sale_id', $saleIds)->sum('quantity');
-        $totalRevenue = SaleItem::whereIn('sale_id', $saleIds)->sum('subtotal');
+        $totalQuantitySold = (clone $baseQuery)->sum('quantity');
+        $totalRevenue = (clone $baseQuery)->sum('subtotal');
 
-        // Aggregasi per tipe inventaris (dengan filter periode)
         $itemsQuery = SaleItem::query()
-            ->join('sales', 'sales.sale_id', '=', 'sale_items.sale_id')
+            ->join('stock_packaging as sp', 'sp.id', '=', 'sale_items.stock_packaging_id')
+            ->join('stock as st', 'st.id', '=', 'sp.stok_benih_id')
             ->select(
-                'sale_items.inventory_type_id',
-                DB::raw('COUNT(DISTINCT sale_items.sale_id) as total_sales'),
+                'st.seed_varieties_id as plant_id',
+                DB::raw('COUNT(DISTINCT sale_items.receipt_number) as total_sales'),
                 DB::raw('COALESCE(SUM(sale_items.quantity), 0) as total_quantity_sold'),
                 DB::raw('COALESCE(SUM(sale_items.subtotal), 0) as total_revenue')
             )
-            ->groupBy('sale_items.inventory_type_id');
+            ->whereNotNull('st.seed_varieties_id')
+            ->groupBy('st.seed_varieties_id');
         if ($dateFrom) {
-            $itemsQuery->where('sales.sale_date', '>=', $dateFrom);
+            $itemsQuery->where('sale_items.sale_date', '>=', $dateFrom);
         }
         if ($dateTo) {
-            $itemsQuery->where('sales.sale_date', '<=', $dateTo);
+            $itemsQuery->where('sale_items.sale_date', '<=', $dateTo);
         }
-        $aggregated = $itemsQuery->get()->keyBy('inventory_type_id');
+        $aggregated = $itemsQuery->get()->keyBy('plant_id');
 
-        $inventoryTypeIds = $aggregated->keys();
-        $inventoryTypesQuery = InventoryType::whereIn('inventory_type_id', $inventoryTypeIds);
-        if ($category) {
-            $inventoryTypesQuery->where('category', $category);
-        }
+        $plantsQuery = Plant::with(['type', 'satuanStok'])->whereIn('seed_varieties_id', $aggregated->keys());
         if ($search !== null && $search !== '') {
-            $inventoryTypesQuery->where(function ($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%')
-                  ->orWhere('sku', 'like', '%' . $search . '%');
+            $plantsQuery->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('variety', 'like', '%'.$search.'%');
             });
         }
-        $inventoryTypes = $inventoryTypesQuery->orderBy('category')->orderBy('name')->get();
-
-        // Lampirkan total dari agregasi (filter periode)
-        foreach ($inventoryTypes as $type) {
-            $agg = $aggregated->get($type->inventory_type_id);
-            $type->total_sales = $agg ? (int) $agg->total_sales : 0;
-            $type->total_quantity_sold = $agg ? (float) $agg->total_quantity_sold : 0;
-            $type->total_revenue = $agg ? (float) $agg->total_revenue : 0;
+        $receiptsQuery = SaleItem::query()
+            ->leftJoin('stock_packaging as sp', 'sp.id', '=', 'sale_items.stock_packaging_id')
+            ->leftJoin('stock as st', 'st.id', '=', 'sp.stok_benih_id')
+            ->leftJoin('plant_varieties as pv', 'pv.seed_varieties_id', '=', 'st.seed_varieties_id')
+            ->leftJoin('plant_commodities as pc', 'pc.seed_commodity_id', '=', 'pv.seed_commodity_id')
+            ->select(
+                'sale_items.receipt_number',
+                DB::raw('MIN(sale_items.sale_date) as sale_date'),
+                DB::raw('MIN(sale_items.buyer_name) as buyer_name'),
+                DB::raw('SUM(sale_items.quantity) as total_quantity'),
+                DB::raw('COUNT(sale_items.sale_item_id) as product_count'),
+                DB::raw('SUM(sale_items.subtotal) as total_amount'),
+                DB::raw('MIN(sale_items.sale_item_id) as first_id'),
+                DB::raw("GROUP_CONCAT(DISTINCT TRIM(CONCAT(COALESCE(pc.name, pv.name, ''), CASE WHEN pv.variety IS NULL OR pv.variety = '' THEN '' ELSE CONCAT(' - ', pv.variety) END)) SEPARATOR ', ') as plant_names")
+            )
+            ->groupBy('sale_items.receipt_number')
+            ->orderBy('sale_date')
+            ->orderBy('sale_items.receipt_number');
+        if ($dateFrom) {
+            $receiptsQuery->where('sale_items.sale_date', '>=', $dateFrom);
         }
-
-        // Daftar kategori untuk filter dropdown (dari tipe yang punya penjualan)
-        $categories = InventoryType::whereHas('saleItems')
-            ->distinct()
-            ->pluck('category')
-            ->filter()
-            ->sort()
-            ->values();
+        if ($dateTo) {
+            $receiptsQuery->where('sale_items.sale_date', '<=', $dateTo);
+        }
+        if ($search) {
+            $receiptsQuery->where(function ($q) use ($search) {
+                $q->where('sale_items.receipt_number', 'like', '%'.$search.'%')
+                    ->orWhere('sale_items.buyer_name', 'like', '%'.$search.'%');
+            });
+        }
+        if ($category) {
+            $receiptsQuery->where('pc.category', $category);
+        }
+        if ($plantName) {
+            $receiptsQuery->where('pc.name', $plantName);
+        }
+        if ($variety) {
+            $receiptsQuery->where('pv.variety', $variety);
+        }
+        $receipts = $receiptsQuery->paginate(20)->withQueryString();
+        $categories = PlantType::query()->whereNotNull('category')->where('category', '!=', '')
+            ->distinct()->orderBy('category')->pluck('category');
+        $filterPlants = Plant::with('type')->orderBy('name')->get();
+        $plantFilterData = $filterPlants->map(fn (Plant $p) => [
+            'category' => $p->type?->category,
+            'name' => $p->type?->name,
+            'variety' => $p->variety,
+        ])->values();
 
         return view('sales.index', compact(
-            'inventoryTypes',
+            'receipts',
             'totalTransactions',
             'totalQuantitySold',
             'totalRevenue',
             'dateFrom',
             'dateTo',
             'category',
+            'plantName',
+            'variety',
             'search',
-            'categories'
+            'categories',
+            'plantFilterData'
         ));
     }
 
     /**
      * Show sales history for a specific inventory type
      */
-    public function showByInventoryType(InventoryType $inventoryType)
+    public function showByPlant(Plant $plant)
     {
-        // Get all sales that include this inventory type
-        $sales = Sale::whereHas('items', function($query) use ($inventoryType) {
-                $query->where('inventory_type_id', $inventoryType->inventory_type_id);
+        $soldItems = SaleItem::whereHas('packaging.stock', function ($q) use ($plant) {
+                $q->where('seed_varieties_id', $plant->getKey());
             })
-            ->with(['user', 'items' => function($query) use ($inventoryType) {
-                $query->where('inventory_type_id', $inventoryType->inventory_type_id)
-                      ->with('inventoryType', 'inventoryLot');
-            }])
+            ->with([
+                'user',
+                'packaging.stock.plant',
+                'packaging.stock.certificationReport',
+                'packaging.stock.postHarvest.planting.field.plantingLocation',
+                'packaging.label',
+                'packaging.rack.warehouse',
+            ])
             ->orderBy('sale_date', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            ->get();
 
-        // Calculate summary
-        $totalSales = $sales->total();
-        $totalQuantity = SaleItem::where('inventory_type_id', $inventoryType->inventory_type_id)->sum('quantity');
-        $totalRevenue = SaleItem::where('inventory_type_id', $inventoryType->inventory_type_id)->sum('subtotal');
+        return view('sales.by-plant', compact('plant', 'soldItems'));
+    }
 
-        return view('sales.by-inventory-type', compact('inventoryType', 'sales', 'totalSales', 'totalQuantity', 'totalRevenue'));
+    public function availablePackagings(Plant $plant)
+    {
+        $packagings = StockPackaging::whereHas('stock', function ($q) use ($plant) {
+                $q->where('seed_varieties_id', $plant->getKey());
+            })
+            ->with(['stock', 'rack.warehouse'])
+            ->get()
+            ->filter(fn (StockPackaging $pkg) => $pkg->isSellable())
+            ->sortBy(fn (StockPackaging $pkg) => $pkg->stock?->tgl_kedaluwarsa?->timestamp ?? PHP_INT_MAX)
+            ->values()
+            ->map(function (StockPackaging $pkg) use ($plant) {
+                return [
+                    'id' => $pkg->id,
+                    'no_label_seri' => $pkg->no_label_seri,
+                    'quantity' => (float) $pkg->kapasitas_per_kemasan,
+                    'unit' => $plant->satuanStok?->code ?: '',
+                    'warehouse' => $pkg->rack?->warehouse?->name ?: '-',
+                    'rack' => $pkg->rack?->name ?: '-',
+                    'unit_price' => (float) ($plant->harga_jual ?? 0),
+                    'expiry' => $pkg->stock?->tgl_kedaluwarsa?->format('Y-m-d'),
+                ];
+            });
+
+        return response()->json(['packagings' => $packagings, 'unit_price' => (float) ($plant->harga_jual ?? 0)]);
     }
 
     /**
@@ -131,25 +189,45 @@ class SaleController extends Controller
      */
     public function create()
     {
-        $warehouses = Warehouse::with('bins')->orderBy('name')->get();
-        $receiptNumber = Sale::generateReceiptNumber();
-        
-        // Get inventory types with available stock
-        $inventoryTypes = InventoryType::whereHas('lots', function($query) {
-                $query->where('current_stock', '>', 0)
-                      ->where('status', '!=', 'kadaluarsa');
-            })
-            ->with(['lots' => function($query) {
-                $query->where('current_stock', '>', 0)
-                      ->where('status', '!=', 'kadaluarsa')
-                      ->with(['warehouse', 'bin'])
-                      ->orderBy('created_at', 'asc'); // FIFO
-            }])
-            ->orderBy('category')
-            ->orderBy('name')
-            ->get();
-        
-        return view('sales.create', compact('warehouses', 'receiptNumber', 'inventoryTypes'));
+        return view('seed-requests.create', [
+            'buyer' => session('sale_buyer', []),
+            'buyerUrl' => route('sales.buyer'),
+            'backUrl' => route('sales.index'),
+            'heading' => 'Informasi Pembeli',
+        ]);
+    }
+
+    public function saveBuyer(Request $request)
+    {
+        session(['sale_buyer' => app(SeedRequestController::class)->validatedBuyer($request)]);
+
+        return redirect()->route('sales.items');
+    }
+
+    public function createItems()
+    {
+        $buyer = session('sale_buyer');
+        if (! $buyer) {
+            return redirect()->route('sales.create');
+        }
+        $commodities = PlantType::orderBy('category')->orderBy('name')->get();
+        $plants = Plant::with(['type', 'satuanStok', 'stocks'])->orderBy('name')->get();
+        $categories = $commodities->pluck('category')->filter()->unique()->sort()->values();
+
+        return view('seed-requests.items', compact('buyer', 'plants', 'categories') + [
+            'storeUrl' => route('sales.store'),
+            'backUrl' => route('sales.create'),
+            'lotsUrl' => url('/permintaan/plants'),
+            'heading' => 'Rincian Item dan Pembayaran',
+            'submitLabel' => 'Catat penjualan',
+        ]);
+    }
+
+    public function availableLots(Plant $plant)
+    {
+        $lots = SeedCertificate::activeLotsForPlant($plant)->map(fn (Stock $stock) => SeedCertificate::lotRow($stock));
+
+        return response()->json(['plant' => $plant->displayName(), 'lots' => $lots]);
     }
 
     /**
@@ -157,412 +235,172 @@ class SaleController extends Controller
      */
     public function store(Request $request)
     {
+        $buyer = session('sale_buyer');
+        if (! $buyer) {
+            return redirect()->route('sales.create')->with('error', 'Lengkapi informasi pembeli terlebih dahulu.');
+        }
+
         $request->validate([
-            'receipt_number' => 'required|string|unique:sales,receipt_number',
-            'sale_date' => 'required|date',
-            'buyer_name' => 'required|string|max:255',
-            'buyer_contact' => 'nullable|string|max:255',
-            'buyer_nik' => 'nullable|string|max:255',
-            'buyer_category' => 'nullable|in:petani_perorangan,kelompok_tani,instansi_pemerintah,swasta,lainnya',
-            'buyer_category_custom' => 'nullable|string|max:255|required_if:buyer_category,lainnya',
-            'destination_province' => 'nullable|string|max:255',
-            'destination_city' => 'nullable|string|max:255',
-            'destination_district' => 'nullable|string|max:255',
-            'destination_village' => 'nullable|string|max:255',
-            'planned_location_name' => 'nullable|string|max:255',
-            'estimated_planting_area' => 'nullable|numeric|min:0',
+            'lots' => 'required|array|min:1',
+            'lots.*.stock_id' => 'required|exists:stock,id',
+            'lots.*.quantity' => 'required|integer|min:1',
             'payment_method' => 'required|in:cash,transfer_bank',
-            'payment_status' => 'required|in:lunas,belum_lunas',
-            'payment_proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'notes' => 'nullable|string',
-            'items' => 'required|array|min:1',
-            'items.*.inventory_type_id' => 'required|exists:inventory_types,inventory_type_id',
-            'items.*.warehouse_id' => 'required|exists:warehouses,warehouse_id',
-            'items.*.bin_id' => 'required|exists:bins,bin_id',
-            'items.*.quantity' => 'required|numeric|min:0.01',
-            'items.*.unit_price' => 'required|numeric|min:0',
-            'items.*.package_quantity' => 'nullable|numeric|min:0',
-            'items.*.package_value' => 'nullable|numeric|min:0',
-            'items.*.package_unit_type' => 'nullable|in:satuan,kantong,ikat,gentong,custom',
-            'items.*.package_unit_custom' => 'nullable|string|max:255|required_if:items.*.package_unit_type,custom',
+            'payment_proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048|required_if:payment_method,transfer_bank',
         ]);
+
+        $packagingIds = app(SeedRequestController::class)->selectFefoPackagings($request->lots);
+        $receiptNumber = SaleItem::generateReceiptNumber();
 
         DB::beginTransaction();
         try {
-            // Handle payment proof upload
-            $paymentProofPath = null;
-            if ($request->hasFile('payment_proof')) {
-                $paymentProofPath = $request->file('payment_proof')->store('payment_proofs', 'public');
-            }
+            $paymentProofPath = $request->hasFile('payment_proof')
+                ? $request->file('payment_proof')->store('payment_proofs', 'public')
+                : null;
 
-            // Create sale
-            $sale = Sale::create([
-                'receipt_number' => $request->receipt_number,
-                'sale_date' => $request->sale_date,
-                'buyer_name' => $request->buyer_name,
-                'buyer_contact' => $request->buyer_contact,
-                'buyer_nik' => $request->buyer_nik,
-                'buyer_category' => $request->buyer_category,
-                'buyer_category_custom' => $request->buyer_category_custom,
-                'destination_province' => $request->destination_province,
-                'destination_city' => $request->destination_city,
-                'destination_district' => $request->destination_district,
-                'destination_village' => $request->destination_village,
-                'planned_location_name' => $request->planned_location_name,
-                'estimated_planting_area' => $request->estimated_planting_area,
-                'total_amount' => 0, // Will be calculated
+            $header = [
+                'receipt_number' => $receiptNumber,
+                'sale_date' => $buyer['request_date'] ?? now()->toDateString(),
+                'buyer_name' => $buyer['buyer_name'],
+                'buyer_contact' => $buyer['buyer_contact'] ?? null,
+                'buyer_nik' => $buyer['buyer_nik'] ?? null,
+                'buyer_category' => $buyer['buyer_category'] ?? null,
+                'buyer_category_custom' => $buyer['buyer_category_custom'] ?? null,
+                'destination_province' => $buyer['destination_province'] ?? null,
+                'destination_city' => $buyer['destination_city'] ?? null,
+                'destination_district' => $buyer['destination_district'] ?? null,
+                'destination_village' => $buyer['destination_village'] ?? null,
+                'planned_location_name' => $buyer['planned_location_name'] ?? null,
+                'planned_gps' => $buyer['planned_gps'] ?? null,
+                'estimated_planting_area' => $buyer['estimated_planting_area'] ?? null,
                 'payment_method' => $request->payment_method,
-                'payment_status' => $request->payment_status,
+                'payment_status' => 'lunas',
                 'payment_proof' => $paymentProofPath,
-                'notes' => $request->notes,
-                'user_id' => Auth::id(),
-            ]);
+                'notes' => $buyer['notes'] ?? null,
+                'user_id' => auth()->user()->user_id ?? Auth::id(),
+            ];
 
             $totalAmount = 0;
-
-            // Process each item
-            foreach ($request->items as $itemData) {
-                $warehouseId = $itemData['warehouse_id'];
-                $binId = $itemData['bin_id'];
-                $quantity = $itemData['quantity'];
-                $unitPrice = $itemData['unit_price'];
-                
-                // Validate quantity is not negative
-                if ($quantity < 0) {
-                    DB::rollBack();
-                    return back()->withErrors([
-                        'items' => "Jumlah jual tidak boleh negatif."
-                    ])->withInput();
-                }
-                
-                // Validate quantity is greater than 0
-                if ($quantity <= 0) {
-                    DB::rollBack();
-                    return back()->withErrors([
-                        'items' => "Jumlah jual harus lebih dari 0."
-                    ])->withInput();
-                }
-                
+            $firstSale = null;
+            foreach ($packagingIds as $packagingId) {
+                $pkg = StockPackaging::with('stock.plant.satuanStok')->findOrFail($packagingId);
+                $plant = $pkg->stock?->plant;
+                $quantity = (float) $pkg->kapasitas_per_kemasan;
+                $unitPrice = (float) ($plant?->harga_jual ?? 0);
+                $unit = $plant?->satuanStok?->code ?: '';
                 $subtotal = $quantity * $unitPrice;
                 $totalAmount += $subtotal;
 
-                // Get bin to verify it exists
-                $bin = Bin::findOrFail($binId);
-                if ($bin->warehouse_id != $warehouseId) {
-                    DB::rollBack();
-                    return back()->withErrors([
-                        'items' => "Bin tidak sesuai dengan lokasi gudang yang dipilih."
-                    ])->withInput();
-                }
-
-                // FIFO: Get lots in this bin ordered by created_at (oldest first)
-                // Exclude expired lots
-                $remainingQuantity = $quantity;
-                $lotsUsed = [];
-                
-                $lots = InventoryLot::where('bin_id', $binId)
-                    ->where('current_stock', '>', 0)
-                    ->where('status', '!=', 'kadaluarsa') // Exclude expired lots
-                    ->orderBy('created_at', 'asc') // FIFO: oldest first
-                    ->get();
-
-                if ($lots->isEmpty()) {
-                    DB::rollBack();
-                    return back()->withErrors([
-                        'items' => "Tidak ada stok tersedia di bin {$bin->name}. Stok yang tersedia mungkin sudah kadaluarsa."
-                    ])->withInput();
-                }
-                
-                // Additional check: verify no expired lots are being sold
-                $expiredLots = InventoryLot::where('bin_id', $binId)
-                    ->where('current_stock', '>', 0)
-                    ->where('status', 'kadaluarsa')
-                    ->count();
-                
-                if ($expiredLots > 0) {
-                    // Check if user is trying to sell from a bin that only has expired lots
-                    $totalLots = InventoryLot::where('bin_id', $binId)
-                        ->where('current_stock', '>', 0)
-                        ->count();
-                    
-                    if ($totalLots == $expiredLots) {
-                        DB::rollBack();
-                        return back()->withErrors([
-                            'items' => "Bin {$bin->name} hanya memiliki stok benih yang sudah kadaluarsa. Stok kadaluarsa tidak dapat dijual."
-                        ])->withInput();
-                    }
-                }
-
-                // Check if all lots have the same inventory type
-                $inventoryTypeIds = $lots->pluck('inventory_type_id')->unique();
-                if ($inventoryTypeIds->count() > 1) {
-                    DB::rollBack();
-                    return back()->withErrors([
-                        'items' => "Bin {$bin->name} memiliki beberapa jenis stok bibit yang berbeda. Silakan pilih bin yang hanya berisi satu jenis stok bibit."
-                    ])->withInput();
-                }
-
-                // Get inventory type from first lot
-                $inventoryType = $lots->first()->inventoryType;
-                $unit = $lots->first()->stock_unit;
-
-                // Check total available stock
-                $totalAvailableStock = $lots->sum('current_stock');
-                if ($totalAvailableStock < $quantity) {
-                    DB::rollBack();
-                    return back()->withErrors([
-                        'items' => "Stok tidak mencukupi di bin {$bin->name}. Stok tersedia: {$totalAvailableStock} {$unit}. Jumlah yang diminta: {$quantity} {$unit}"
-                    ])->withInput();
-                }
-                
-                // Additional validation: quantity cannot exceed available stock (prevent negative stock)
-                if ($quantity > $totalAvailableStock) {
-                    DB::rollBack();
-                    return back()->withErrors([
-                        'items' => "Penjualan gagal! Jumlah jual ({$quantity} {$unit}) melebihi stok tersedia ({$totalAvailableStock} {$unit}) di bin {$bin->name}."
-                    ])->withInput();
-                }
-
-                // Reduce stock using FIFO
-                foreach ($lots as $lot) {
-                    if ($remainingQuantity <= 0) {
-                        break;
-                    }
-
-                    $quantityToTake = min($remainingQuantity, $lot->current_stock);
-                    $lot->current_stock -= $quantityToTake;
-                    $lot->updateStatus();
-                    $lot->save();
-
-                    $lotsUsed[] = [
-                        'lot' => $lot,
-                        'quantity' => $quantityToTake
-                    ];
-
-                    $remainingQuantity -= $quantityToTake;
-
-                    // Create inventory transaction for each lot used
-                    InventoryTransaction::create([
-                        'inventory_type_id' => $lot->inventory_type_id,
-                        'inventory_lot_id' => $lot->inventory_lot_id,
-                        'transaction_type' => 'distribusi',
-                        'quantity' => $quantityToTake,
-                        'unit' => $lot->stock_unit,
-                        'warehouse_id' => $warehouseId,
-                        'bin_id' => $binId,
-                        'reason' => 'Penjualan',
-                        'notes' => "No. Struk: {$sale->receipt_number} - Pembeli: {$request->buyer_name}",
-                        'user_id' => Auth::id(),
+                $pkg->update(['status_kemasan' => StockPackaging::STATUS_DISALURKAN]);
+                if ($pkg->stock) {
+                    $pkg->stock->update([
+                        'stok_saat_ini' => max(0, (float) $pkg->stock->stok_saat_ini - $quantity),
+                        'updated_by' => auth()->user()->user_id ?? Auth::id(),
                     ]);
                 }
 
-                // Create sale item (use first lot ID for reference, but note that multiple lots may be used)
-                SaleItem::create([
-                    'sale_id' => $sale->sale_id,
-                    'inventory_type_id' => $inventoryType->inventory_type_id,
-                    'inventory_lot_id' => $lotsUsed[0]['lot']->inventory_lot_id, // Reference to first lot used
+                $firstSale = SaleItem::create(array_merge($header, [
+                    'stock_packaging_id' => $pkg->id,
                     'quantity' => $quantity,
                     'unit' => $unit,
                     'unit_price' => $unitPrice,
                     'subtotal' => $subtotal,
+                ]));
+
+                \App\Models\StockHistory::create([
+                    'stock_id' => $pkg->stok_benih_id,
+                    'stock_packaging_id' => $pkg->id,
+                    'seed_varieties_id' => $pkg->stock?->seed_varieties_id,
+                    'transaction_type' => 'distribusi',
+                    'quantity' => $quantity,
+                    'unit' => $unit,
+                    'reason' => 'Penjualan '.$receiptNumber,
+                    'notes' => 'Kemasan '.$pkg->no_label_seri.' terjual ke '.$buyer['buyer_name'],
+                    'user_id' => auth()->user()->user_id ?? Auth::id(),
                 ]);
             }
 
-            // Update total amount
-            $sale->total_amount = $totalAmount;
-            $sale->save();
-
+            SaleItem::where('receipt_number', $receiptNumber)->update(['total_amount' => $totalAmount]);
+            session()->forget('sale_buyer');
             DB::commit();
 
-            return redirect()->route('sales.show', $sale)
+            return redirect()->route('sales.show', $firstSale)
                 ->with('success', 'Penjualan berhasil dicatat dan stok telah dikurangi.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Terjadi kesalahan saat menyimpan penjualan: ' . $e->getMessage()])->withInput();
+            return back()->withErrors(['error' => 'Terjadi kesalahan saat menyimpan penjualan: '.$e->getMessage()])->withInput();
         }
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified resource (sale_id resolved via route binding to first SaleItem).
      */
-    public function show(Sale $sale)
+    public function show(SaleItem $sale)
     {
-        $sale->load(['user', 'items.inventoryType', 'items.inventoryLot']);
-        
+        $items = SaleItem::where('receipt_number', $sale->receipt_number)
+            ->with([
+                'packaging.stock.plant.type',
+                'packaging.stock.postHarvest',
+                'packaging.label',
+                'packaging.rack.warehouse',
+                'seedRequest.items.plant.type',
+                'seedRequest.packagings.stock.plant.type',
+                'seedRequest.packagings.rack.warehouse',
+                'user',
+            ])
+            ->orderBy('sale_item_id')
+            ->get();
+
+        SaleItem::hydrateFromStockHistories($items);
+        foreach ($items as $item) {
+            $resolved = $item->resolvedPackaging();
+            if (! $item->relationLoaded('packaging') || ! $item->packaging) {
+                if ($resolved) {
+                    $item->setRelation('packaging', $resolved);
+                }
+            }
+        }
+
+        $sale->setRelation('items', $items);
+        $sale->loadMissing(['user', 'seedRequest']);
+        $sale->organization = $items->first()?->displayOrganization();
+
         return view('sales.show', compact('sale'));
     }
 
     /**
-     * Get inventory lots for a specific inventory type
+     * Remove the specified resource from storage (sale_id via binding = first SaleItem).
      */
-    /**
-     * Get bins for a specific warehouse (for AJAX)
-     */
-    public function getBins(Request $request)
+    public function destroy(SaleItem $sale)
     {
-        $warehouseId = $request->input('warehouse_id');
-        
-        if (!$warehouseId) {
-            return response()->json([]);
-        }
-
-        $bins = Bin::where('warehouse_id', $warehouseId)
-            ->orderBy('name')
-            ->get()
-            ->map(function ($bin) {
-                return [
-                    'id' => $bin->bin_id,
-                    'name' => $bin->name,
-                    'internal_id' => $bin->internal_id,
-                ];
-            });
-
-        return response()->json($bins);
-    }
-
-    /**
-     * Get inventory type details with warehouse and bin info (for auto-fill)
-     */
-    public function getInventoryTypeDetails($id)
-    {
-        $inventoryType = InventoryType::with(['lots' => function($query) {
-                $query->where('current_stock', '>', 0)
-                      ->where('status', '!=', 'kadaluarsa')
-                      ->with(['warehouse', 'bin'])
-                      ->orderBy('created_at', 'asc'); // FIFO - oldest first
-            }])
-            ->findOrFail($id);
-        
-        // Get first available lot (FIFO)
-        $firstLot = $inventoryType->lots->first();
-        
-        if (!$firstLot) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tidak ada stok tersedia untuk tipe benih ini'
-            ], 404);
-        }
-        
-        // Calculate total stock
-        $totalStock = $inventoryType->lots->sum('current_stock');
-
-        // Build unique warehouses list from all lots
-        $warehousesMap = [];
-        foreach ($inventoryType->lots as $lot) {
-            if ($lot->warehouse_id && !isset($warehousesMap[$lot->warehouse_id])) {
-                $warehousesMap[$lot->warehouse_id] = [
-                    'warehouse_id' => $lot->warehouse_id,
-                    'warehouse_name' => $lot->warehouse?->name ?: 'Gudang',
-                ];
-            }
-        }
-        
-        return response()->json([
-            'success' => true,
-            'inventory_type' => [
-                'id' => $inventoryType->inventory_type_id,
-                'name' => $inventoryType->name,
-                'unit' => $inventoryType->unit,
-                'estimated_value_per_unit' => $inventoryType->estimated_value_per_unit,
-                'estimated_kg_per_unit' => $inventoryType->estimated_kg_per_unit,
-                'total_stock' => $totalStock,
-            ],
-            'warehouses' => array_values($warehousesMap),
-            'first_lot' => [
-                'warehouse_id' => $firstLot->warehouse_id,
-                'warehouse_name' => $firstLot->warehouse?->name ?: 'Gudang',
-                'bin_id' => $firstLot->bin_id,
-                'bin_name' => $firstLot->bin?->name ?: 'Bin',
-                'bin_internal_id' => $firstLot->bin?->internal_id ?? '',
-                'stock_unit' => $firstLot->stock_unit,
-                'current_stock' => $firstLot->current_stock,
-            ],
-            'all_lots' => $inventoryType->lots->map(function($lot) {
-                return [
-                    'id' => $lot->inventory_lot_id,
-                    'warehouse_id' => $lot->warehouse_id,
-                    'bin_id' => $lot->bin_id,
-                    'current_stock' => $lot->current_stock,
-                    'stock_unit' => $lot->stock_unit,
-                ];
-            })
-        ]);
-    }
-    
-    /**
-     * Get inventory lots for a specific bin (for FIFO calculation)
-     */
-    public function getBinInventoryLots(Request $request)
-    {
-        $binId = $request->input('bin_id');
-        
-        if (!$binId) {
-            return response()->json([]);
-        }
-
-        // Get all lots in this bin with stock > 0 and status not expired, ordered by created_at (FIFO)
-        $lots = InventoryLot::where('bin_id', $binId)
-            ->where('current_stock', '>', 0)
-            ->where('status', '!=', 'kadaluarsa') // Exclude expired lots
-            ->with(['inventoryType', 'warehouse', 'bin'])
-            ->orderBy('created_at', 'asc') // FIFO: oldest first
-            ->get()
-            ->map(function ($lot) {
-                return [
-                    'id' => $lot->inventory_lot_id,
-                    'inventory_type_id' => $lot->inventory_type_id,
-                    'inventory_type_name' => $lot->inventoryType->name ?? '-',
-                    'production_id' => $lot->production_id ?? 'Lot #' . $lot->inventory_lot_id,
-                    'current_stock' => $lot->current_stock,
-                    'stock_unit' => $lot->stock_unit,
-                    'expiry_date' => $lot->expiry_date ? $lot->expiry_date->format('d-M-Y') : '-',
-                    'created_at' => $lot->created_at->format('d-M-Y H:i'),
-                    'status' => $lot->status,
-                ];
-            });
-
-        return response()->json($lots);
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Sale $sale)
-    {
+        $items = SaleItem::where('receipt_number', $sale->receipt_number)->get();
         DB::beginTransaction();
         try {
             // Restore stock for items with lot
-            foreach ($sale->items as $item) {
-                if ($item->inventory_lot_id) {
-                    $lot = InventoryLot::find($item->inventory_lot_id);
-                    if ($lot) {
-                        // Restore stock
-                        $lot->current_stock += $item->quantity;
-                        $lot->updateStatus();
-                        $lot->save();
-
-                        // Create inventory transaction to record the restoration
-                        InventoryTransaction::create([
-                            'inventory_type_id' => $item->inventory_type_id,
-                            'inventory_lot_id' => $lot->inventory_lot_id,
-                            'transaction_type' => 'masuk',
-                            'quantity' => $item->quantity,
-                            'unit' => $item->unit,
-                            'warehouse_id' => $lot->warehouse_id,
-                            'bin_id' => $lot->bin_id,
-                            'reason' => 'Pembatalan Penjualan',
-                            'notes' => "Pembatalan penjualan No. Struk: {$sale->receipt_number}",
-                            'user_id' => Auth::id(),
+            foreach ($items as $item) {
+                $pkg = $item->packaging;
+                if ($pkg) {
+                    $pkg->update(['status_kemasan' => StockPackaging::STATUS_TERSEDIA]);
+                    if ($pkg->stock) {
+                        $pkg->stock->update([
+                            'stok_saat_ini' => (float) $pkg->stock->stok_saat_ini + (float) $item->quantity,
                         ]);
                     }
+
+                    \App\Models\StockHistory::create([
+                        'stock_id' => $pkg->stok_benih_id,
+                        'stock_packaging_id' => $pkg->id,
+                        'seed_varieties_id' => $pkg->stock?->seed_varieties_id,
+                        'transaction_type' => 'penyesuaian_tambah',
+                        'quantity' => (float) $item->quantity,
+                        'unit' => $item->unit,
+                        'reason' => 'Pembatalan penjualan '.$sale->receipt_number,
+                        'notes' => 'Kemasan '.$pkg->no_label_seri.' dikembalikan ke stok',
+                        'user_id' => auth()->user()->user_id ?? Auth::id(),
+                    ]);
                 }
             }
 
-            // Delete sale items (will cascade delete automatically)
-            $sale->items()->delete();
-            
-            // Delete sale
-            $sale->delete();
+            SaleItem::where('receipt_number', $sale->receipt_number)->delete();
 
             DB::commit();
 

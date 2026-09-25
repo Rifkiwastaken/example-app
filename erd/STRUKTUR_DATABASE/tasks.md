@@ -7,33 +7,40 @@ Tabel untuk menyimpan data tugas
 
 | Nama Atribut | Tipe Data | Ukuran | Keterangan |
 |--------------|-----------|--------|------------|
-| **id** | BIGINT | - | Primary Key, Auto Increment |
-| title | VARCHAR | 50 | Judul tugas (NOT NULL) |
-| description | TEXT | - | Deskripsi tugas (NULL) |
-| priority | ENUM | - | Prioritas: 'low', 'medium', 'high', 'highest' (NOT NULL, Default: 'medium') |
-| status | ENUM | - | Status: 'pending', 'in_progress', 'completed' (NOT NULL, Default: 'pending') |
-| due_date | DATE | - | Tanggal tenggat (NOT NULL) |
-| location | VARCHAR | 50 | Lokasi tugas (NULL) |
-| location_tagged | BOOLEAN | - | Apakah ditandai lokasi (NOT NULL, Default: false) |
-| planting_location_id | BIGINT | - | Foreign Key → planting_locations.id (NULL) |
-| planting_id | BIGINT | - | Foreign Key → plantings.id (NULL) |
-| created_by | BIGINT | - | Foreign Key → users.id (NULL) |
-| last_edited | TIMESTAMP | - | Terakhir diedit (NULL) |
-| task_color | VARCHAR | 50 | Warna tugas (NULL) |
-| collaborators | JSON | - | Kolaborator (NULL) |
-| repeats | VARCHAR | 50 | Pengulangan (NULL) |
-| hours_spent | DECIMAL | 8,2 | Jam yang dihabiskan (NULL) |
-| created_at | TIMESTAMP | - | Tanggal dibuat (NOT NULL) |
-| updated_at | TIMESTAMP | - | Tanggal diupdate (NOT NULL) |
+| **task_id** | VARCHAR | 36 | Primary Key |
+| assigned_to | VARCHAR | 36 | Foreign Key → users.user_id |
+| template_id | VARCHAR | 36 | Foreign Key → task_templates.task_template_id |
+| series_id | VARCHAR | 36 | Foreign Key → task_series.task_series_id |
+| planting_location_id | VARCHAR | 36 | Foreign Key → planting_locations.planting_location_id |
+| planting_id | VARCHAR | 36 | Foreign Key → plantings.planting_id |
+| created_by | VARCHAR | 36 | Foreign Key → users.user_id |
+| last_edited_by | VARCHAR | 36 | Foreign Key → users.user_id |
+| title | VARCHAR | 50 | |
+| description | TEXT | | |
+| priority | ENUM | | |
+| status | ENUM | | |
+| due_date | DATE | | |
+| location | VARCHAR | 50 | |
+| location_tagged | VARCHAR | 50 | |
+| task_color | VARCHAR | 7 | |
+| collaborators | JSON | | |
+| repeats | VARCHAR | 50 | |
+| hours_spent | DECIMAL | 8,2 | |
+| last_edited_at | TIMESTAMP | | |
+| created_at | TIMESTAMP | | |
+| updated_at | TIMESTAMP | | |
 
 ## Relasi
 - Many-to-One dengan: `planting_locations` (planting_location_id, CASCADE DELETE), `plantings` (planting_id, CASCADE DELETE), `users` (created_by)
 
 ## Index
-- PRIMARY KEY: `id`
-- FOREIGN KEY: `planting_location_id` → `planting_locations.id` (CASCADE DELETE)
-- FOREIGN KEY: `planting_id` → `plantings.id` (CASCADE DELETE)
-- FOREIGN KEY: `created_by` → `users.id`
+- PRIMARY KEY: `task_id`
+- FOREIGN KEY: `assigned_to` → `users.user_id`
+- FOREIGN KEY: `template_id` → `task_templates.task_template_id`
+- FOREIGN KEY: `series_id` → `task_series.task_series_id`
+- FOREIGN KEY: `planting_location_id` → `planting_locations.planting_location_id`
+- FOREIGN KEY: `planting_id` → `plantings.planting_id`
+- FOREIGN KEY: `created_by` → `users.user_id`
 
 
 

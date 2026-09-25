@@ -7,30 +7,30 @@ Tabel untuk menyimpan data hasil panen
 
 | Nama Atribut | Tipe Data | Ukuran | Keterangan |
 |--------------|-----------|--------|------------|
-| **id** | BIGINT | - | Primary Key, Auto Increment |
-| plant_id | BIGINT | - | Foreign Key → plants.id (NOT NULL) |
-| planting_id | BIGINT | - | Foreign Key → plantings.id (NULL) |
-| planting_location_id | BIGINT | - | Foreign Key → planting_locations.id (NULL) |
-| harvested_at | DATE | - | Tanggal panen (NOT NULL) |
-| batch_no | VARCHAR | 50 | Nomor batch (NULL) |
-| note | TEXT | - | Catatan panen (NULL) |
-| source | VARCHAR | 50 | Sumber (bed/lokasi) (NULL) |
-| quality | VARCHAR | 50 | Kualitas hasil panen (NULL) |
-| quantity | DECIMAL | 12,2 | Jumlah hasil panen (NOT NULL) |
-| unit | VARCHAR | 50 | Satuan (NULL) |
-| loss_quantity | DECIMAL | 12,2 | Jumlah kerugian (NULL) |
-| created_at | TIMESTAMP | - | Tanggal dibuat (NOT NULL) |
-| updated_at | TIMESTAMP | - | Tanggal diupdate (NOT NULL) |
+| **harvest_id** | VARCHAR | 36 | Primary Key |
+| plant_id | VARCHAR | 36 | Foreign Key → plants.plant_id |
+| planting_id | VARCHAR | 36 | Foreign Key → plantings.planting_id |
+| planting_location_id | VARCHAR | 36 | Foreign Key → planting_locations.planting_location_id |
+| harvested_at | DATE | | |
+| batch_no | VARCHAR | 50 | |
+| note | TEXT | | |
+| source | VARCHAR | 50 | |
+| quality | VARCHAR | 50 | |
+| quantity | DECIMAL | 15,2 | |
+| unit | VARCHAR | 50 | |
+| loss_quantity | DECIMAL | 15,2 | |
+| created_at | TIMESTAMP | | |
+| updated_at | TIMESTAMP | | |
 
 ## Relasi
 - Many-to-One dengan: `plants` (plant_id, CASCADE DELETE), `plantings` (planting_id, NULL ON DELETE), `planting_locations` (planting_location_id, NULL ON DELETE)
 - One-to-Many dengan: `certifications` (harvest_id)
 
 ## Index
-- PRIMARY KEY: `id`
-- FOREIGN KEY: `plant_id` → `plants.id` (CASCADE DELETE)
-- FOREIGN KEY: `planting_id` → `plantings.id` (NULL ON DELETE)
-- FOREIGN KEY: `planting_location_id` → `planting_locations.id` (NULL ON DELETE)
+- PRIMARY KEY: `harvest_id`
+- FOREIGN KEY: `plant_id` → `plants.plant_id`
+- FOREIGN KEY: `planting_id` → `plantings.planting_id`
+- FOREIGN KEY: `planting_location_id` → `planting_locations.planting_location_id`
 
 
 

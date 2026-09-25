@@ -133,7 +133,7 @@ const lots = @json($inventoryType->lots->map(function($l) {
     return [
         'id' => $l->id,
         'warehouse_id' => $l->warehouse_id,
-        'bin_id' => $l->bin_id,
+        'bin_id' => $l->warehouse_bin_id,
         'production_id' => $l->production_id,
         'current_stock' => $l->current_stock
     ];

@@ -3,43 +3,44 @@
 ' Use case 03: Mengelola data lokasi penanaman
 ' Aktor: Admin/Kepala Sek, Penangkar/Kepala Satgas
 !theme plain
+skinparam backgroundColor white
 skinparam activity {
     BackgroundColor #E1F5FE
     BorderColor #01579B
     FontSize 11
 }
 skinparam swimlane {
-    BackgroundColor #F5F5F5
-    BorderColor #424242
-    TitleBackgroundColor #BBDEFB
-    TitleBorderColor #1976D2
+    BackgroundColor White
+    BorderColor #CCCCCC
+    TitleBackgroundColor White
+    TitleBorderColor #999999
 }
 
 title Activity Diagram - Mengelola data lokasi penanaman
 
-|#LightBlue|User|
+|#White|User|
 start
 :Masuk ke halaman kelola lokasi penanaman;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Validasi role pengguna;
 :Query data lokasi penanaman dari database;
 :Menampilkan daftar lokasi penanaman;
 
-|#LightBlue|User|
+|#White|User|
 :Lihat daftar lokasi penanaman;
 :Klik tombol tambah lokasi;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Tampilkan form tambah lokasi;
 :Load data user untuk assignment;
 
-|#LightBlue|User|
+|#White|User|
 :Isi form data lokasi\n(nama, tipe lokasi, format penanaman, deskripsi);
 :Pilih user sebagai land manager/worker;
 :Submit form;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Validasi data;
 :Check user terdaftar;
 
@@ -49,12 +50,12 @@ if (Data valid?) then (Ya)
     :Generate planting_location_id (VARCHAR 36);
     :Tampilkan pesan sukses;
     :Redirect ke halaman detail lokasi;
-    |#LightBlue|User|
+    |#White|User|
     :Lihat pesan lokasi berhasil ditambahkan;
 else (Tidak)
     :Tampilkan pesan error;
     :Kembali ke form;
-    |#LightBlue|User|
+    |#White|User|
     :Lihat form dengan pesan error;
 endif
 

@@ -3,31 +3,32 @@
 ' Use case 10: Logout
 ' Aktor: Admin/Kepala Sek, Petugas BBI, Penangkar/Kepala Satgas, Petugas Gudang
 !theme plain
+skinparam backgroundColor white
 skinparam activity {
     BackgroundColor #E1F5FE
     BorderColor #01579B
     FontSize 11
 }
 skinparam swimlane {
-    BackgroundColor #F5F5F5
-    BorderColor #424242
-    TitleBackgroundColor #BBDEFB
-    TitleBorderColor #1976D2
+    BackgroundColor White
+    BorderColor #CCCCCC
+    TitleBackgroundColor White
+    TitleBorderColor #999999
 }
 
 title Activity Diagram - Logout
 
-|#LightBlue|User|
+|#White|User|
 start
 :Klik tombol logout;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Validasi session;
 :Hapus session;
 :Hapus cookies;
 :Redirect ke halaman login;
 
-|#LightBlue|User|
+|#White|User|
 :Masuk ke halaman login;
 
 stop

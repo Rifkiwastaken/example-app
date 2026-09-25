@@ -21,13 +21,14 @@ class Warehouse extends Model
     protected $fillable = [
         'name',
         'internal_id',
-        'tracking_type',
+        'tipe_lokasi',
         'description',
         'responsible_person_id',
     ];
 
-    protected $casts = [
-        'tracking_type' => 'string',
+    public const TIPE_LOKASI = [
+        'gudang' => 'Gudang',
+        'lapangan' => 'Lapangan',
     ];
 
     /**
@@ -38,16 +39,9 @@ class Warehouse extends Model
         return $this->hasMany(Bin::class, 'warehouse_id', 'warehouse_id');
     }
 
-    /**
-     * Get tracking type label
-     */
-    public function getTrackingTypeLabelAttribute(): string
+    public function getTipeLokasiLabelAttribute(): string
     {
-        return match($this->tracking_type) {
-            'bin_separated' => 'Di dalam bin terpisah',
-            'warehouse_only' => 'Hanya di lokasi ini',
-            default => $this->tracking_type ?? 'Tidak ditentukan',
-        };
+        return self::TIPE_LOKASI[$this->tipe_lokasi] ?? 'Gudang';
     }
 
     /**

@@ -7,14 +7,14 @@ Tabel untuk menyimpan data gudang
 
 | Nama Atribut | Tipe Data | Ukuran | Keterangan |
 |--------------|-----------|--------|------------|
-| **warehouse_id** | VARCHAR | 36 | Primary Key (format: warehouse_id) |
-| name | VARCHAR | 255 | Nama gudang (NOT NULL) |
-| internal_id | VARCHAR | 50 | ID internal gudang (UNIQUE, NOT NULL) |
-| tracking_type | ENUM | - | Tipe tracking: 'bin_separated', 'warehouse_only' (NOT NULL) |
-| description | TEXT | - | Deskripsi gudang (NULL) |
-| responsible_person_id | VARCHAR | 36 | Foreign Key → users.user_id (NULL, SET NULL ON DELETE) |
-| created_at | TIMESTAMP | - | Tanggal dibuat (NOT NULL) |
-| updated_at | TIMESTAMP | - | Tanggal diupdate (NOT NULL) |
+| **warehouse_id** | VARCHAR | 36 | Primary Key |
+| responsible_person_id | VARCHAR | 36 | Foreign Key → users.user_id |
+| name | VARCHAR | 50 | |
+| internal_id | VARCHAR | 50 | |
+| tracking_type | VARCHAR | 50 | |
+| description | TEXT | | |
+| created_at | TIMESTAMP | | |
+| updated_at | TIMESTAMP | | |
 
 ## Relasi
 - Many-to-One dengan: `users` (responsible_person_id)

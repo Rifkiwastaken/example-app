@@ -7,7 +7,7 @@ use App\Models\InventoryType;
 use App\Models\User;
 use App\Models\Plant;
 use App\Models\InventoryLot;
-use App\Models\InventoryTransaction;
+use App\Models\StockHistory;
 use App\Models\InventoryTypeSeed;
 use App\Models\InventoryNote;
 use App\Models\InventoryPhoto;
@@ -114,19 +114,24 @@ class InventoryTypeTest extends TestCase
             'unit' => 'kg',
         ]);
 
-        $transaction1 = InventoryTransaction::create([
-            'inventory_type_id' => $inventoryType->id,
+        $user = \App\Models\User::factory()->create();
+        $transaction1 = StockHistory::create([
+            'inventory_type_id' => $inventoryType->inventory_type_id,
             'transaction_type' => 'stok_masuk',
             'quantity' => 100,
+            'unit' => 'kg',
+            'user_id' => $user->user_id,
         ]);
 
-        $transaction2 = InventoryTransaction::create([
-            'inventory_type_id' => $inventoryType->id,
+        $transaction2 = StockHistory::create([
+            'inventory_type_id' => $inventoryType->inventory_type_id,
             'transaction_type' => 'stok_keluar',
             'quantity' => 50,
+            'unit' => 'kg',
+            'user_id' => $user->user_id,
         ]);
 
-        // Memverifikasi bahwa relasi berfungsi dengan benar
+        // Memverifikasi bahwa relasi berfungsi dengan benar (transactions = StockHistory dengan transaction_type)
         $this->assertTrue($inventoryType->transactions->contains($transaction1));
         $this->assertTrue($inventoryType->transactions->contains($transaction2));
         $this->assertEquals(2, $inventoryType->transactions->count());

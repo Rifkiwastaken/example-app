@@ -38,7 +38,6 @@ class TreatmentController extends Controller
             'keywords' => 'nullable|string|max:255',
         ]);
 
-        $data['planting_location_id'] = $plantingLocation->planting_location_id;
         Treatment::create($data);
         
         return redirect()->route('planting-locations.treatments.index', $plantingLocation)

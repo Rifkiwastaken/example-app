@@ -7,21 +7,21 @@ Tabel untuk menyimpan data kerugian/kehilangan pada penanaman
 
 | Nama Atribut | Tipe Data | Ukuran | Keterangan |
 |--------------|-----------|--------|------------|
-| **id** | BIGINT | - | Primary Key, Auto Increment |
-| planting_id | BIGINT | - | Foreign Key → plantings.id (NOT NULL) |
-| loss_date | DATE | - | Tanggal kerugian (NOT NULL) |
-| loss_amount | DECIMAL | 12,2 | Jumlah kerugian (NOT NULL) |
-| loss_reason | VARCHAR | 50 | Alasan kerugian (NULL) |
-| description | TEXT | - | Deskripsi kerugian (NULL) |
-| created_at | TIMESTAMP | - | Tanggal dibuat (NOT NULL) |
-| updated_at | TIMESTAMP | - | Tanggal diupdate (NOT NULL) |
+| **planting_loss_id** | VARCHAR | 36 | Primary Key |
+| planting_id | VARCHAR | 36 | Foreign Key → plantings.planting_id |
+| loss_date | DATE | | |
+| loss_amount | DECIMAL | 15,2 | |
+| loss_reason | VARCHAR | 50 | |
+| description | TEXT | | |
+| created_at | TIMESTAMP | | |
+| updated_at | TIMESTAMP | | |
 
 ## Relasi
 - Many-to-One dengan: `plantings` (planting_id, CASCADE DELETE)
 
 ## Index
-- PRIMARY KEY: `id`
-- FOREIGN KEY: `planting_id` → `plantings.id` (CASCADE DELETE)
+- PRIMARY KEY: `planting_loss_id`
+- FOREIGN KEY: `planting_id` → `plantings.planting_id`
 
 
 

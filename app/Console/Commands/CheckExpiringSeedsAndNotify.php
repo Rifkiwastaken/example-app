@@ -3,8 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Jobs\SendExpiringSeedsNotificationJob;
-use App\Models\InventoryType;
-use App\Models\InventoryTypeSeed;
+use App\Models\Stock;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
@@ -34,50 +33,32 @@ class CheckExpiringSeedsAndNotify extends Command
         $today = Carbon::today();
         $fourteenDaysFromNow = $today->copy()->addDays(14);
         
-        // Get all seeds that are expired or will expire within 14 days
-        $expiringSeeds = InventoryTypeSeed::with([
-            'inventoryType',
-            'plant.type',
-            'plantingLocation'
-        ])
-        ->whereNotNull('expiry_date')
-        ->where(function($query) use ($today, $fourteenDaysFromNow) {
-            $query->where('expiry_date', '<=', $fourteenDaysFromNow)
-                  ->where('expiry_date', '>=', $today->copy()->subDays(30)); // Include expired up to 30 days ago
-        })
-        ->orderBy('expiry_date', 'asc')
-        ->get()
-        ->map(function($seed) use ($today) {
-            $isExpired = $seed->expiry_date->isPast();
-            $daysUntil = $isExpired 
-                ? $seed->expiry_date->diffInDays($today) 
-                : $today->diffInDays($seed->expiry_date);
-            
-            // Get batch number from certification report if available
-            $batchNo = '-';
-            $certificationReport = null;
-            if ($seed->certification_report_id) {
-                $certificationReport = \App\Models\CertificationReport::find($seed->certification_report_id);
-                if ($certificationReport) {
-                    $batchNo = $certificationReport->batch_no ?? '-';
-                }
-            }
-            
-            return [
-                'id' => $seed->id,
-                'inventory_type_id' => $seed->inventory_type_id,
-                'name' => $seed->plant->name ?? $seed->inventoryType->name ?? 'Benih',
-                'variety' => $seed->plant->variety ?? null,
-                'batch_no' => $batchNo,
-                'location' => $seed->plantingLocation->name ?? 'Tidak Diketahui',
-                'expiry_date' => $seed->expiry_date->format('d M Y'),
-                'is_expired' => $isExpired,
-                'days_until' => $daysUntil,
-                'stock_quantity' => $seed->total_seed_quantity ?? 0,
-                'stock_unit' => $seed->total_seed_unit ?? 'kg',
-            ];
-        })
-        ->toArray();
+        // Lot stok benih yang sudah kedaluwarsa atau akan kedaluwarsa dalam 14 hari
+        $expiringSeeds = Stock::with(['plant.satuanStok', 'postHarvest', 'rack.warehouse'])
+            ->whereNotNull('tgl_kedaluwarsa')
+            ->whereBetween('tgl_kedaluwarsa', [$today->copy()->subDays(30), $fourteenDaysFromNow])
+            ->where('stok_saat_ini', '>', 0)
+            ->orderBy('tgl_kedaluwarsa')
+            ->get()
+            ->map(function (Stock $stock) use ($today) {
+                $expiry = $stock->tgl_kedaluwarsa;
+                $isExpired = $expiry->isPast();
+
+                return [
+                    'id' => $stock->id,
+                    'inventory_type_id' => $stock->seed_varieties_id,
+                    'name' => $stock->plant->name ?? 'Benih',
+                    'variety' => $stock->plant->variety ?? null,
+                    'batch_no' => $stock->postHarvest?->nomor_lot ?? $stock->no_label_resmi ?? '-',
+                    'location' => $stock->rack?->warehouse?->name ?? 'Tidak Diketahui',
+                    'expiry_date' => $expiry->format('d M Y'),
+                    'is_expired' => $isExpired,
+                    'days_until' => $isExpired ? $expiry->diffInDays($today) : $today->diffInDays($expiry),
+                    'stock_quantity' => (float) $stock->stok_saat_ini,
+                    'stock_unit' => $stock->plant?->satuanStok?->code ?? 'kg',
+                ];
+            })
+            ->toArray();
         
         if (empty($expiringSeeds)) {
             $this->info('No expiring seeds found.');

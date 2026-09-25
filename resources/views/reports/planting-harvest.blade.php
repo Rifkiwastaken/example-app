@@ -40,19 +40,9 @@
                     <label class="form-label">Sampai Tanggal</label>
                     <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
                 </div>
+                @include('reports.partials._variety-scope-filter')
                 <div class="col-md-3 mb-3">
-                    <label class="form-label">Komoditas</label>
-                    <select name="plant_id" class="form-select">
-                        <option value="">Semua Komoditas</option>
-                        @foreach($plants as $plant)
-                            <option value="{{ $plant->id }}" {{ request('plant_id') == $plant->id ? 'selected' : '' }}>
-                                {{ $plant->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Lokasi Lahan</label>
+                    <label class="form-label">Lokasi Penanaman</label>
                     <select name="planting_location_id" class="form-select">
                         <option value="">Semua Lokasi</option>
                         @foreach($locations as $loc)
@@ -105,8 +95,9 @@
                         <th rowspan="2">KOMODITI</th>
                         <th rowspan="2">KELAS BENIH</th>
                         <th rowspan="2">VARIETAS</th>
+                        <th rowspan="2">BENIH SUMBER</th>
                         <th rowspan="2">LUAS (ha)</th>
-                        <th rowspan="2">LOKASI KEGIATAN</th>
+                        <th rowspan="2">LOKASI PENANAMAN</th>
                         <th colspan="2">WAKTU</th>
                         <th colspan="2">PRODUKSI (kg)</th>
                     </tr>
@@ -173,7 +164,7 @@
                         @endphp
                     @empty
                         <tr>
-                            <td colspan="10" class="text-center text-muted py-4">
+                            <td colspan="11" class="text-center text-muted py-4">
                                 <i class="fas fa-inbox fa-2x mb-2"></i><br>
                                 Tidak ada data ditemukan
                             </td>
@@ -193,7 +184,7 @@
                     @foreach($groupedData as $item)
                         @if($item['type'] === 'total')
                             <tr class="table-info">
-                                <td colspan="4"><strong>Total {{ $item['commodity'] }}</strong></td>
+                                <td colspan="5"><strong>Total {{ $item['commodity'] }}</strong></td>
                                 <td class="text-end"><strong>{{ number_format($item['totals']['area'], 2) }}</strong></td>
                                 <td colspan="2"></td>
                                 <td class="text-end"><strong>{{ number_format($item['totals']['candidate_seed'], 0, ',', '.') }}</strong></td>
@@ -212,9 +203,10 @@
                                         {{ $item['seedClass'] }}
                                     @endif
                                 </td>
-                                <td>{{ $item['planting']->plant->name ?? '-' }}</td>
+                                <td>{{ $item['planting']->plant->variety ?: ($item['planting']->plant->name ?? '-') }}</td>
+                                <td>{{ $item['planting']->seed_source_label ?? '-' }}</td>
                                 <td class="text-end">{{ $item['planting']->area_ha > 0 ? number_format($item['planting']->area_ha, 2) : '-' }}</td>
-                                <td>{{ $item['planting']->location->name ?? '-' }}</td>
+                                <td>{{ $item['planting']->location_name ?? ($item['planting']->location->name ?? '-') }}</td>
                                 <td>{{ $item['planting']->planted_at ? $item['planting']->planted_at->format('d-m-Y') : '-' }}</td>
                                 <td>{{ $item['planting']->harvest && $item['planting']->harvest->harvested_at ? $item['planting']->harvest->harvested_at->format('d-m-Y') : '-' }}</td>
                                 <td class="text-end">{{ $item['planting']->candidate_seed_kg > 0 ? number_format($item['planting']->candidate_seed_kg, 0, ',', '.') : '-' }}</td>
@@ -255,7 +247,9 @@ function exportExcel() {
     // Redirect to Excel export route
     window.location.href = '{{ route("reports.planting-harvest") }}?export=excel&' + params.toString();
 }
+
 </script>
 @endpush
+@include('reports.partials._variety-scope-scripts')
 @endsection
 

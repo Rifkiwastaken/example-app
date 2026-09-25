@@ -39,14 +39,14 @@ class CheckExpiredBinStockAndNotify extends Command
             'warehouse',
             'bin'
         ])
-        ->whereNotNull('bin_id')
+        ->whereNotNull('warehouse_bin_id')
         ->whereNotNull('expiry_date')
         ->where('expiry_date', '<', $today)
         ->where('current_stock', '>', 0)
         ->orderBy('expiry_date', 'asc')
         ->get()
         ->groupBy(function($lot) {
-            return $lot->warehouse_id . '-' . $lot->bin_id;
+            return $lot->warehouse_id . '-' . $lot->warehouse_bin_id;
         })
         ->map(function($lots, $key) use ($today) {
             $firstLot = $lots->first();

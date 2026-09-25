@@ -66,14 +66,7 @@
             @endphp
             @foreach($expenses as $expense)
                 @php
-                    $plant = null;
-                    if ($expense->planting && $expense->planting->plant) {
-                        $plant = $expense->planting->plant;
-                    } elseif ($expense->treatment && $expense->treatment->planting && $expense->treatment->planting->plant) {
-                        $plant = $expense->treatment->planting->plant;
-                    } elseif ($expense->nutrient && $expense->nutrient->planting && $expense->nutrient->planting->plant) {
-                        $plant = $expense->nutrient->planting->plant;
-                    }
+                    $plant = $expense->planting && $expense->planting->plant ? $expense->planting->plant : null;
                     $total += $expense->amount;
                 @endphp
                 <tr>
@@ -82,7 +75,7 @@
                     <td>{{ $expense->expense_name ?? '-' }}</td>
                     <td>{{ $expenseTypes[$expense->expense_type] ?? '-' }}</td>
                     <td>{{ $plant ? $plant->name : '-' }}</td>
-                    <td>{{ $expense->plantingLocation->name ?? '-' }}</td>
+                    <td>{{ ($expense->planting && $expense->planting->location) ? $expense->planting->location->name : '-' }}</td>
                     <td>{{ $expense->responsiblePerson->name ?? '-' }}</td>
                     <td class="text-right">Rp {{ number_format($expense->amount, 0, ',', '.') }}</td>
                 </tr>

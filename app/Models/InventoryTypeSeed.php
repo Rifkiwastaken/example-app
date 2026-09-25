@@ -37,8 +37,6 @@ class InventoryTypeSeed extends Model
 
     protected $fillable = [
         'inventory_type_id',
-        'plant_id',
-        'planting_location_id',
         'certification_report_id',
         'quantity',
         'seed_unit',
@@ -71,14 +69,20 @@ class InventoryTypeSeed extends Model
         return $this->belongsTo(InventoryType::class, 'inventory_type_id', 'inventory_type_id');
     }
 
+    /**
+     * Compat relation (legacy). Nilai plant kini diambil dari certification_report.
+     */
     public function plant(): BelongsTo
     {
-        return $this->belongsTo(Plant::class);
+        return $this->belongsTo(Plant::class, 'plant_id', 'plant_id');
     }
 
+    /**
+     * Compat relation (legacy). Nilai lokasi kini diambil dari certification_report/harvest.
+     */
     public function plantingLocation(): BelongsTo
     {
-        return $this->belongsTo(PlantingLocation::class);
+        return $this->belongsTo(PlantingLocation::class, 'planting_location_id', 'planting_location_id');
     }
 
     public function filledByUser(): BelongsTo
@@ -93,7 +97,9 @@ class InventoryTypeSeed extends Model
 
     public function histories()
     {
-        return $this->hasMany(SeedHistory::class, 'inventory_type_seed_id', 'inventory_type_seed_id');
+        // Kolom inventory_type_seed_id sudah dihapus dari stock_histories.
+        // Riwayat stok benih sekarang ditautkan lewat warehouse_lot_id (lot) atau inventory_type_id.
+        return $this->hasMany(StockHistory::class, 'inventory_type_id', 'inventory_type_id');
     }
 
     public function certificationReport(): BelongsTo

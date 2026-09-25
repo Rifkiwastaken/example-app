@@ -7,21 +7,21 @@ Tabel untuk menyimpan catatan tanaman
 
 | Nama Atribut | Tipe Data | Ukuran | Keterangan |
 |--------------|-----------|--------|------------|
-| **id** | BIGINT | - | Primary Key, Auto Increment |
-| plant_id | BIGINT | - | Foreign Key → plants.id (NOT NULL) |
-| description | TEXT | - | Deskripsi catatan (NOT NULL) |
-| note_date | DATE | - | Tanggal catatan (NOT NULL) |
-| keywords | VARCHAR | 50 | Kata kunci (NULL) |
-| attachment_path | VARCHAR | 50 | Path attachment (NULL) |
-| created_at | TIMESTAMP | - | Tanggal dibuat (NOT NULL) |
-| updated_at | TIMESTAMP | - | Tanggal diupdate (NOT NULL) |
+| **plant_note_id** | VARCHAR | 36 | Primary Key |
+| plant_id | VARCHAR | 36 | Foreign Key → plants.plant_id |
+| description | TEXT | | |
+| note_date | DATE | | |
+| keywords | VARCHAR | 50 | |
+| attachment_path | VARCHAR | 50 | |
+| created_at | TIMESTAMP | | |
+| updated_at | TIMESTAMP | | |
 
 ## Relasi
 - Many-to-One dengan: `plants` (plant_id, CASCADE DELETE)
 
 ## Index
-- PRIMARY KEY: `id`
-- FOREIGN KEY: `plant_id` → `plants.id` (CASCADE DELETE)
+- PRIMARY KEY: `plant_note_id`
+- FOREIGN KEY: `plant_id` → `plants.plant_id`
 
 
 

@@ -155,15 +155,7 @@
                 <tbody>
                     @forelse($expenses as $index => $expense)
                         @php
-                            // Get plant from expense
-                            $plant = null;
-                            if ($expense->planting && $expense->planting->plant) {
-                                $plant = $expense->planting->plant;
-                            } elseif ($expense->treatment && $expense->treatment->planting && $expense->treatment->planting->plant) {
-                                $plant = $expense->treatment->planting->plant;
-                            } elseif ($expense->nutrient && $expense->nutrient->planting && $expense->nutrient->planting->plant) {
-                                $plant = $expense->nutrient->planting->plant;
-                            }
+                            $plant = $expense->planting && $expense->planting->plant ? $expense->planting->plant : null;
                         @endphp
                         <tr>
                             <td>{{ $expenses->firstItem() + $index }}</td>
@@ -195,7 +187,7 @@
                                     <span class="text-muted">-</span>
                                 @endif
                             </td>
-                            <td>{{ $expense->plantingLocation->name ?? '-' }}</td>
+                            <td>{{ ($expense->planting && $expense->planting->location) ? $expense->planting->location->name : '-' }}</td>
                             <td>{{ $expense->responsiblePerson->name ?? '-' }}</td>
                             <td class="text-end">
                                 <strong>Rp {{ number_format($expense->amount, 0, ',', '.') }}</strong>

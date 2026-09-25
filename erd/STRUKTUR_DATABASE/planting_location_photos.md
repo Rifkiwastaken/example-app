@@ -7,23 +7,25 @@ Tabel untuk menyimpan foto lokasi penanaman
 
 | Nama Atribut | Tipe Data | Ukuran | Keterangan |
 |--------------|-----------|--------|------------|
-| **id** | BIGINT | - | Primary Key, Auto Increment |
-| planting_location_id | BIGINT | - | Foreign Key → planting_locations.id (NOT NULL) |
-| file_path | VARCHAR | 50 | Path file (NOT NULL) |
-| file_name | VARCHAR | 50 | Nama file (NULL) |
-| file_size | INT | - | Ukuran file dalam bytes (NULL) |
-| mime_type | VARCHAR | 50 | Tipe MIME (NULL) |
-| description | TEXT | - | Deskripsi foto (NULL) |
-| taken_at | DATE | - | Tanggal foto diambil (NULL) |
-| created_at | TIMESTAMP | - | Tanggal dibuat (NOT NULL) |
-| updated_at | TIMESTAMP | - | Tanggal diupdate (NOT NULL) |
+| **planting_location_photo_id** | VARCHAR | 36 | Primary Key |
+| planting_location_id | VARCHAR | 36 | Foreign Key → planting_locations.planting_location_id |
+| planting_id | VARCHAR | 36 | Foreign Key → plantings.planting_id |
+| file_path | VARCHAR | 255 | |
+| file_name | VARCHAR | 255 | |
+| file_size | INT | | |
+| mime_type | VARCHAR | 100 | |
+| description | TEXT | | |
+| taken_at | TIMESTAMP | | |
+| created_at | TIMESTAMP | | |
+| updated_at | TIMESTAMP | | |
 
 ## Relasi
-- Many-to-One dengan: `planting_locations` (planting_location_id, CASCADE DELETE)
+- Many-to-One dengan: `planting_locations` (planting_location_id), `plantings` (planting_id)
 
 ## Index
-- PRIMARY KEY: `id`
-- FOREIGN KEY: `planting_location_id` → `planting_locations.id` (CASCADE DELETE)
+- PRIMARY KEY: `planting_location_photo_id`
+- FOREIGN KEY: `planting_location_id` → `planting_locations.planting_location_id`
+- FOREIGN KEY: `planting_id` → `plantings.planting_id`
 
 
 

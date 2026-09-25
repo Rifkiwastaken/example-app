@@ -3,42 +3,43 @@
 ' Use case 12: Menambahkan User
 ' Aktor: Admin/Kepala Sek
 !theme plain
+skinparam backgroundColor white
 skinparam activity {
     BackgroundColor #E1F5FE
     BorderColor #01579B
     FontSize 11
 }
 skinparam swimlane {
-    BackgroundColor #F5F5F5
-    BorderColor #424242
-    TitleBackgroundColor #BBDEFB
-    TitleBorderColor #1976D2
+    BackgroundColor White
+    BorderColor #CCCCCC
+    TitleBackgroundColor White
+    TitleBorderColor #999999
 }
 
 title Activity Diagram - Menambahkan User
 
-|#LightBlue|Admin|
+|#White|Admin|
 start
 :Masuk ke halaman kelola user;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Validasi role admin;
 :Query data user dari database;
 :Menampilkan daftar user;
 
-|#LightBlue|Admin|
+|#White|Admin|
 :Lihat daftar user;
 :Klik tombol tambah user;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Tampilkan form tambah user;
 
-|#LightBlue|Admin|
+|#White|Admin|
 :Isi form data user;
 :Pilih role user;
 :Submit form;
 
-|#LightGreen|Sistem|
+|#White|Sistem|
 :Validasi data;
 if (Data valid?) then (Tidak)
     :Tampilkan pesan error;
@@ -56,9 +57,10 @@ endif
 :Assign role ke user;
 :Tampilkan pesan sukses;
 
-|#LightBlue|Admin|
+|#White|Admin|
 :Lihat user baru ditambahkan;
 
 stop
 
 @enduml
+

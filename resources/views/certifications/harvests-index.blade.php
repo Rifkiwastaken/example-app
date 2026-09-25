@@ -162,14 +162,14 @@
                                     @php
                                         // Pernah ditambahkan = report punya pivot ke inventory type
                                         $hasBeenAddedToStock = $harvest->certification->reports->contains(function($report) {
-                                            return $report->inventoryTypes->count() > 0;
+                                            return $report->inventory_type_id !== null;
                                         });
                                         // Data stok telah dihapus = ada report yang punya pivot tapi seed-nya sudah tidak ada
                                         $stockWasDeleted = false;
                                         if ($hasBeenAddedToStock) {
                                             $stockWasDeleted = $harvest->certification->reports->contains(function($report) {
-                                                if ($report->inventoryTypes->count() === 0) return false;
-                                                $linkedTypeIds = $report->inventoryTypes->pluck('inventory_type_id')->toArray();
+                                                if (!$report->inventory_type_id) return false;
+                                                $linkedTypeIds = [$report->inventory_type_id];
                                                 $seedStillExists = \App\Models\InventoryTypeSeed::where('certification_report_id', $report->certification_report_id)
                                                     ->whereIn('inventory_type_id', $linkedTypeIds)
                                                     ->exists();
@@ -181,8 +181,8 @@
                                             $hasBeenAddedToStock = false;
                                         } else if ($hasBeenAddedToStock) {
                                             $hasBeenAddedToStock = $harvest->certification->reports->contains(function($report) {
-                                                if ($report->inventoryTypes->count() === 0) return false;
-                                                $linkedTypeIds = $report->inventoryTypes->pluck('inventory_type_id')->toArray();
+                                                if (!$report->inventory_type_id) return false;
+                                                $linkedTypeIds = [$report->inventory_type_id];
                                                 return \App\Models\InventoryTypeSeed::where('certification_report_id', $report->certification_report_id)
                                                     ->whereIn('inventory_type_id', $linkedTypeIds)
                                                     ->exists();
@@ -191,10 +191,10 @@
                                         $linkedInventoryType = null;
                                         if ($hasBeenAddedToStock) {
                                             foreach ($harvest->certification->reports as $report) {
-                                                if ($report->inventoryTypes->count() > 0) {
-                                                    $linkedTypeIds = $report->inventoryTypes->pluck('inventory_type_id')->toArray();
+                                                if ($report->inventory_type_id) {
+                                                    $linkedTypeIds = [$report->inventory_type_id];
                                                     if (\App\Models\InventoryTypeSeed::where('certification_report_id', $report->certification_report_id)->whereIn('inventory_type_id', $linkedTypeIds)->exists()) {
-                                                        $linkedInventoryType = $report->inventoryTypes->first();
+                                                        $linkedInventoryType = $report->inventoryType;
                                                         break;
                                                     }
                                                 }
@@ -204,7 +204,7 @@
                                             return $report->conclusion === 'LULUS' 
                                                 && $report->certified_seed_quantity 
                                                 && $report->certified_seed_quantity > 0
-                                                && $report->inventoryTypes->count() == 0;
+                                                && $report->inventory_type_id === null;
                                         });
                                     @endphp
                                     @if($stockWasDeleted)

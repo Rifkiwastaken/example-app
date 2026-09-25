@@ -40,6 +40,13 @@
     @if(isset($selectedHarvestId) && $selectedHarvestId)
         <input type="hidden" name="harvest_id" value="{{ $selectedHarvestId }}">
     @endif
+    @if(!empty($selectedPostHarvestId))
+        <input type="hidden" name="planting_post_harvest_id" value="{{ $selectedPostHarvestId }}">
+    @endif
+    @if(!empty($report))
+        <input type="hidden" name="report_id" value="{{ $report->getKey() }}">
+        <input type="hidden" name="stock_id" value="{{ $report->stock_id }}">
+    @endif
     
     @if(isset($redirectPlantId) && $redirectPlantId)
         <input type="hidden" name="plant_id" value="{{ $redirectPlantId }}">
@@ -56,7 +63,7 @@
                     <label class="form-label">Nomor Laporan BPSB <span class="text-danger">*</span></label>
                     <input type="text" class="form-control @error('report_number_bpsb') is-invalid @enderror" 
                            name="report_number_bpsb" id="report_number_bpsb" 
-                           value="{{ old('report_number_bpsb', 'BPSB-' . date('Y') . '-' . str_pad(\App\Models\CertificationReport::whereYear('report_date', date('Y'))->count() + 1, 6, '0', STR_PAD_LEFT)) }}" 
+                           value="{{ old('report_number_bpsb', optional($report ?? null)->report_number_bpsb ?? ('BPSB-' . date('Y') . '-' . str_pad(\App\Models\CertificationReport::whereYear('report_date', date('Y'))->count() + 1, 6, '0', STR_PAD_LEFT))) }}" 
                            placeholder="Contoh: Pdg 01.P/L3-21-40/..." required>
                     <small class="text-muted">Nomor batch akan otomatis terisi, namun dapat diubah jika diperlukan</small>
                     @error('report_number_bpsb')
@@ -66,7 +73,7 @@
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Tanggal Laporan <span class="text-danger">*</span></label>
                     <input type="date" class="form-control @error('report_date') is-invalid @enderror" 
-                           name="report_date" value="{{ old('report_date', date('Y-m-d')) }}" required>
+                           name="report_date" value="{{ old('report_date', optional($report ?? null)->report_date?->format('Y-m-d') ?? date('Y-m-d')) }}" required>
                     <small class="text-muted">Contoh: 25 Desember 2024</small>
                     @error('report_date')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -84,17 +91,22 @@
                 </div>
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Fase Pemeriksaan <span class="text-danger">*</span></label>
-                    <select class="form-select @error('inspection_phase') is-invalid @enderror" name="inspection_phase" required>
+                    <select class="form-select @error('inspection_phase') is-invalid @enderror" name="inspection_phase">
                         <option value="">Pilih Fase</option>
-                        <option value="Vegetatif" {{ old('inspection_phase') == 'Vegetatif' ? 'selected' : '' }}>Vegetatif</option>
-                        <option value="Generatif" {{ old('inspection_phase') == 'Generatif' ? 'selected' : '' }}>Generatif</option>
-                        <option value="Menjelang Panen" {{ old('inspection_phase') == 'Menjelang Panen' ? 'selected' : '' }}>Menjelang Panen</option>
-                        <option value="Lainnya" {{ old('inspection_phase') == 'Lainnya' ? 'selected' : '' }}>Lainnya</option>
+                        <option value="Vegetatif" {{ old('inspection_phase', $report->inspection_phase ?? '') == 'Vegetatif' ? 'selected' : '' }}>Vegetatif</option>
+                        <option value="Generatif" {{ old('inspection_phase', $report->inspection_phase ?? '') == 'Generatif' ? 'selected' : '' }}>Generatif</option>
+                        <option value="Menjelang Panen" {{ old('inspection_phase', $report->inspection_phase ?? '') == 'Menjelang Panen' ? 'selected' : '' }}>Menjelang Panen</option>
+                        <option value="Lainnya" {{ old('inspection_phase', $report->inspection_phase ?? '') == 'Lainnya' ? 'selected' : '' }}>Lainnya</option>
                     </select>
                     <small class="text-muted">Contoh: Vegetatif</small>
                     @error('inspection_phase')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Uji ke</label>
+                    <input type="number" class="form-control" name="uji_ke" value="{{ old('uji_ke', $ujiKe ?? 1) }}" min="1" readonly>
+                    <small class="text-muted">Nilai 1 untuk uji pertama. Bertambah otomatis saat sertifikasi ulang.</small>
                 </div>
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Petugas Pengawas Mutu (BPSB)</label>
@@ -123,16 +135,16 @@
             <h5 class="mb-0"><i class="fas fa-link me-2"></i>Bagian B: Tautkan ke Lokasi Produksi</h5>
         </div>
         <div class="card-body">
-            @if(isset($harvest) && $harvest)
+            @if((isset($harvest) && $harvest) || !empty($postHarvest))
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
-                    <strong>Data dari Panen:</strong> Lokasi dan tanaman sudah terisi otomatis dari data panen.
+                    <strong>Data dari pasca panen:</strong> Lokasi dan tanaman sudah terisi otomatis.
                 </div>
             @endif
             
             <div class="mb-3">
                 <label class="form-label">Lokasi Produksi <span class="text-danger">*</span></label>
-                <select class="form-select @error('planting_location_id') is-invalid @enderror" name="planting_location_id" id="planting_location_id" required {{ isset($harvest) && $harvest ? 'disabled' : '' }}>
+                <select class="form-select @error('planting_location_id') is-invalid @enderror" name="planting_location_id" id="planting_location_id" required {{ ((isset($harvest) && $harvest) || !empty($postHarvest)) ? 'disabled' : '' }}>
                     <option value="">-- Pilih Lokasi Penanaman --</option>
                     @foreach($plantingLocations as $location)
                         <option value="{{ $location->planting_location_id }}" 
@@ -142,7 +154,7 @@
                         </option>
                     @endforeach
                 </select>
-                @if(isset($harvest) && $harvest)
+                @if((isset($harvest) && $harvest) || !empty($postHarvest))
                     <input type="hidden" name="planting_location_id" value="{{ $selectedPlantingLocationId }}">
                 @endif
                 <small class="text-muted">Pilih lokasi penanaman yang akan diperiksa. Data diambil dari Lokasi Penanaman.</small>
@@ -153,22 +165,22 @@
 
             <div class="mb-3">
                 <label class="form-label">Pilih Benih untuk Disertifikasi <span class="text-danger">*</span></label>
-                <select class="form-select @error('plant_id') is-invalid @enderror" name="plant_id" id="plant_id" required {{ isset($harvest) && $harvest ? 'disabled' : '' }}>
+                <select class="form-select @error('plant_id') is-invalid @enderror" name="plant_id" id="plant_id" required {{ ((isset($harvest) && $harvest) || !empty($postHarvest)) ? 'disabled' : '' }}>
                     <option value="">-- Pilih Benih --</option>
                     @foreach($plants as $plant)
                         @php
                             $variety = $plant->variety ?: 'Tanpa Varietas';
                             $commodity = $plant->type?->name ?: $plant->name;
                         @endphp
-                        <option value="{{ $plant->plant_id }}" 
-                                {{ old('plant_id', $selectedPlantId) == $plant->plant_id ? 'selected' : '' }}
+                        <option value="{{ $plant->getKey() }}" 
+                                {{ old('plant_id', $selectedPlantId) == $plant->getKey() ? 'selected' : '' }}
                                 data-commodity="{{ $commodity }}"
                                 data-variety="{{ $variety }}">
                             {{ $commodity }} - {{ $variety }}
                         </option>
                     @endforeach
                 </select>
-                @if(isset($harvest) && $harvest)
+                @if((isset($harvest) && $harvest) || !empty($postHarvest))
                     <input type="hidden" name="plant_id" value="{{ $selectedPlantId }}">
                 @endif
                 <small class="text-muted">Pilih benih yang akan disertifikasi. Data diambil dari Tanaman Saya.</small>
@@ -460,18 +472,18 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <label class="form-label">Kesimpulan / Rekomendasi <span class="text-danger">*</span></label>
+                    <label class="form-label">Kesimpulan / Rekomendasi</label>
                     <div class="mt-2">
                         <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="conclusion" id="conclusion_lulus" value="LULUS" {{ old('conclusion') == 'LULUS' ? 'checked' : '' }} required>
+                            <input class="form-check-input" type="radio" name="conclusion" id="conclusion_lulus" value="LULUS" {{ old('conclusion', $report->conclusion ?? '') == 'LULUS' ? 'checked' : '' }}>
                             <label class="form-check-label text-success fw-bold" for="conclusion_lulus">LULUS</label>
                         </div>
                         <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="conclusion" id="conclusion_tidak_lulus" value="TIDAK LULUS" {{ old('conclusion') == 'TIDAK LULUS' ? 'checked' : '' }} required>
+                            <input class="form-check-input" type="radio" name="conclusion" id="conclusion_tidak_lulus" value="TIDAK LULUS" {{ old('conclusion', $report->conclusion ?? '') == 'TIDAK LULUS' ? 'checked' : '' }}>
                             <label class="form-check-label text-danger fw-bold" for="conclusion_tidak_lulus">TIDAK LULUS</label>
                         </div>
                     </div>
-                    <small class="text-muted">Contoh: LULUS</small>
+                    <small class="text-muted">Boleh dikosongkan untuk menyimpan draf, lalu dilanjutkan di riwayat sertifikasi.</small>
                     @error('conclusion')
                         <div class="text-danger small">{{ $message }}</div>
                     @enderror
@@ -494,6 +506,7 @@
         <a href="{{ route('certifications.index') }}" class="btn btn-secondary">
             <i class="fas fa-times me-2"></i>Batal
         </a>
+        <button type="submit" class="btn btn-outline-primary me-2">Simpan draf</button>
         <button type="submit" class="btn btn-success">
             <i class="fas fa-save me-2"></i>Simpan Sertifikasi & Laporan
         </button>
